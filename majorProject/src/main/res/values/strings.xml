@@ -1,0 +1,8 @@
+<resources>
+
+    <string name="app_name">AndroidGame</string>
+    <string name="leaderboards_not_available">Please sign in to view leaderboards.</string>
+    <string name="saved_toast">Score uploaded to Google Play Games</string>
+    <string name="ccccombo_unlocked">Achievement Unlocked: C-c-c-Combo!</string>
+
+</resources>

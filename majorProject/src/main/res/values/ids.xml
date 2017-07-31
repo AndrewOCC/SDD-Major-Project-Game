@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Google Play Games resources -->
+<resources>
+    
+    <string name="app_id">1067003330220</string>
+
+    <string name="achievement_borderline_obsessive">CgkIrP3q8oYfEAIQBA</string>
+	<string name="achievement_obsessive">CgkIrP3q8oYfEAIQBQ</string>
+	<string name="achievement_daredevil">CgkIrP3q8oYfEAIQBg</string>
+	<string name="achievement_livin_life_on_the_edge">CgkIrP3q8oYfEAIQBw</string>
+	<string name="achievement_ccccombo">CgkIrP3q8oYfEAIQCA</string>
+
+    <string name="leaderboard_pacifist_mode">CgkIrP3q8oYfEAIQAg</string>
+</resources>

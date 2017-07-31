@@ -1,0 +1,40 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.aocc.majorproject"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-sdk
+        android:targetSdkVersion="22"/>
+
+    <application
+
+        tools:replace="android:allowBackup, android:icon, android:label"
+        android:icon="@drawable/icon"
+        android:label="MajorProject"
+        android:allowBackup="false"
+        >
+
+        <meta-data android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/app_id" />
+   		<meta-data android:name="com.google.android.gms.version"
+   		    android:value="@integer/google_play_services_version"/>
+        
+        <activity
+            android:name=".MajorProjectGame"
+            android:configChanges="keyboard|keyboardHidden|orientation"
+            android:label="Major Project"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+    
+</manifest>

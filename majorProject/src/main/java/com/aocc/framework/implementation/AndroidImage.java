@@ -1,0 +1,38 @@
+package com.aocc.framework.implementation;
+
+import android.graphics.Bitmap;
+
+import com.aocc.framework.Image;
+import com.aocc.framework.Graphics.ImageFormat;
+
+//EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
+
+public class AndroidImage implements Image {
+    Bitmap bitmap;
+    ImageFormat format;
+    
+    public AndroidImage(Bitmap bitmap, ImageFormat format) {
+        this.bitmap = bitmap;
+        this.format = format;
+    }
+
+    @Override
+    public int getWidth() {
+        return bitmap.getWidth();
+    }
+
+    @Override
+    public int getHeight() {
+        return bitmap.getHeight();
+    }
+
+    @Override
+    public ImageFormat getFormat() {
+        return format;
+    }
+
+    @Override
+    public void dispose() {
+        bitmap.recycle();
+    }      
+}
