@@ -14,8 +14,6 @@ public class Assets {
 	public static Image game_bg;
 	public static Image sign_in_base;
 	public static Image sign_in_press;
-	public static Image sign_out_base;
-	public static Image sign_out_press;
 	public static Image gpg_icon_leaderboards;
 	public static Image gpg_icon_achievements;
 	public static Image splash;

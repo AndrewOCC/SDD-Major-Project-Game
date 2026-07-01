@@ -1,8 +1,14 @@
 <resources>
 
     <string name="app_name">AndroidGame</string>
-    <string name="leaderboards_not_available">Please sign in to view leaderboards.</string>
+    <string name="leaderboards_not_available">Please sign in to Google Play Games to view leaderboards.</string>
+    <string name="achievements_not_available">Please sign in to Google Play Games to view achievements.</string>
     <string name="saved_toast">Score uploaded to Google Play Games</string>
     <string name="ccccombo_unlocked">Achievement Unlocked: C-c-c-Combo!</string>
+    <string name="play_games_sign_in_failed">Could not sign in to Google Play Games. Check that Play Games is installed and you are signed in to a Google account.</string>
+    <string name="play_games_leaderboards_failed">Could not open leaderboards. Try again in a moment.</string>
+    <string name="play_games_achievements_failed">Could not open achievements. Try again in a moment.</string>
+    <string name="play_games_score_failed">Could not upload your score to Google Play Games.</string>
+    <string name="play_games_achievement_failed">Could not unlock the achievement on Google Play Games.</string>
 
 </resources>
