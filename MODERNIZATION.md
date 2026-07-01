@@ -140,8 +140,9 @@ Optional background music via the Spotify app (App Remote SDK). Bundled `game-mu
 ### How it works
 
 - On launch, the game tries to connect to Spotify in the background.
-- If connected, the music button controls Spotify playback of the playlist in `spotify_playlist_uri` (default: Spotify’s “Feel Good Indie” playlist).
-- If Spotify is not configured, not installed, or connection fails, bundled OGG music is used instead.
+- If connected, Darude — Sandstorm plays on loop via Spotify App Remote (`spotify:track:45MYQfUkyOulu070m7tj5V`).
+- A rounded music pill on the home screen and pause menu shows album art, track name, and prev/play/next controls.
+- If Spotify is not configured, not installed, or connection fails, bundled OGG music is used instead (also loops).
 - First connect may show Spotify’s authorization screen (built-in App Remote auth).
 
 ### Branch

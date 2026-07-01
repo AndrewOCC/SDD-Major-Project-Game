@@ -22,6 +22,7 @@ public class GameScreen extends Screen {
 	
 	// for non-static references within code, this holds the MajorProjectGame object
 	MajorProjectGame majorProjectGame;
+	private final MusicPlayerPill musicPlayerPill = new MusicPlayerPill();
 	
 	// Variable Setup
 	Paint paint;
@@ -271,6 +272,7 @@ public class GameScreen extends Screen {
 			    		MainMenuScreen.music = false;
 			    		Assets.setMusicVolume(0);
 			    	}
+			    } else if (musicPlayerPill.handleTouch(event, majorProjectGame)) {
 			    }  else {
                     // Tap anywhere to resume game
                     Assets.tap.play(MainMenuScreen.tapVol);
@@ -457,8 +459,8 @@ public class GameScreen extends Screen {
 		g.drawString("Press anywhere to resume", 640, 300, Color.WHITE, paint);
 		
 		g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-		
-		
+
+		musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 

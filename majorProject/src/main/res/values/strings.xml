@@ -16,6 +16,8 @@
     <!-- Paste your Client ID from https://developer.spotify.com/dashboard -->
     <string name="spotify_client_id">462d7c5eb2694390a2e6dccd3b5fe8e3</string>
     <string name="spotify_redirect_uri">com.aocc.majorproject://callback</string>
-    <string name="spotify_playlist_uri">spotify:playlist:37i9dQZF1DX2sUQwD7tbmL</string>
+    <string name="spotify_track_uri">spotify:track:45MYQfUkyOulu070m7tj5V</string>
+    <string name="default_track_name">Sandstorm</string>
+    <string name="default_track_artist">Darude</string>
 
 </resources>

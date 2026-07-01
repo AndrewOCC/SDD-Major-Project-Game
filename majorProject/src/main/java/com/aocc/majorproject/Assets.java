@@ -47,10 +47,11 @@ public class Assets {
 	
 	public static void loadMusic(MajorProjectGame majorProjectGame) {
 		musicGame = majorProjectGame;
+		MainMenuScreen.music = !majorProjectGame.isMusicActive();
 		for (String musicFile : MUSIC_FILES) {
 			try {
 				darude = majorProjectGame.getAudio().createMusic(musicFile);
-				if (!majorProjectGame.isMusicActive()) {
+				if (MainMenuScreen.music) {
 					darude.setVolume(0.85f);
 					darude.setLooping(true);
 					darude.play();
