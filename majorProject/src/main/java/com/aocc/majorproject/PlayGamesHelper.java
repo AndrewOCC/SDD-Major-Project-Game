@@ -25,6 +25,7 @@ public class PlayGamesHelper {
     private volatile boolean signedIn;
     private volatile boolean signInStatusKnown;
     private volatile boolean signInInProgress;
+    private boolean autoSignInAttempted;
 
     public PlayGamesHelper(Activity activity) {
         this.activity = activity;
@@ -34,11 +35,17 @@ public class PlayGamesHelper {
     }
 
     public void initializeSignIn() {
-        checkAuthentication(true);
+        signInClient.isAuthenticated().addOnCompleteListener(task -> {
+            updateSignedInFromTask(task);
+            if (!signedIn && !autoSignInAttempted) {
+                autoSignInAttempted = true;
+                requestSignIn(false);
+            }
+        });
     }
 
     public void refreshSignInState() {
-        checkAuthentication(true);
+        signInClient.isAuthenticated().addOnCompleteListener(this::updateSignedInFromTask);
     }
 
     public boolean isSignInStatusKnown() {
@@ -113,15 +120,6 @@ public class PlayGamesHelper {
         } catch (RuntimeException e) {
             runOnUiThread(() -> showToast(R.string.play_games_achievement_failed));
         }
-    }
-
-    private void checkAuthentication(boolean attemptSignInIfNeeded) {
-        signInClient.isAuthenticated().addOnCompleteListener(task -> {
-            updateSignedInFromTask(task);
-            if (!signedIn && attemptSignInIfNeeded) {
-                requestSignIn(false);
-            }
-        });
     }
 
     private void requestSignIn(boolean userInitiated) {

@@ -11,19 +11,19 @@ import com.aocc.framework.PersonalMethods;
 public class MusicPlayerPill {
 
     public static final int PILL_X = 340;
-    public static final int PILL_Y = 585;
+    public static final int PILL_Y = 638;
     public static final int PILL_W = 600;
-    public static final int PILL_H = 90;
-    public static final int PILL_RADIUS = 45;
+    public static final int PILL_H = 80;
+    public static final int PILL_RADIUS = 40;
 
-    private static final int ART_X = PILL_X + 10;
-    private static final int ART_Y = PILL_Y + 10;
-    private static final int ART_SIZE = 70;
+    private static final int ART_X = PILL_X + 8;
+    private static final int ART_Y = PILL_Y + 8;
+    private static final int ART_SIZE = 64;
 
     private static final int PREV_X = PILL_X + 390;
     private static final int NEXT_X = PILL_X + 510;
     private static final int PLAY_X = PILL_X + 450;
-    private static final int CONTROL_Y = PILL_Y + 20;
+    private static final int CONTROL_Y = PILL_Y + 15;
     private static final int CONTROL_SIZE = 50;
 
     public boolean handleTouch(TouchEvent event, MajorProjectGame game) {
@@ -31,28 +31,25 @@ public class MusicPlayerPill {
             return false;
         }
 
-        if (!PersonalMethods.touchInBounds(event, PILL_X, PILL_Y, PILL_W, PILL_H)) {
-            return false;
-        }
-
-        Assets.tap.play(MainMenuScreen.tapVol);
-
         if (PersonalMethods.touchInBounds(event, PREV_X, CONTROL_Y, CONTROL_SIZE, CONTROL_SIZE)) {
+            Assets.tap.play(MainMenuScreen.tapVol);
             skipPrevious(game);
             return true;
         }
 
         if (PersonalMethods.touchInBounds(event, PLAY_X, CONTROL_Y, CONTROL_SIZE, CONTROL_SIZE)) {
+            Assets.tap.play(MainMenuScreen.tapVol);
             togglePlayPause(game);
             return true;
         }
 
         if (PersonalMethods.touchInBounds(event, NEXT_X, CONTROL_Y, CONTROL_SIZE, CONTROL_SIZE)) {
+            Assets.tap.play(MainMenuScreen.tapVol);
             skipNext(game);
             return true;
         }
 
-        return true;
+        return false;
     }
 
     public void paint(Graphics g, Paint paint, MajorProjectGame game) {
@@ -80,11 +77,11 @@ public class MusicPlayerPill {
 
         paint.setTypeface(Assets.plain);
         paint.setTextAlign(Paint.Align.LEFT);
-        paint.setTextSize(24);
-        g.drawString(title, PILL_X + 95, PILL_Y + 38, Color.WHITE, paint);
+        paint.setTextSize(22);
+        g.drawString(title, PILL_X + 88, PILL_Y + 34, Color.WHITE, paint);
 
-        paint.setTextSize(18);
-        g.drawString(artist, PILL_X + 95, PILL_Y + 64, Color.argb(220, 200, 200, 200), paint);
+        paint.setTextSize(16);
+        g.drawString(artist, PILL_X + 88, PILL_Y + 58, Color.argb(220, 200, 200, 200), paint);
 
         drawControlButton(g, paint, PREV_X, "|<");
         drawControlButton(g, paint, PLAY_X, paused ? ">" : "||");
