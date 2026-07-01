@@ -15,8 +15,8 @@ android {
         applicationId 'com.aocc.majorproject'
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName '1.1.0'
+        versionCode 5
+        versionName '1.2.0'
     }
 
     buildTypes {
@@ -33,6 +33,10 @@ android {
 
     lint {
         abortOnError false
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     testOptions {

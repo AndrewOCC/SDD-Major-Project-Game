@@ -29,7 +29,6 @@ public class MajorProjectGame extends AndroidGame {
 
 		try {
 			playGamesHelper = new PlayGamesHelper(this);
-			playGamesHelper.initializeSignIn();
 		} catch (RuntimeException e) {
 			CrashReporter.log(this, "Play Games helper failed to initialize", e);
 			playGamesHelper = null;

@@ -14,7 +14,9 @@ import com.google.android.gms.tasks.Task;
 
 /**
  * Thin wrapper around Play Games Services v2 for sign-in, leaderboards,
- * and achievements.
+ * and achievements. Sign-in is only requested when the player taps the
+ * sign-in button; Play Games handles silent auth on launch via
+ * {@link #refreshSignInState()}.
  */
 public class PlayGamesHelper {
 
@@ -25,23 +27,12 @@ public class PlayGamesHelper {
     private volatile boolean signedIn;
     private volatile boolean signInStatusKnown;
     private volatile boolean signInInProgress;
-    private boolean autoSignInAttempted;
 
     public PlayGamesHelper(Activity activity) {
         this.activity = activity;
         signInClient = PlayGames.getGamesSignInClient(activity);
         leaderboardsClient = PlayGames.getLeaderboardsClient(activity);
         achievementsClient = PlayGames.getAchievementsClient(activity);
-    }
-
-    public void initializeSignIn() {
-        signInClient.isAuthenticated().addOnCompleteListener(task -> {
-            updateSignedInFromTask(task);
-            if (!signedIn && !autoSignInAttempted) {
-                autoSignInAttempted = true;
-                requestSignIn(false);
-            }
-        });
     }
 
     public void refreshSignInState() {
@@ -57,14 +48,13 @@ public class PlayGamesHelper {
     }
 
     public void signIn() {
-        requestSignIn(true);
+        requestSignIn();
     }
 
     public void showLeaderboards(String leaderboardId) {
         runOnUiThread(() -> {
             if (!signedIn) {
                 showAlert(activity.getString(R.string.leaderboards_not_available));
-                signIn();
                 return;
             }
 
@@ -86,7 +76,6 @@ public class PlayGamesHelper {
         runOnUiThread(() -> {
             if (!signedIn) {
                 showAlert(activity.getString(R.string.achievements_not_available));
-                signIn();
                 return;
             }
 
@@ -122,7 +111,7 @@ public class PlayGamesHelper {
         }
     }
 
-    private void requestSignIn(boolean userInitiated) {
+    private void requestSignIn() {
         if (signInInProgress) {
             return;
         }
@@ -133,13 +122,7 @@ public class PlayGamesHelper {
             updateSignedInFromTask(task);
 
             if (signedIn) {
-                if (userInitiated) {
-                    showToast(R.string.play_games_sign_in_success);
-                }
-                return;
-            }
-
-            if (!userInitiated) {
+                showToast(R.string.play_games_sign_in_success);
                 return;
             }
 

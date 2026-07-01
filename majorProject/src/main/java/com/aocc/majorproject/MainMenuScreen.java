@@ -97,6 +97,7 @@ public class MainMenuScreen extends Screen {
 
         paint.setTypeface(Assets.plain);
         musicPlayerPill.paint(g, paint, majorProjectGame);
+        VersionOverlay.paint(g, paint);
 	}
 
 	@Override

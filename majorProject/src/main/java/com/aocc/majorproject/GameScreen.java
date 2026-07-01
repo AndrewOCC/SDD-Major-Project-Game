@@ -357,6 +357,7 @@ public class GameScreen extends Screen {
         if (state == GameState.GameOver)
             drawGameOverUI();
 
+        VersionOverlay.paint(g, paint);
 	}
 
 	private void drawReadyUI() {

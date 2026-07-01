@@ -56,7 +56,8 @@ public class TutorialScreen extends Screen {
 		g.drawRect(0, 0, 200, 100, Color.DKGRAY);
 		paint.setTypeface(Assets.plain);
         g.drawString("Menu", 100, 65, Color.WHITE, paint);
-		
+
+        VersionOverlay.paint(g, paint);
 	}
 	
 
