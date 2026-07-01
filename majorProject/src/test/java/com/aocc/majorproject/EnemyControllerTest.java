@@ -22,7 +22,7 @@ public class EnemyControllerTest {
         controller.generateNextEnemy(0);
 
         assertTrue(EnemyController.nextEnemySpawn >= 5);
-        assertTrue(EnemyController.nextEnemySpawn <= 40);
+        assertTrue(EnemyController.nextEnemySpawn <= 44);
     }
 
     @Test

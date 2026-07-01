@@ -86,20 +86,8 @@ public class MajorProjectGame extends AndroidGame {
 		}
 	}
 
-	public void onSignOutButtonClicked() {
-		if (playGamesHelper.isSignedIn()) {
-			playGamesHelper.signOut();
-		}
-	}
-
 	public void onEnteredScore(int score) {
-		if (playGamesHelper.isSignedIn()) {
-			playGamesHelper.submitScore(getString(R.string.leaderboard_pacifist_mode), score);
-			runOnUiThread(() -> Toast.makeText(
-					getApplicationContext(),
-					getString(R.string.saved_toast),
-					Toast.LENGTH_SHORT).show());
-		}
+		playGamesHelper.submitScore(getString(R.string.leaderboard_pacifist_mode), score);
 	}
 
 	public void onAchievementUnlocked(String ID) {

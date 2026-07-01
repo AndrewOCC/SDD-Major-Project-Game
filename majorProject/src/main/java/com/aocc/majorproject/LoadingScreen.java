@@ -30,8 +30,6 @@ public class LoadingScreen extends Screen {
         Assets.game_bg = g.newImage("game-bg.png", ImageFormat.RGB565);
         Assets.sign_in_base = g.newImage("Red-signin_Medium_base.png", ImageFormat.ARGB4444);
         Assets.sign_in_press = g.newImage("Red-signin_Medium_press.png", ImageFormat.ARGB4444);
-        Assets.sign_out_base = g.newImage("Red-signout_Medium_base.png", ImageFormat.ARGB4444);
-        Assets.sign_out_press = g.newImage("Red-signout_Medium_press.png", ImageFormat.ARGB4444);
         Assets.gpg_icon_leaderboards = g.newImage("gpg-icon-leaderboards.png", ImageFormat.RGB565);
         Assets.gpg_icon_achievements = g.newImage("gpg-icon-achievements.png", ImageFormat.RGB565);
         Assets.tilt_control_flat = g.newImage("tilt-button-flat.png", ImageFormat.ARGB4444);
