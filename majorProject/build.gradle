@@ -34,6 +34,13 @@ android {
     lint {
         abortOnError false
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -41,4 +48,7 @@ dependencies {
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.activity:activity:1.9.2'
     implementation 'com.google.android.gms:play-services-games-v2:20.1.2'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.12.2'
 }
