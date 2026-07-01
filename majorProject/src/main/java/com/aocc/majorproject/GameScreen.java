@@ -22,6 +22,7 @@ public class GameScreen extends Screen {
 	
 	// for non-static references within code, this holds the MajorProjectGame object
 	MajorProjectGame majorProjectGame;
+	private final MusicPlayerPill musicPlayerPill = new MusicPlayerPill();
 	
 	// Variable Setup
 	Paint paint;
@@ -154,6 +155,7 @@ public class GameScreen extends Screen {
 			    		MainMenuScreen.music = false;
 			    		Assets.setMusicVolume(0);
 			    	}
+			    } else if (musicPlayerPill.handleTouch(event, majorProjectGame)) {
 			    } else {
 			    	Assets.tap.play(MainMenuScreen.tapVol);
 			    	state = GameState.Running;
@@ -165,6 +167,15 @@ public class GameScreen extends Screen {
 	}
 	
 	private void updateRunning(List<TouchEvent> touchEvents, float deltaTime) {
+		int len = touchEvents.size();
+		for (int i = 0; i < len; i++) {
+			TouchEvent event = touchEvents.get(i);
+			if (event.type == TouchEvent.TOUCH_UP
+					&& musicPlayerPill.handleTouch(event, majorProjectGame)) {
+				continue;
+			}
+		}
+
 		// User Input
 		
 		// update count: allows events to occur every few updates an on-update basis
@@ -271,6 +282,7 @@ public class GameScreen extends Screen {
 			    		MainMenuScreen.music = false;
 			    		Assets.setMusicVolume(0);
 			    	}
+			    } else if (musicPlayerPill.handleTouch(event, majorProjectGame)) {
 			    }  else {
                     // Tap anywhere to resume game
                     Assets.tap.play(MainMenuScreen.tapVol);
@@ -345,6 +357,7 @@ public class GameScreen extends Screen {
         if (state == GameState.GameOver)
             drawGameOverUI();
 
+        VersionOverlay.paint(g, paint);
 	}
 
 	private void drawReadyUI() {
@@ -382,7 +395,7 @@ public class GameScreen extends Screen {
         paint.setTextSize(50);
         g.drawString("Press anywhere to start", 640, 300, Color.WHITE, paint);
 
-	
+        musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 
@@ -408,6 +421,8 @@ public class GameScreen extends Screen {
 		paint.setTypeface(Assets.plain);
 		g.drawRect(480, 0, 320, 50, Color.argb(100, 255, 255, 255));
         g.drawString("SCORE: " + score, 640, 40, Color.WHITE, paint);
+
+		musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 
@@ -457,8 +472,8 @@ public class GameScreen extends Screen {
 		g.drawString("Press anywhere to resume", 640, 300, Color.WHITE, paint);
 		
 		g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-		
-		
+
+		musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 

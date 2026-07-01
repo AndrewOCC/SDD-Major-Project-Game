@@ -109,3 +109,42 @@ Common causes fixed in recent builds:
 - Missing background music file (`darude-sandstorm.m4a`) — game now continues silently without music
 - Google Play Games unavailable on device — game continues without Play Games features
 - Zero-size display metrics on some handhelds — scaling now guarded
+
+## Spotify integration (`releases/spotify-integration/`)
+
+Optional background music via the Spotify app (App Remote SDK). Bundled `game-music.ogg` still plays when Spotify is unavailable.
+
+### Spotify Developer Dashboard setup
+
+1. Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+2. Select **Android** as the API you plan to use.
+3. **Redirect URI** — enter exactly:
+
+   `com.aocc.majorproject://callback`
+
+4. **Android package**: `com.aocc.majorproject`
+5. **SHA-1 fingerprint** (debug build on this machine):
+
+   `35:BA:10:CA:3C:13:F4:33:4F:84:07:47:A8:9C:63:8E:9D:49:BE:5E`
+
+   For release builds, add your release keystore SHA-1 as well.
+
+6. Copy the **Client ID** into `majorProject/src/main/res/values/strings.xml`, replacing `YOUR_SPOTIFY_CLIENT_ID`.
+
+### Requirements on device
+
+- Spotify app installed and signed in
+- **Spotify Premium** (required to play a specific playlist URI)
+- Music toggle enabled in-game (same button as before)
+
+### How it works
+
+- On launch, the game tries to connect to Spotify in the background.
+- If connected, Darude — Sandstorm plays on loop via Spotify App Remote (`spotify:track:45MYQfUkyOulu070m7tj5V`).
+- A rounded music pill on the home screen and pause menu shows album art, track name, and prev/play/next controls.
+- If Spotify is not configured, not installed, or connection fails, bundled OGG music is used instead (also loops).
+- First connect may show Spotify’s authorization screen (built-in App Remote auth).
+
+### Branch
+
+`cursor/spotify-integration-a6be`

@@ -2,6 +2,8 @@ package com.aocc.majorproject;
 
 import java.util.List;
 
+import android.graphics.Paint;
+
 import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
@@ -10,6 +12,8 @@ import com.aocc.framework.Input.TouchEvent;
 public class MainMenuScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
+	private final MusicPlayerPill musicPlayerPill = new MusicPlayerPill();
+	private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	int signInPressed = -1;
 	public static int tapVol = 10;
@@ -27,7 +31,6 @@ public class MainMenuScreen extends Screen {
         } else {
             music = true;
         }
-
 	}
     
 	@Override
@@ -39,6 +42,10 @@ public class MainMenuScreen extends Screen {
 			TouchEvent event = touchEvents.get(i);
 				
 			if (event.type == TouchEvent.TOUCH_UP) {
+				if (musicPlayerPill.handleTouch(event, majorProjectGame)) {
+					continue;
+				}
+
 		    	if (PersonalMethods.touchInBounds(event, 140, 435, 440, 200)) {
 		    		Assets.tap.play(tapVol);
 		        	game.setScreen(new GameScreen(majorProjectGame));
@@ -49,7 +56,7 @@ public class MainMenuScreen extends Screen {
 		        	game.setScreen(new TutorialScreen(majorProjectGame));
 		        }
 		    	
-		    	if (!majorProjectGame.isLoggedIn()
+		    	if (majorProjectGame.shouldShowPlayGamesSignInButton()
 		    			&& PersonalMethods.touchInBounds(event, 7, 7, 180, 60)) {
 		    		Assets.tap.play(tapVol);
 		    		signInPressed = i;
@@ -80,13 +87,17 @@ public class MainMenuScreen extends Screen {
         g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
         g.drawImage(Assets.gpg_icon_achievements, 1175, 105);
 
-        if (!majorProjectGame.isLoggedIn()) {
+        if (majorProjectGame.shouldShowPlayGamesSignInButton()) {
         	if (signInPressed >= 0) {
         		g.drawImage(Assets.sign_in_press, 7, 7);
         	} else {
         		g.drawImage(Assets.sign_in_base, 7, 7);
         	}
         }
+
+        paint.setTypeface(Assets.plain);
+        musicPlayerPill.paint(g, paint, majorProjectGame);
+        VersionOverlay.paint(g, paint);
 	}
 
 	@Override

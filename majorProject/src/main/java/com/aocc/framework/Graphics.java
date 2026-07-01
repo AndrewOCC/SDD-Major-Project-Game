@@ -38,6 +38,13 @@ public interface Graphics {
 	void drawArc(RectF oval, float startAngle, float sweepAngle,
 			boolean useCenter, int color);
 
+	void drawRoundRect(int x, int y, int width, int height, float radius, int color);
+
+	void drawScaledImage(Image image, int x, int y, int width, int height,
+			int srcX, int srcY, int srcWidth, int srcHeight);
+
+	void drawCircularImage(Image image, int x, int y, int size);
+
     //Intelligently draws a button of appropriate width given an input string/location
     void drawButton(int x, int y, int height, int color, String text);
 

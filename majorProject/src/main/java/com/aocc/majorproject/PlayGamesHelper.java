@@ -6,13 +6,17 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.games.AchievementsClient;
+import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.LeaderboardsClient;
 import com.google.android.gms.games.PlayGames;
+import com.google.android.gms.tasks.Task;
 
 /**
  * Thin wrapper around Play Games Services v2 for sign-in, leaderboards,
- * and achievements.
+ * and achievements. Sign-in is only requested when the player taps the
+ * sign-in button; Play Games handles silent auth on launch via
+ * {@link #refreshSignInState()}.
  */
 public class PlayGamesHelper {
 
@@ -21,6 +25,8 @@ public class PlayGamesHelper {
     private final LeaderboardsClient leaderboardsClient;
     private final AchievementsClient achievementsClient;
     private volatile boolean signedIn;
+    private volatile boolean signInStatusKnown;
+    private volatile boolean signInInProgress;
 
     public PlayGamesHelper(Activity activity) {
         this.activity = activity;
@@ -30,11 +36,11 @@ public class PlayGamesHelper {
     }
 
     public void refreshSignInState() {
-        signInClient.isAuthenticated().addOnCompleteListener(task -> {
-            signedIn = task.isSuccessful()
-                    && task.getResult() != null
-                    && task.getResult().isAuthenticated();
-        });
+        signInClient.isAuthenticated().addOnCompleteListener(this::updateSignedInFromTask);
+    }
+
+    public boolean isSignInStatusKnown() {
+        return signInStatusKnown;
     }
 
     public boolean isSignedIn() {
@@ -42,31 +48,13 @@ public class PlayGamesHelper {
     }
 
     public void signIn() {
-        signInClient.signIn().addOnCompleteListener(task -> runOnUiThread(() -> {
-            if (task.isSuccessful()) {
-                signedIn = true;
-                showToast(R.string.play_games_sign_in_success);
-                return;
-            }
-
-            signedIn = false;
-            Exception exception = task.getException();
-            if (exception instanceof ApiException) {
-                int statusCode = ((ApiException) exception).getStatusCode();
-                if (statusCode == 12501 || statusCode == 12502) {
-                    return;
-                }
-            }
-
-            showAlert(activity.getString(R.string.play_games_sign_in_failed));
-        }));
+        requestSignIn();
     }
 
     public void showLeaderboards(String leaderboardId) {
         runOnUiThread(() -> {
             if (!signedIn) {
                 showAlert(activity.getString(R.string.leaderboards_not_available));
-                signIn();
                 return;
             }
 
@@ -88,7 +76,6 @@ public class PlayGamesHelper {
         runOnUiThread(() -> {
             if (!signedIn) {
                 showAlert(activity.getString(R.string.achievements_not_available));
-                signIn();
                 return;
             }
 
@@ -122,6 +109,40 @@ public class PlayGamesHelper {
         } catch (RuntimeException e) {
             runOnUiThread(() -> showToast(R.string.play_games_achievement_failed));
         }
+    }
+
+    private void requestSignIn() {
+        if (signInInProgress) {
+            return;
+        }
+
+        signInInProgress = true;
+        signInClient.signIn().addOnCompleteListener(task -> runOnUiThread(() -> {
+            signInInProgress = false;
+            updateSignedInFromTask(task);
+
+            if (signedIn) {
+                showToast(R.string.play_games_sign_in_success);
+                return;
+            }
+
+            Exception exception = task.getException();
+            if (exception instanceof ApiException) {
+                int statusCode = ((ApiException) exception).getStatusCode();
+                if (statusCode == 12501 || statusCode == 12502) {
+                    return;
+                }
+            }
+
+            showAlert(activity.getString(R.string.play_games_sign_in_failed));
+        }));
+    }
+
+    private void updateSignedInFromTask(Task<AuthenticationResult> task) {
+        signInStatusKnown = true;
+        signedIn = task.isSuccessful()
+                && task.getResult() != null
+                && task.getResult().isAuthenticated();
     }
 
     private void runOnUiThread(Runnable action) {

@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 
@@ -125,6 +126,14 @@ public class AndroidGraphics implements Graphics {
         paint.setAntiAlias(true);
         canvas.drawRect(x, y, x + width - 1, y + height - 1, paint);
     }
+
+    @Override
+    public void drawRoundRect(int x, int y, int width, int height, float radius, int color) {
+        paint.setColor(color);
+        paint.setStyle(Style.FILL);
+        paint.setAntiAlias(true);
+        canvas.drawRoundRect(x, y, x + width, y + height, radius, radius, paint);
+    }
     
     @Override
     public void drawARGB(int a, int r, int g, int b) {
@@ -164,6 +173,7 @@ public class AndroidGraphics implements Graphics {
         canvas.drawBitmap(((AndroidImage)Image).bitmap, x, y, null);
     }
     
+    @Override
     public void drawScaledImage(Image Image, int x, int y, int width, int height, int srcX, int srcY, int srcWidth, int srcHeight){
     	
    	 srcRect.left = srcX;
@@ -181,6 +191,25 @@ public class AndroidGraphics implements Graphics {
         
         canvas.drawBitmap(((AndroidImage) Image).bitmap, srcRect, dstRect, null);
         
+    }
+
+    @Override
+    public void drawCircularImage(Image image, int x, int y, int size) {
+        Bitmap bitmap = ((AndroidImage) image).bitmap;
+        Path clipPath = new Path();
+        float radius = size / 2f;
+        clipPath.addCircle(x + radius, y + radius, radius, Path.Direction.CW);
+        canvas.save();
+        canvas.clipPath(clipPath);
+        canvas.drawBitmap(bitmap, null, new RectF(x, y, x + size, y + size), null);
+        canvas.restore();
+    }
+
+    public Image newImageFromBitmap(Bitmap bitmap) {
+        if (bitmap == null) {
+            return null;
+        }
+        return new AndroidImage(bitmap, ImageFormat.ARGB8888);
     }
    
     @Override
