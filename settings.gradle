@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'MajorProject'
-include ':majorProject', ':baseGameUtils', ':googleplayservices_lib'
+include ':majorProject'

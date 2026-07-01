@@ -15,8 +15,8 @@ android {
         applicationId 'com.aocc.majorproject'
         minSdk 21
         targetSdk 34
-        versionCode 3
-        versionName '1.0.2'
+        versionCode 4
+        versionName '1.1.0'
     }
 
     buildTypes {
@@ -37,7 +37,8 @@ android {
 }
 
 dependencies {
-    implementation project(':baseGameUtils')
+    implementation 'androidx.fragment:fragment:1.8.2'
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.activity:activity:1.9.2'
+    implementation 'com.google.android.gms:play-services-games-v2:20.1.2'
 }
