@@ -75,3 +75,21 @@ export ANDROID_HOME=$HOME/Android/Sdk   # or your SDK path
 ```
 
 APK output: `majorProject/build/outputs/apk/debug/majorProject-debug.apk`
+
+## Unit tests
+
+Run the JVM unit test suite (Robolectric + JUnit 4):
+
+```bash
+./gradlew :majorProject:testDebugUnitTest
+```
+
+Coverage includes:
+
+| Test class | What it verifies |
+|------------|------------------|
+| `PersonalMethodsTest` | Value clamping, touch hit boxes, rectangle collision |
+| `PoolTest` | Object pool reuse and max-size cap |
+| `ButtonTest` | Menu and play button touch targets |
+| `PlayerTest` | Arena boundary clamping, shield drain, health/game-over |
+| `EnemyControllerTest` | Enemy spawn timing and list management |
