@@ -4,6 +4,7 @@ import android.graphics.Typeface;
 
 import com.aocc.framework.Image;
 import com.aocc.framework.Music;
+import com.aocc.framework.NoOpMusic;
 import com.aocc.framework.Sound;
 
 public class Assets {
@@ -40,12 +41,35 @@ public class Assets {
 	public static Typeface plain;
 	public static Typeface bold;
 	
-	public static void loadMusic(MajorProjectGame majorProjectGame){
-		darude = majorProjectGame.getAudio().createMusic("darude-sandstorm.m4a");
-        if (!majorProjectGame.isMusicActive()) {
-            Assets.darude.setVolume(0.85f);
-            Assets.darude.setLooping(true);
-            Assets.darude.play();
-        }
-	}	
+	public static void loadMusic(MajorProjectGame majorProjectGame) {
+		try {
+			darude = majorProjectGame.getAudio().createMusic("darude-sandstorm.m4a");
+			if (!majorProjectGame.isMusicActive()) {
+				darude.setVolume(0.85f);
+				darude.setLooping(true);
+				darude.play();
+			}
+		} catch (RuntimeException e) {
+			CrashReporter.log(majorProjectGame, "Background music missing or failed to load", e);
+			darude = new NoOpMusic();
+		}
+	}
+
+	public static void setMusicVolume(float volume) {
+		if (darude != null) {
+			darude.setVolume(volume);
+		}
+	}
+
+	public static void playMusic() {
+		if (darude != null) {
+			darude.play();
+		}
+	}
+
+	public static void pauseMusic() {
+		if (darude != null) {
+			darude.pause();
+		}
+	}
 }

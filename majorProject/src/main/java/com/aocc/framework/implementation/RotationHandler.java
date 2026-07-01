@@ -18,9 +18,16 @@ public class RotationHandler implements SensorEventListener {
     static float screenZ;
 
     
-    public RotationHandler(Context context) {		// sensor type changed from the accelerometer
+    public RotationHandler(Context context) {
+        if (context == null) {
+            return;
+        }
+
         SensorManager manager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        
+        if (manager == null) {
+            return;
+        }
+
         if (manager.getSensorList(Sensor.TYPE_ORIENTATION).size() != 0) {
             Sensor rotationVector = manager.getSensorList(Sensor.TYPE_ORIENTATION).get(0);
             manager.registerListener(this, rotationVector, SensorManager.SENSOR_DELAY_GAME);
@@ -37,7 +44,16 @@ public class RotationHandler implements SensorEventListener {
    
     @Override
     public void onSensorChanged(SensorEvent event) {
-        final int[] as = ROTATION_VECTOR_AXIS_SWAP[MajorProjectGame.screenRotation];
+        if (event == null || event.values == null || event.values.length < 3) {
+            return;
+        }
+
+        int rotationIndex = MajorProjectGame.screenRotation;
+        if (rotationIndex < 0 || rotationIndex >= ROTATION_VECTOR_AXIS_SWAP.length) {
+            rotationIndex = 0;
+        }
+
+        final int[] as = ROTATION_VECTOR_AXIS_SWAP[rotationIndex];
     	// rolling device over its short side	(-180 => 180, increases over right side)
         screenX = as[1]*event.values[1];
         // rolling device over its long side 	(-180 => 180, increases over front side)

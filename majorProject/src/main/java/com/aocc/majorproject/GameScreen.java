@@ -149,10 +149,10 @@ public class GameScreen extends Screen {
 			    } else if (PersonalMethods.touchInBounds(event, SOUND_X, SOUND_Y + 200, SOUND_WIDTH, SOUND_WIDTH)){
 			    	if (MainMenuScreen.music == false){
 			    		MainMenuScreen.music = true;
-			    		Assets.darude.setVolume(0.25f);
+			    		Assets.setMusicVolume(0.25f);
 			    	} else if (MainMenuScreen.music == true) {
 			    		MainMenuScreen.music = false;
-			    		Assets.darude.setVolume(0);
+			    		Assets.setMusicVolume(0);
 			    	}
 			    } else {
 			    	Assets.tap.play(MainMenuScreen.tapVol);
@@ -266,17 +266,17 @@ public class GameScreen extends Screen {
 			    	// Music button
                     if (MainMenuScreen.music == false){
 			    		MainMenuScreen.music = true;
-			    		Assets.darude.setVolume(0.25f);
+			    		Assets.setMusicVolume(0.25f);
 			    	} else if (MainMenuScreen.music == true) {
 			    		MainMenuScreen.music = false;
-			    		Assets.darude.setVolume(0);
+			    		Assets.setMusicVolume(0);
 			    	}
 			    }  else {
                     // Tap anywhere to resume game
                     Assets.tap.play(MainMenuScreen.tapVol);
                     state = GameState.Running;
                     if (MainMenuScreen.music == true){
-                        Assets.darude.setVolume(0.85f);
+                        Assets.setMusicVolume(0.85f);
                     }
 		        }
 			    	
@@ -497,7 +497,7 @@ public class GameScreen extends Screen {
 		if (state == GameState.Running){
             state = GameState.Paused;
             if (MainMenuScreen.music == true){
-            	Assets.darude.setVolume(0.25f); 
+            	Assets.setMusicVolume(0.25f); 
             }
 		}
 	}
@@ -505,8 +505,8 @@ public class GameScreen extends Screen {
 	@Override
 	public void resume() {
         if (MainMenuScreen.music == true) {
-            Assets.darude.play();
-            Assets.darude.setVolume(0.25f);
+            Assets.playMusic();
+            Assets.setMusicVolume(0.25f);
         }
 	}
 
@@ -542,7 +542,7 @@ public class GameScreen extends Screen {
 	private void goToMenu() {
 		game.setScreen(new MainMenuScreen(majorProjectGame));
 		if (MainMenuScreen.music == true){
-        	Assets.darude.setVolume(0.85f); 
+        	Assets.setMusicVolume(0.85f); 
         }
 	}
 

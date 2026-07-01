@@ -22,8 +22,16 @@ public class MajorProjectGame extends AndroidGame {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		CrashReporter.install(this);
 		super.onCreate(savedInstanceState);
-		playGamesHelper = new PlayGamesHelper(this);
+		CrashReporter.showPreviousCrashIfPresent(this);
+
+		try {
+			playGamesHelper = new PlayGamesHelper(this);
+		} catch (RuntimeException e) {
+			CrashReporter.log(this, "Play Games helper failed to initialize", e);
+			playGamesHelper = null;
+		}
 
 		getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
 			@Override
@@ -65,33 +73,39 @@ public class MajorProjectGame extends AndroidGame {
 	public void onPause() {
         getCurrentScreen().pause();
 		super.onPause();
-		Assets.darude.pause();
+		Assets.pauseMusic();
 	}
 
 	public void onShowLeaderboardsRequested(String ID) {
-		playGamesHelper.showLeaderboards(ID);
+		if (playGamesHelper != null) {
+			playGamesHelper.showLeaderboards(ID);
+		}
 	}
 
 	public void onShowAchievementsRequested(String ID) {
-		playGamesHelper.showAchievements();
+		if (playGamesHelper != null) {
+			playGamesHelper.showAchievements();
+		}
 	}
 
 	public boolean isLoggedIn() {
-		return playGamesHelper.isSignedIn();
+		return playGamesHelper != null && playGamesHelper.isSignedIn();
 	}
 
 	public void onSignInButtonClicked() {
-		if (!playGamesHelper.isSignedIn()) {
+		if (playGamesHelper != null && !playGamesHelper.isSignedIn()) {
 			playGamesHelper.signIn();
 		}
 	}
 
 	public void onEnteredScore(int score) {
-		playGamesHelper.submitScore(getString(R.string.leaderboard_pacifist_mode), score);
+		if (playGamesHelper != null) {
+			playGamesHelper.submitScore(getString(R.string.leaderboard_pacifist_mode), score);
+		}
 	}
 
 	public void onAchievementUnlocked(String ID) {
-		if (playGamesHelper.isSignedIn()) {
+		if (playGamesHelper != null && playGamesHelper.isSignedIn()) {
 			playGamesHelper.unlockAchievement(ID);
         } else {
         	runOnUiThread(() -> Toast.makeText(

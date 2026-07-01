@@ -48,7 +48,6 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
 
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
 
-        configureImmersiveWindow();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         int frameBufferWidth = 1280;
@@ -61,14 +60,16 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         float scaleY;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
-            scaleX = (float) frameBufferWidth / bounds.width();
-            scaleY = (float) frameBufferHeight / bounds.height();
+            int width = Math.max(1, bounds.width());
+            int height = Math.max(1, bounds.height());
+            scaleX = (float) frameBufferWidth / width;
+            scaleY = (float) frameBufferHeight / height;
         } else {
             Point size = new Point();
             Display display = getWindowManager().getDefaultDisplay();
             display.getSize(size);
-            scaleX = (float) frameBufferWidth / size.x;
-            scaleY = (float) frameBufferHeight / size.y;
+            scaleX = (float) frameBufferWidth / Math.max(1, size.x);
+            scaleY = (float) frameBufferHeight / Math.max(1, size.y);
         }
 
         renderView = new AndroidFastRenderView(this, frameBuffer);
@@ -79,6 +80,7 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
 
         screen = getInitScreen();
         setContentView(renderView);
+        configureImmersiveWindow();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
@@ -98,17 +100,25 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     public void onResume() {
         super.onResume();
         configureImmersiveWindow();
-        screen.resume();
-        renderView.resume();
+        if (screen != null) {
+            screen.resume();
+        }
+        if (renderView != null) {
+            renderView.resume();
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        renderView.pause();
-        screen.pause();
+        if (renderView != null) {
+            renderView.pause();
+        }
+        if (screen != null) {
+            screen.pause();
+        }
 
-        if (isFinishing())
+        if (isFinishing() && screen != null)
             screen.dispose();
     }
 
