@@ -26,7 +26,8 @@
         
         <activity
             android:name=".MajorProjectGame"
-            android:configChanges="keyboard|keyboardHidden|orientation"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="true"
             android:label="Major Project"
             android:screenOrientation="landscape" >
             <intent-filter>
