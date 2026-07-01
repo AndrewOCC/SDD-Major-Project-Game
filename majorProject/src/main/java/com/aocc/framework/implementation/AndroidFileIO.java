@@ -10,7 +10,6 @@ import java.io.OutputStream;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 
 import com.aocc.framework.FileIO;
@@ -25,11 +24,7 @@ public class AndroidFileIO implements FileIO {
     public AndroidFileIO(Context context) {
         this.context = context;
         this.assets = context.getAssets();
-        this.externalStoragePath = Environment.getExternalStorageDirectory()
-                .getAbsolutePath() + File.separator;
-        
- 
-    
+        this.externalStoragePath = context.getFilesDir().getAbsolutePath() + File.separator;
     }
 
     @Override
