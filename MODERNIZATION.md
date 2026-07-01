@@ -93,3 +93,19 @@ Coverage includes:
 | `ButtonTest` | Menu and play button touch targets |
 | `PlayerTest` | Arena boundary clamping, shield drain, health/game-over |
 | `EnemyControllerTest` | Enemy spawn timing and list management |
+
+## Debugging crashes without ADB
+
+If the app crashes, relaunch it. A dialog may show the previous crash summary.
+
+The full log is written to app-internal storage:
+
+`Android/data/com.aocc.majorproject/files/crash_log.txt`
+
+On your device, open a file manager, browse to that path (or `Internal storage/Android/data/com.aocc.majorproject/files/`), and copy `crash_log.txt` to share for debugging.
+
+Common causes fixed in recent builds:
+
+- Missing background music file (`darude-sandstorm.m4a`) — game now continues silently without music
+- Google Play Games unavailable on device — game continues without Play Games features
+- Zero-size display metrics on some handhelds — scaling now guarded

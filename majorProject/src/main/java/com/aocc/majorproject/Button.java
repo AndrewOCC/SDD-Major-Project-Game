@@ -88,7 +88,7 @@ public class Button {
 
         } else if (type == 3){
 
-            if (text == "Flat"){
+            if ("Flat".equals(text)){
                 if(player.getTiltMode() == 1){
                     g.drawImage(Assets.tilt_control_flat_2, this.posX, this.posY);
                 } else {
@@ -97,16 +97,16 @@ public class Button {
 
                 g.drawString(text, this.posX + width + 65, this.posY + width/2 + 14, Color.BLACK, paint);
 
-            } else if (text == "Tiled"){
+            } else if ("Tilted".equals(text)){
                 if( player.getTiltMode() == 2){
                     g.drawImage(Assets.tilt_control_tilted_2, this.posX, this.posY);
                 } else {
-                    g.drawImage(Assets.tilt_control_tilted, this.posY, this.posY);
+                    g.drawImage(Assets.tilt_control_tilted, this.posX, this.posY);
                 }
 
                 g.drawString(text, this.posX + width + 70, this.posY + width/2 + 14, Color.BLACK, paint);
 
-            } else if (text == "Custom"){
+            } else if ("Custom".equals(text)){
                 // custom shouldn't depress, as it is not a simple toggle. Gains border when used instead
                 if( player.getTiltMode() == 3){
                     g.drawCircle(this.posX + width/2, this.posY + width/2, + width/2 + 5, Color.RED);

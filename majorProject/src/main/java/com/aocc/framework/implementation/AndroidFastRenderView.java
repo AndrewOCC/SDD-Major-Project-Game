@@ -46,12 +46,20 @@ public class AndroidFastRenderView extends SurfaceView implements Runnable {
            }
      
 
-            game.getCurrentScreen().update(deltaTime);
-            game.getCurrentScreen().paint(deltaTime);
+            try {
+                game.getCurrentScreen().update(deltaTime);
+                game.getCurrentScreen().paint(deltaTime);
+            } catch (RuntimeException e) {
+                running = false;
+                throw e;
+            }
           
             
             
             Canvas canvas = holder.lockCanvas();
+            if (canvas == null) {
+                continue;
+            }
             canvas.getClipBounds(dstRect);
             canvas.drawBitmap(framebuffer, null, dstRect, null);                           
             holder.unlockCanvasAndPost(canvas);
@@ -61,7 +69,10 @@ public class AndroidFastRenderView extends SurfaceView implements Runnable {
     }
 
     public void pause() {                        
-        running = false;                        
+        running = false;
+        if (renderThread == null) {
+            return;
+        }
         while(true) {
             try {
                 renderThread.join();
