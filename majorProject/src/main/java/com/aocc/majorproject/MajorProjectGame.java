@@ -29,6 +29,7 @@ public class MajorProjectGame extends AndroidGame {
 
 		try {
 			playGamesHelper = new PlayGamesHelper(this);
+			playGamesHelper.initializeSignIn();
 		} catch (RuntimeException e) {
 			CrashReporter.log(this, "Play Games helper failed to initialize", e);
 			playGamesHelper = null;
@@ -118,6 +119,12 @@ public class MajorProjectGame extends AndroidGame {
 
 	public boolean isLoggedIn() {
 		return playGamesHelper != null && playGamesHelper.isSignedIn();
+	}
+
+	public boolean shouldShowPlayGamesSignInButton() {
+		return playGamesHelper != null
+				&& playGamesHelper.isSignInStatusKnown()
+				&& !playGamesHelper.isSignedIn();
 	}
 
 	public void onSignInButtonClicked() {

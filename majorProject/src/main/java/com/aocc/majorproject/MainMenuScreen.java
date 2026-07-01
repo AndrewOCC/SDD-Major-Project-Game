@@ -56,7 +56,7 @@ public class MainMenuScreen extends Screen {
 		        	game.setScreen(new TutorialScreen(majorProjectGame));
 		        }
 		    	
-		    	if (!majorProjectGame.isLoggedIn()
+		    	if (majorProjectGame.shouldShowPlayGamesSignInButton()
 		    			&& PersonalMethods.touchInBounds(event, 7, 7, 180, 60)) {
 		    		Assets.tap.play(tapVol);
 		    		signInPressed = i;
@@ -87,7 +87,7 @@ public class MainMenuScreen extends Screen {
         g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
         g.drawImage(Assets.gpg_icon_achievements, 1175, 105);
 
-        if (!majorProjectGame.isLoggedIn()) {
+        if (majorProjectGame.shouldShowPlayGamesSignInButton()) {
         	if (signInPressed >= 0) {
         		g.drawImage(Assets.sign_in_press, 7, 7);
         	} else {
