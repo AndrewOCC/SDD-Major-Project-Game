@@ -13,7 +13,7 @@ public class MainMenuScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
 	private final MusicPlayerPill musicPlayerPill = new MusicPlayerPill();
-	private final Paint paint = new Paint();
+	private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	int signInPressed = -1;
 	public static int tapVol = 10;

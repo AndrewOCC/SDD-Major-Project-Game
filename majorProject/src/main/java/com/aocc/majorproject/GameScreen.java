@@ -155,6 +155,7 @@ public class GameScreen extends Screen {
 			    		MainMenuScreen.music = false;
 			    		Assets.setMusicVolume(0);
 			    	}
+			    } else if (musicPlayerPill.handleTouch(event, majorProjectGame)) {
 			    } else {
 			    	Assets.tap.play(MainMenuScreen.tapVol);
 			    	state = GameState.Running;
@@ -166,6 +167,15 @@ public class GameScreen extends Screen {
 	}
 	
 	private void updateRunning(List<TouchEvent> touchEvents, float deltaTime) {
+		int len = touchEvents.size();
+		for (int i = 0; i < len; i++) {
+			TouchEvent event = touchEvents.get(i);
+			if (event.type == TouchEvent.TOUCH_UP
+					&& musicPlayerPill.handleTouch(event, majorProjectGame)) {
+				continue;
+			}
+		}
+
 		// User Input
 		
 		// update count: allows events to occur every few updates an on-update basis
@@ -384,7 +394,7 @@ public class GameScreen extends Screen {
         paint.setTextSize(50);
         g.drawString("Press anywhere to start", 640, 300, Color.WHITE, paint);
 
-	
+        musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 
@@ -410,6 +420,8 @@ public class GameScreen extends Screen {
 		paint.setTypeface(Assets.plain);
 		g.drawRect(480, 0, 320, 50, Color.argb(100, 255, 255, 255));
         g.drawString("SCORE: " + score, 640, 40, Color.WHITE, paint);
+
+		musicPlayerPill.paint(g, paint, majorProjectGame);
 	}
 
 

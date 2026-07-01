@@ -11,7 +11,7 @@ import com.aocc.framework.PersonalMethods;
 public class MusicPlayerPill {
 
     public static final int PILL_X = 340;
-    public static final int PILL_Y = 610;
+    public static final int PILL_Y = 585;
     public static final int PILL_W = 600;
     public static final int PILL_H = 90;
     public static final int PILL_RADIUS = 45;
@@ -56,8 +56,12 @@ public class MusicPlayerPill {
     }
 
     public void paint(Graphics g, Paint paint, MajorProjectGame game) {
+        paint.setAntiAlias(true);
+
+        g.drawRoundRect(PILL_X - 2, PILL_Y - 2, PILL_W + 4, PILL_H + 4, PILL_RADIUS + 2,
+                Color.argb(200, 255, 255, 255));
         g.drawRoundRect(PILL_X, PILL_Y, PILL_W, PILL_H, PILL_RADIUS,
-                Color.argb(210, 25, 25, 25));
+                Color.argb(245, 30, 30, 36));
 
         String title = game.getString(R.string.default_track_name);
         String artist = game.getString(R.string.default_track_artist);
