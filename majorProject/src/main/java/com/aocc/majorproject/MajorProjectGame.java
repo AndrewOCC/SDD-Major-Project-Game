@@ -2,11 +2,13 @@ package com.aocc.majorproject;
 
 // password: o@YMudFr1FDDHEruKJeA
 
-import android.app.Activity;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowManager;
+import android.view.Display;
 import android.widget.Toast;
+
+import androidx.activity.OnBackPressedCallback;
 
 import com.aocc.framework.Screen;
 import com.aocc.framework.implementation.AndroidGame;
@@ -22,10 +24,14 @@ public class MajorProjectGame extends AndroidGame {
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		
-		//enableDebugLog(true);
 		super.onCreate(savedInstanceState);
-		
+
+		getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+			@Override
+			public void handleOnBackPressed() {
+				getCurrentScreen().backButton();
+			}
+		});
 	}
 	
 	@Override
@@ -41,20 +47,23 @@ public class MajorProjectGame extends AndroidGame {
 		return new LoadingSplashScreen(this);
 		
 	}
-
-	@Override
-	public void onBackPressed() {
-		getCurrentScreen().backButton();
-	}
 	
+	@Override
 	public void onResume() {
 		super.onResume();
         getCurrentScreen().resume();
-		//Assets.darude.play();
-		WindowManager windowMgr = (WindowManager) this.getSystemService(Activity.WINDOW_SERVICE);
-		screenRotation = windowMgr.getDefaultDisplay().getRotation();
+		screenRotation = getScreenRotation();
 	}
 	
+	private int getScreenRotation() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+			Display display = getDisplay();
+			return display != null ? display.getRotation() : Display.DEFAULT_DISPLAY;
+		}
+		return getWindowManager().getDefaultDisplay().getRotation();
+	}
+	
+	@Override
 	public void onPause() {
         getCurrentScreen().pause();
 		super.onPause();
