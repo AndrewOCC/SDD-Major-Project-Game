@@ -48,6 +48,8 @@ dependencies {
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.activity:activity:1.9.2'
     implementation 'com.google.android.gms:play-services-games-v2:20.1.2'
+    implementation files('libs/spotify-app-remote-release-0.8.0.aar')
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.12.2'

@@ -19,6 +19,7 @@ public class MajorProjectGame extends AndroidGame {
 	boolean firstTimeCreate = true;
 	Typeface bold, plain;
 	private PlayGamesHelper playGamesHelper;
+	private SpotifyMusicHelper spotifyMusicHelper;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -31,6 +32,13 @@ public class MajorProjectGame extends AndroidGame {
 		} catch (RuntimeException e) {
 			CrashReporter.log(this, "Play Games helper failed to initialize", e);
 			playGamesHelper = null;
+		}
+
+		try {
+			spotifyMusicHelper = new SpotifyMusicHelper(this);
+		} catch (RuntimeException e) {
+			CrashReporter.log(this, "Spotify helper failed to initialize", e);
+			spotifyMusicHelper = null;
 		}
 
 		getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -49,6 +57,22 @@ public class MajorProjectGame extends AndroidGame {
 		}
 
 		return new LoadingSplashScreen(this);
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		if (spotifyMusicHelper != null) {
+			spotifyMusicHelper.connect();
+		}
+	}
+
+	@Override
+	public void onStop() {
+		if (spotifyMusicHelper != null) {
+			spotifyMusicHelper.disconnect();
+		}
+		super.onStop();
 	}
 
 	@Override
@@ -124,6 +148,10 @@ public class MajorProjectGame extends AndroidGame {
     public boolean isMusicActive() {
         return this.audioManager.isMusicActive();
     }
+
+	public SpotifyMusicHelper getSpotifyMusicHelper() {
+		return spotifyMusicHelper;
+	}
 
 	private void showPlayGamesUnavailable() {
 		runOnUiThread(() -> Toast.makeText(

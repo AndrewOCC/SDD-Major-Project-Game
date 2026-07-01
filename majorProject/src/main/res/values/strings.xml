@@ -13,4 +13,9 @@
     <string name="play_games_score_failed">Could not upload your score to Google Play Games.</string>
     <string name="play_games_achievement_failed">Could not unlock the achievement on Google Play Games.</string>
 
+    <!-- Paste your Client ID from https://developer.spotify.com/dashboard -->
+    <string name="spotify_client_id">YOUR_SPOTIFY_CLIENT_ID</string>
+    <string name="spotify_redirect_uri">com.aocc.majorproject://callback</string>
+    <string name="spotify_playlist_uri">spotify:playlist:37i9dQZF1DX2sUQwD7tbmL</string>
+
 </resources>

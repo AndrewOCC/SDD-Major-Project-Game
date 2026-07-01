@@ -39,11 +39,14 @@ public class Assets {
 	public static Sound powerup;
 	public static Sound burn;
 	public static Music darude;
+
+	private static MajorProjectGame musicGame;
 	
 	public static Typeface plain;
 	public static Typeface bold;
 	
 	public static void loadMusic(MajorProjectGame majorProjectGame) {
+		musicGame = majorProjectGame;
 		for (String musicFile : MUSIC_FILES) {
 			try {
 				darude = majorProjectGame.getAudio().createMusic(musicFile);
@@ -62,24 +65,77 @@ public class Assets {
 	}
 
 	public static boolean hasPlayableMusic() {
+		if (shouldUseSpotify()) {
+			return true;
+		}
 		return darude != null && !(darude instanceof NoOpMusic);
 	}
 
+	public static void onSpotifyConnected() {
+		if (MainMenuScreen.music) {
+			pauseLocalMusic();
+			resumeSpotifyPlayback();
+		}
+	}
+
 	public static void setMusicVolume(float volume) {
+		if (shouldUseSpotify()) {
+			pauseLocalMusic();
+			if (volume > 0) {
+				resumeSpotifyPlayback();
+			} else {
+				pauseSpotifyPlayback();
+			}
+			return;
+		}
+
 		if (darude != null) {
 			darude.setVolume(volume);
 		}
 	}
 
 	public static void playMusic() {
-		if (darude != null) {
+		if (shouldUseSpotify()) {
+			pauseLocalMusic();
+			resumeSpotifyPlayback();
+			return;
+		}
+
+		if (darude != null && MainMenuScreen.music) {
 			darude.play();
 		}
 	}
 
 	public static void pauseMusic() {
+		pauseSpotifyPlayback();
 		if (darude != null) {
 			darude.pause();
+		}
+	}
+
+	private static boolean shouldUseSpotify() {
+		return musicGame != null
+				&& musicGame.getSpotifyMusicHelper() != null
+				&& musicGame.getSpotifyMusicHelper().isConnected()
+				&& MainMenuScreen.music;
+	}
+
+	private static void pauseLocalMusic() {
+		if (darude != null) {
+			darude.pause();
+			darude.setVolume(0);
+		}
+	}
+
+	private static void resumeSpotifyPlayback() {
+		if (musicGame != null && musicGame.getSpotifyMusicHelper() != null) {
+			musicGame.getSpotifyMusicHelper().resumeOrPlay();
+		}
+	}
+
+	private static void pauseSpotifyPlayback() {
+		if (musicGame != null && musicGame.getSpotifyMusicHelper() != null) {
+			musicGame.getSpotifyMusicHelper().pause();
 		}
 	}
 }
