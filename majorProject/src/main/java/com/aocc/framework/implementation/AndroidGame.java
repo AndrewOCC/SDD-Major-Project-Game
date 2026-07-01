@@ -1,16 +1,21 @@
 package com.aocc.framework.implementation;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
+
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.aocc.framework.Audio;
 import com.aocc.framework.FileIO;
@@ -37,76 +42,64 @@ public abstract class AndroidGame extends BaseGameActivity implements Game {
     FileIO fileIO;
     Screen screen;
     public AudioManager audioManager;
-    
-	// Added to allow lint (android sdk checker) to ignore this section, as
-	// code is executing different code for different sdk versions
-    @SuppressWarnings("deprecation")
-    
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
 
-        // handles audio services
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
 
-    	//works out SDK version for version-specific code
-    	final int version = android.os.Build.VERSION.SDK_INT;
+        configureImmersiveWindow();
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-        //parameters for the created window
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        float scaleX;
-        float scaleY;
-        
-        //handles device orientation
-        	
-        // modified to set display to landscape
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);	
-        //boolean isPortrait = getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
-        //int frameBufferWidth = isPortrait ? 720: 1280;
-        //int frameBufferHeight = isPortrait ? 1280: 720;
         int frameBufferWidth = 1280;
         int frameBufferHeight = 720;
-        
+
         Bitmap frameBuffer = Bitmap.createBitmap(frameBufferWidth,
                 frameBufferHeight, Config.RGB_565);
-        
-        // sets display variable for use
-        Display display = getWindowManager().getDefaultDisplay();
-        
-        // handles resolution, checking the sdk version
-        if (version >= 13) {
-        	Point size = new Point();
+
+        float scaleX;
+        float scaleY;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+            scaleX = (float) frameBufferWidth / bounds.width();
+            scaleY = (float) frameBufferHeight / bounds.height();
+        } else {
+            Point size = new Point();
+            Display display = getWindowManager().getDefaultDisplay();
             display.getSize(size);
             scaleX = (float) frameBufferWidth / size.x;
             scaleY = (float) frameBufferHeight / size.y;
         }
-        
-        else {		// for older versions of the SDK
-        	scaleX = (float) frameBufferWidth
-             / getWindowManager().getDefaultDisplay().getWidth();
-            scaleY = (float) frameBufferHeight
-                    / getWindowManager().getDefaultDisplay().getHeight();
-        }
 
-        //initiates the various android interfaces/implementations
         renderView = new AndroidFastRenderView(this, frameBuffer);
         graphics = new AndroidGraphics(getAssets(), frameBuffer);
         fileIO = new AndroidFileIO(this);
         audio = new AndroidAudio(this);
         input = new AndroidInput(this, renderView, scaleX, scaleY);
-        
-        //loads the 'initscreen'- in this case the loading screen
+
         screen = getInitScreen();
         setContentView(renderView);
-        
-        //keeps the screen on while app is active
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    private void configureImmersiveWindow() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowInsetsControllerCompat insetsController =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (insetsController != null) {
+            insetsController.hide(WindowInsetsCompat.Type.systemBars());
+            insetsController.setSystemBarsBehavior(
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        configureImmersiveWindow();
         screen.resume();
         renderView.resume();
     }
