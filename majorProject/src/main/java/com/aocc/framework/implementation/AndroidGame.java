@@ -23,9 +23,7 @@ import com.aocc.framework.Game;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
-import com.google.example.games.basegameutils.BaseGameActivity;
-
-//EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
+import androidx.fragment.app.FragmentActivity;
 
 // Note: this code was heavily modified for the purposes of the major project, including
 // changes to the size of windows, SDK versions and handling orientation. Similarly,
@@ -34,7 +32,7 @@ import com.google.example.games.basegameutils.BaseGameActivity;
 // is otherwise not possible
 
 
-public abstract class AndroidGame extends BaseGameActivity implements Game {
+public abstract class AndroidGame extends FragmentActivity implements Game {
     AndroidFastRenderView renderView;
     Graphics graphics;
     Audio audio;
