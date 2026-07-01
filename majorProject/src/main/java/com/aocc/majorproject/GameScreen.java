@@ -353,7 +353,7 @@ public class GameScreen extends Screen {
 		g.drawARGB(155, 0, 0, 0);
         
 		// Tilt settings rectangle
-		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, tiltedTiltButton.getWidth(), Color.DKGRAY);
+		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, 360 + flatTiltButton.getWidth(), Color.DKGRAY);
         g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
 
 

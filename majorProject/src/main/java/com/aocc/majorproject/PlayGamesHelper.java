@@ -42,9 +42,10 @@ public class PlayGamesHelper {
     }
 
     public void signIn() {
-        signInClient.signIn().addOnCompleteListener(task -> activity.runOnUiThread(() -> {
+        signInClient.signIn().addOnCompleteListener(task -> runOnUiThread(() -> {
             if (task.isSuccessful()) {
                 signedIn = true;
+                showToast(R.string.play_games_sign_in_success);
                 return;
             }
 
@@ -62,34 +63,40 @@ public class PlayGamesHelper {
     }
 
     public void showLeaderboards(String leaderboardId) {
-        if (!signedIn) {
-            showAlert(activity.getString(R.string.leaderboards_not_available));
-            return;
-        }
+        runOnUiThread(() -> {
+            if (!signedIn) {
+                showAlert(activity.getString(R.string.leaderboards_not_available));
+                signIn();
+                return;
+            }
 
-        if (leaderboardId == null || leaderboardId.isEmpty()) {
-            leaderboardsClient.getAllLeaderboardsIntent()
-                    .addOnSuccessListener(intent -> activity.startActivity(intent))
-                    .addOnFailureListener(e -> showAlert(
-                            activity.getString(R.string.play_games_leaderboards_failed)));
-        } else {
-            leaderboardsClient.getLeaderboardIntent(leaderboardId)
-                    .addOnSuccessListener(intent -> activity.startActivity(intent))
-                    .addOnFailureListener(e -> showAlert(
-                            activity.getString(R.string.play_games_leaderboards_failed)));
-        }
+            if (leaderboardId == null || leaderboardId.isEmpty()) {
+                leaderboardsClient.getAllLeaderboardsIntent()
+                        .addOnSuccessListener(intent -> activity.startActivity(intent))
+                        .addOnFailureListener(e -> showAlert(
+                                activity.getString(R.string.play_games_leaderboards_failed)));
+            } else {
+                leaderboardsClient.getLeaderboardIntent(leaderboardId)
+                        .addOnSuccessListener(intent -> activity.startActivity(intent))
+                        .addOnFailureListener(e -> showAlert(
+                                activity.getString(R.string.play_games_leaderboards_failed)));
+            }
+        });
     }
 
     public void showAchievements() {
-        if (!signedIn) {
-            showAlert(activity.getString(R.string.achievements_not_available));
-            return;
-        }
+        runOnUiThread(() -> {
+            if (!signedIn) {
+                showAlert(activity.getString(R.string.achievements_not_available));
+                signIn();
+                return;
+            }
 
-        achievementsClient.getAchievementsIntent()
-                .addOnSuccessListener(intent -> activity.startActivity(intent))
-                .addOnFailureListener(e -> showAlert(
-                        activity.getString(R.string.play_games_achievements_failed)));
+            achievementsClient.getAchievementsIntent()
+                    .addOnSuccessListener(intent -> activity.startActivity(intent))
+                    .addOnFailureListener(e -> showAlert(
+                            activity.getString(R.string.play_games_achievements_failed)));
+        });
     }
 
     public void submitScore(String leaderboardId, long score) {
@@ -99,9 +106,9 @@ public class PlayGamesHelper {
 
         try {
             leaderboardsClient.submitScore(leaderboardId, score);
-            showToast(R.string.saved_toast);
+            runOnUiThread(() -> showToast(R.string.saved_toast));
         } catch (RuntimeException e) {
-            showAlert(activity.getString(R.string.play_games_score_failed));
+            runOnUiThread(() -> showAlert(activity.getString(R.string.play_games_score_failed)));
         }
     }
 
@@ -113,8 +120,12 @@ public class PlayGamesHelper {
         try {
             achievementsClient.unlock(achievementId);
         } catch (RuntimeException e) {
-            showToast(R.string.play_games_achievement_failed);
+            runOnUiThread(() -> showToast(R.string.play_games_achievement_failed));
         }
+    }
+
+    private void runOnUiThread(Runnable action) {
+        activity.runOnUiThread(action);
     }
 
     private void showAlert(String message) {

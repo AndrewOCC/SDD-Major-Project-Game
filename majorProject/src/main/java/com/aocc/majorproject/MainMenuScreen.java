@@ -76,10 +76,9 @@ public class MainMenuScreen extends Screen {
 	public void paint(float deltaTime) {
 		Graphics g = game.getGraphics();
         g.drawImage(Assets.menu_bg, 0, 0);
-        if (majorProjectGame.isLoggedIn()){
-        	g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
-            g.drawImage(Assets.gpg_icon_achievements, 1175, 105);
-		}
+
+        g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
+        g.drawImage(Assets.gpg_icon_achievements, 1175, 105);
 
         if (!majorProjectGame.isLoggedIn()) {
         	if (signInPressed >= 0) {

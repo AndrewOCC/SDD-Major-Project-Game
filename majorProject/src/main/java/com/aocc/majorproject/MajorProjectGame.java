@@ -79,12 +79,16 @@ public class MajorProjectGame extends AndroidGame {
 	public void onShowLeaderboardsRequested(String ID) {
 		if (playGamesHelper != null) {
 			playGamesHelper.showLeaderboards(ID);
+		} else {
+			showPlayGamesUnavailable();
 		}
 	}
 
 	public void onShowAchievementsRequested(String ID) {
 		if (playGamesHelper != null) {
 			playGamesHelper.showAchievements();
+		} else {
+			showPlayGamesUnavailable();
 		}
 	}
 
@@ -95,6 +99,8 @@ public class MajorProjectGame extends AndroidGame {
 	public void onSignInButtonClicked() {
 		if (playGamesHelper != null && !playGamesHelper.isSignedIn()) {
 			playGamesHelper.signIn();
+		} else if (playGamesHelper == null) {
+			showPlayGamesUnavailable();
 		}
 	}
 
@@ -118,4 +124,11 @@ public class MajorProjectGame extends AndroidGame {
     public boolean isMusicActive() {
         return this.audioManager.isMusicActive();
     }
+
+	private void showPlayGamesUnavailable() {
+		runOnUiThread(() -> Toast.makeText(
+				getApplicationContext(),
+				getString(R.string.play_games_unavailable),
+				Toast.LENGTH_LONG).show());
+	}
 }

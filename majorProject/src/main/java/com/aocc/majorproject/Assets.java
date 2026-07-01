@@ -8,8 +8,12 @@ import com.aocc.framework.NoOpMusic;
 import com.aocc.framework.Sound;
 
 public class Assets {
+
+	private static final String[] MUSIC_FILES = {
+			"darude-sandstorm.m4a",
+			"game-music.ogg",
+	};
 	
-	//creates the objects for the game's assets (these are loaded in LoadingScreen.java)
 	public static Image noise;
 	public static Image menu_bg;
 	public static Image game_bg;
@@ -30,29 +34,35 @@ public class Assets {
 	public static Image music_muted;
 	public static Image tutorial;
 	
-	
 	public static Sound tap;
 	public static Sound zap;
 	public static Sound powerup;
 	public static Sound burn;
 	public static Music darude;
 	
-	// fonts
 	public static Typeface plain;
 	public static Typeface bold;
 	
 	public static void loadMusic(MajorProjectGame majorProjectGame) {
-		try {
-			darude = majorProjectGame.getAudio().createMusic("darude-sandstorm.m4a");
-			if (!majorProjectGame.isMusicActive()) {
-				darude.setVolume(0.85f);
-				darude.setLooping(true);
-				darude.play();
+		for (String musicFile : MUSIC_FILES) {
+			try {
+				darude = majorProjectGame.getAudio().createMusic(musicFile);
+				if (!majorProjectGame.isMusicActive()) {
+					darude.setVolume(0.85f);
+					darude.setLooping(true);
+					darude.play();
+				}
+				return;
+			} catch (RuntimeException e) {
+				CrashReporter.log(majorProjectGame, "Failed to load music: " + musicFile, e);
 			}
-		} catch (RuntimeException e) {
-			CrashReporter.log(majorProjectGame, "Background music missing or failed to load", e);
-			darude = new NoOpMusic();
 		}
+
+		darude = new NoOpMusic();
+	}
+
+	public static boolean hasPlayableMusic() {
+		return darude != null && !(darude instanceof NoOpMusic);
 	}
 
 	public static void setMusicVolume(float volume) {
