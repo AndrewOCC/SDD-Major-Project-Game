@@ -13,8 +13,6 @@ import android.util.Log;
 public class Player {
 	
 	final float BORDER_WIDTH = 3;
-	
-	// Gyro Values
 	final float SENSITIVITY = 100;		// tilt sensitivity
 	final int MAX_SPEED = 30;
 	final int MAX_RADIUS = 50;
@@ -51,7 +49,11 @@ public class Player {
 	private RectF mainCharacter = new RectF(0,0,0,0);
 	private int overheat = 0;
 	private float shieldDrainAccumulator = 0f;
-	
+	private final GameSession session;
+
+	public Player(GameSession session) {
+		this.session = session;
+	}
 	
 	public void update(float deltaSeconds) {
 		float step = GameConstants.secondsToSteps(deltaSeconds);
@@ -98,7 +100,7 @@ public class Player {
 //		}
 		
 		if (health <= 0){
-			GameScreen.setGameOverFlag(true);
+			session.setGameOverFlag(true);
 		}
 		
 		//increases overheat when shields aren't full (i.e. when off the powerup)

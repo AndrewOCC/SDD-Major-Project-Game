@@ -136,3 +136,48 @@ Common causes fixed in recent builds:
 ### Test APK
 
 Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwritten when a new build is shared.
+
+## Phase 5 — Game session state (`cursor/game-session-a6be`)
+
+**What changed**
+- Introduced `GameSession` to hold score, speed, spawn timers, and game-over flag per play-through.
+- Removed static fields from `GameScreen`; `Player`, `Enemy`, `PowerUp`, and `EnemyController` receive session context explicitly.
+- Fixed score upload guard (`==` instead of accidental assignment).
+
+**What to verify**
+- Retry starts a clean run (score/combo reset, no stale game-over state).
+- Game over still submits score once.
+- Unit tests pass without static `GameScreen` setters.
+
+### Branch
+
+`cursor/game-session-a6be`
+
+## Phase 7 — Async asset loading (planned)
+
+**Goal**
+- Load images/audio off the main thread with a progress indicator on the loading screen.
+- Avoid jank or ANRs on slower devices when entering the main menu.
+
+## Phase 10 — Modern Android UI shell (deferred, larger task)
+
+Hold off further canvas UI layout work (main-menu touch mapping on ultrawide, composed tilt/sound panels, scrolling settings) until this phase.
+
+**Problem today**
+- Game screens draw directly to a 1280×720 framebuffer with hard-coded pixel coordinates.
+- Works for gameplay, but menus/settings do not scale or compose cleanly on ultrawide or notched devices without reinventing a layout system.
+
+**Options to evaluate**
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Jetpack Compose** | Modern declarative UI, scrolling lists, Material 3, good for settings/menus | Learning curve; game canvas would stay separate; hybrid Activity/Compose setup |
+| **Traditional Views + ConstraintLayout** | Familiar XML, `ScrollView`/`RecyclerView` for long menus, works alongside SurfaceView | More boilerplate than Compose; less flexible for dynamic UI |
+| **Stay on canvas + custom layout engine** | Keeps single render path | Reinvents Compose; poor fit for scrolling settings |
+
+**Recommendation when we pick this up**
+- Keep the **game loop on the existing SurfaceView/canvas** (performance, minimal risk).
+- Build **menus, pause/settings, and how-to-play** as a **Compose overlay or separate Compose screens** hosted in the same Activity.
+- Use Compose for scrolling leaderboards/settings; map touches through the existing `Viewport` only for in-game HUD.
+
+This phase is intentionally separate and larger — do not block Phases 5–7 on it.
