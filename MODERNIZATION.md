@@ -265,3 +265,21 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 
 `cursor/controller-secondary-display-a6be` (stacked on `cursor/native-resolution-a6be`)
 
+## Phase 14 — Kotlin migration (`cursor/kotlin-migration-a6be`)
+
+**What changed**
+- Entire `majorProject` module converted from Java to Kotlin (game framework, screens, UI, tests).
+- Sources live under `src/main/kotlin` and `src/test/kotlin`; no Java sources remain in `majorProject`.
+- Compose overlay stubs moved to `kotlin/.../ui/compose/` alongside other Kotlin sources.
+- `baseGameUtils` vendored module stays Java (unchanged).
+- Version shows **v1.9.0**.
+
+**What to verify**
+- App installs and launches; gameplay, menus, settings, and gamepad navigation unchanged.
+- All unit tests pass (`./gradlew :majorProject:testDebugUnitTest`).
+- Version shows **v1.9.0**.
+
+### Branch
+
+`cursor/kotlin-migration-a6be` (stacked on `cursor/controller-secondary-display-a6be`)
+
