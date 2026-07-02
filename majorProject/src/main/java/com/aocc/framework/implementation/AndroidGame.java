@@ -10,8 +10,10 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,6 +27,8 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Viewport;
+import com.aocc.majorproject.ui.ComposeOverlayBridge;
+import com.aocc.majorproject.ui.compose.ComposeOverlayHost;
 import androidx.fragment.app.FragmentActivity;
 
 // Note: this code was heavily modified for the purposes of the major project, including
@@ -43,6 +47,7 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     Screen screen;
     public AudioManager audioManager;
     private final Viewport viewport = new Viewport();
+    private ComposeOverlayHost composeOverlayHost;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -72,8 +77,26 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         audio = new AndroidAudio(this);
         input = new AndroidInput(this, renderView, viewport);
 
+        composeOverlayHost = new ComposeOverlayHost(this);
+
+        FrameLayout root = new FrameLayout(this);
+        root.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int width = right - left;
+            int height = bottom - top;
+            if (width > 0 && height > 0) {
+                viewport.update(width, height);
+                updateInputViewport(viewport);
+            }
+        });
+        root.addView(renderView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(composeOverlayHost.getView(), new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+
         screen = getInitScreen();
-        setContentView(renderView);
+        setContentView(root);
         configureImmersiveWindow();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -164,5 +187,9 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         if (input instanceof AndroidInput) {
             ((AndroidInput) input).updateViewport(viewport);
         }
+    }
+
+    public ComposeOverlayBridge getComposeOverlay() {
+        return composeOverlayHost;
     }
 }
