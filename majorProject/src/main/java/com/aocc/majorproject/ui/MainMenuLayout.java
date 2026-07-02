@@ -19,6 +19,10 @@ public final class MainMenuLayout {
     public static final int SIGN_IN_HEIGHT = 60;
     public static final int SIGN_IN_MARGIN = 7;
 
+    /** Inset from touch targets to match visible art on menu_bg for Play/Tutorial. */
+    private static final int PLAY_HIGHLIGHT_INSET_X = 26;
+    private static final int PLAY_HIGHLIGHT_INSET_Y = 38;
+
     private MainMenuLayout() {
     }
 
@@ -47,6 +51,27 @@ public final class MainMenuLayout {
 
     public static UiBounds signInButton() {
         return new UiBounds(SIGN_IN_MARGIN, SIGN_IN_MARGIN, SIGN_IN_WIDTH, SIGN_IN_HEIGHT);
+    }
+
+    /** Focus ring bounds aligned to visible menu art (not the full touch target). */
+    public static UiBounds highlightForIndex(int index, boolean loggedIn) {
+        if (!loggedIn) {
+            return switch (index) {
+                case 0 -> playButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y);
+                case 1 -> tutorialButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y);
+                case 2 -> signInButton();
+                case 3 -> leaderboardsButton();
+                case 4 -> achievementsButton();
+                default -> null;
+            };
+        }
+        return switch (index) {
+            case 0 -> playButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y);
+            case 1 -> tutorialButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y);
+            case 2 -> leaderboardsButton();
+            case 3 -> achievementsButton();
+            default -> null;
+        };
     }
 
     public static boolean isPlay(Input.TouchEvent event) {

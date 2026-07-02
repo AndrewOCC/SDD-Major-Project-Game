@@ -6,6 +6,7 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.GameConstants;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Sound;
+import com.aocc.majorproject.GamePreferences;
 
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -49,7 +50,7 @@ public class PowerUp {
 			
 			//plays sound on first contact
 			if (firstContact == true){
-				Assets.powerup.play(MainMenuScreen.tapVol);
+				Assets.powerup.play(GamePreferences.getTapVolume());
 				firstContact = false;
 			}
 			

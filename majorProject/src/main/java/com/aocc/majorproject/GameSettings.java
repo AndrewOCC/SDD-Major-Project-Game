@@ -4,7 +4,7 @@ import com.aocc.framework.implementation.RotationHandler;
 import com.aocc.framework.PersonalMethods;
 
 /**
- * Shared sound, music, and tilt preference logic for canvas and Compose UI.
+ * Shared sound, music, and tilt preference logic. Persists via {@link GamePreferences}.
  */
 public final class GameSettings {
 
@@ -13,23 +13,28 @@ public final class GameSettings {
 
     public static void toggleSound() {
         playTap();
-        if (!MainMenuScreen.sound) {
-            MainMenuScreen.sound = true;
-            MainMenuScreen.tapVol = 10;
-        } else {
-            MainMenuScreen.sound = false;
-            MainMenuScreen.tapVol = 0;
-        }
+        GamePreferences.setSound(!GamePreferences.sound);
     }
 
     public static void toggleMusic() {
         playTap();
-        if (!MainMenuScreen.music) {
-            MainMenuScreen.music = true;
+        GamePreferences.setMusic(!GamePreferences.music);
+        if (GamePreferences.music) {
             Assets.setMusicVolume(0.25f);
         } else {
-            MainMenuScreen.music = false;
             Assets.setMusicVolume(0);
+        }
+    }
+
+    public static void toggleSecondScreen(MajorProjectGame game) {
+        playTap();
+        GamePreferences.setSecondScreenEnabled(!GamePreferences.secondScreenEnabled);
+        if (game != null) {
+            game.getSecondaryDisplayManager().updateForScreen(game.getCurrentScreen());
+            if (GamePreferences.secondScreenEnabled
+                    && !game.getSecondaryDisplayManager().isSecondaryDisplayAvailable()) {
+                game.showSecondDisplayUnavailable();
+            }
         }
     }
 
@@ -38,6 +43,7 @@ public final class GameSettings {
         player.setxBias(0);
         player.setyBias(0);
         player.setTiltMode(1);
+        GamePreferences.setTiltMode(1);
     }
 
     public static void applyTiltedTilt(Player player) {
@@ -45,6 +51,7 @@ public final class GameSettings {
         player.setxBias(0);
         player.setyBias(-0.30f);
         player.setTiltMode(2);
+        GamePreferences.setTiltMode(2);
     }
 
     public static void applyCustomTilt(Player player) {
@@ -52,11 +59,12 @@ public final class GameSettings {
         player.setxBias(-PersonalMethods.limitInside(RotationHandler.getRotationX(), -90, 90) / 90);
         player.setyBias(-PersonalMethods.limitInside(RotationHandler.getRotationY(), -90, 90) / 90);
         player.setTiltMode(3);
+        GamePreferences.setTiltMode(3);
     }
 
     private static void playTap() {
         if (Assets.tap != null) {
-            Assets.tap.play(MainMenuScreen.tapVol);
+            Assets.tap.play(GamePreferences.getTapVolume());
         }
     }
 }

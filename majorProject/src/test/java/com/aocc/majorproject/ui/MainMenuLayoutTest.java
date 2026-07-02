@@ -5,6 +5,7 @@ import com.aocc.framework.GameConstants;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MainMenuLayoutTest {
 
@@ -25,5 +26,13 @@ public class MainMenuLayoutTest {
         UiBounds leaderboards = MainMenuLayout.leaderboardsButton();
         assertEquals(GameConstants.WORLD_WIDTH - MainMenuLayout.GPG_BUTTON_WIDTH
                 - MainMenuLayout.GPG_MARGIN, leaderboards.x);
+    }
+
+    @Test
+    public void playHighlight_isInsetFromTouchTarget() {
+        UiBounds touch = MainMenuLayout.playButton();
+        UiBounds highlight = MainMenuLayout.highlightForIndex(0, true);
+        assertTrue(highlight.width < touch.width);
+        assertTrue(highlight.height < touch.height);
     }
 }

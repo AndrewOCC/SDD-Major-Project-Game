@@ -243,3 +243,25 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - Devices with viewport scale ≥ 1.5 load 2× automatically; others stay on 1×.
 
 **v1.7.2 performance fix:** Paint into a letterbox-sized RGB_565 off-screen buffer (one scale pass), then a single blit to the surface — restores frame rate vs direct-to-surface rendering. Full-screen backgrounds stay 1×; 2× only for UI sprites.
+
+## Phase 13 — Controller & secondary display (`cursor/controller-secondary-display-a6be`)
+
+**What changed**
+- `GamepadInput` maps D-pad, A/B, Enter, and Escape to menu navigation actions.
+- Main menu, settings panel, pause/ready, and game-over screens support controller highlight + confirm.
+- `GamePreferences` persists sound, music, tilt mode, and 2nd-screen toggle via SharedPreferences (survives app restarts).
+- `SecondaryDisplayManager` detects a non-default display (e.g. AYN Thor rear screen) and shows menu background, game background, or pause overlay when enabled in settings.
+- Version shows **v1.8.0**.
+
+**What to verify**
+- Bluetooth or built-in gamepad navigates main menu and settings (D-pad + A).
+- Sound, music, tilt, and 2nd-screen settings persist after force-close and relaunch.
+- On dual-screen devices, enabling "2nd Screen" shows content on the rear display; disabling hides it.
+- Version shows **v1.8.1**.
+
+**v1.8.1 fix:** Rear-display detection uses Android's `DISPLAY_CATEGORY_REAR` (required on AYN Thor), fixes a race that dismissed the presentation right after showing it, and refreshes on resume / display hot-plug.
+
+### Branch
+
+`cursor/controller-secondary-display-a6be` (stacked on `cursor/native-resolution-a6be`)
+

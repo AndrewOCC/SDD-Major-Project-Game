@@ -33,4 +33,10 @@ public final class UiBounds {
     public boolean contains(Input.TouchEvent event) {
         return contains(event.x, event.y);
     }
+
+    /** Returns a smaller rectangle inset on all sides (for visual focus rings). */
+    public UiBounds inset(int horizontal, int vertical) {
+        return new UiBounds(x + horizontal, y + vertical,
+                width - horizontal * 2, height - vertical * 2);
+    }
 }

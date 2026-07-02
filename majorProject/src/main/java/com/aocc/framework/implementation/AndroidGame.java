@@ -24,6 +24,7 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Viewport;
+import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.ComposeOverlayBridge;
 import com.aocc.majorproject.ui.compose.ComposeOverlayHost;
 import androidx.fragment.app.FragmentActivity;
@@ -44,6 +45,7 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     Screen screen;
     public AudioManager audioManager;
     private final Viewport viewport = new Viewport();
+    private final GamepadInput gamepadInput = new GamepadInput();
     private ComposeOverlayHost composeOverlayHost;
 
     @Override
@@ -85,6 +87,9 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         root.addView(renderView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
+        renderView.setFocusable(true);
+        renderView.setFocusableInTouchMode(true);
+        renderView.requestFocus();
         root.addView(composeOverlayHost.getView(), new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
@@ -185,5 +190,9 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
 
     public ComposeOverlayBridge getComposeOverlay() {
         return composeOverlayHost;
+    }
+
+    public GamepadInput getGamepadInput() {
+        return gamepadInput;
     }
 }
