@@ -364,7 +364,7 @@ public class GameScreen extends Screen {
         if (state == GameState.GameOver)
             drawGameOverUI();
 
-        VersionOverlay.paint(g, paint);
+        VersionOverlay.paint(g);
 	}
 
 	private void drawReadyUI() {
@@ -451,7 +451,7 @@ public class GameScreen extends Screen {
 		}
 		
 		// buttons
-        menuButton.paint(g, paint);
+        menuButton.paint(g);
         flatTiltButton.paint(g, paint, player);
         tiltedTiltButton.paint(g, paint, player);
         customTiltButton.paint(g, paint, player);
@@ -468,8 +468,8 @@ public class GameScreen extends Screen {
 		
 		g.drawARGB(155, 0, 0, 0);
 
-        menuButton.paint(g, paint);
-        retryButton.paint(g, paint);
+        menuButton.paint(g);
+        retryButton.paint(g);
 		g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
 		
 		paint.setTypeface(Assets.plain);

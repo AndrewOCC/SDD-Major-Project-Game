@@ -91,8 +91,7 @@ public class MainMenuScreen extends Screen {
         	}
         }
 
-        paint.setTypeface(Assets.plain);
-        VersionOverlay.paint(g, paint);
+        VersionOverlay.paint(g);
 	}
 
 	@Override

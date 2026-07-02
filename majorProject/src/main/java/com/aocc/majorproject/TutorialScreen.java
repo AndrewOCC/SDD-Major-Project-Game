@@ -13,33 +13,25 @@ import com.aocc.majorproject.ui.UiButton;
 public class TutorialScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
-	Paint paint;
 	private final UiButton menuButton = UiButton.menuAt(0, 0);
+
+	/** Legacy tutorial art includes a 200x100 menu button graphic beneath our control. */
+	private static final int LEGACY_MENU_ART_HEIGHT = 100;
 	
 	public TutorialScreen(MajorProjectGame game) {
 		super(game);
 		majorProjectGame = game;
-		// Define a paint object
-		paint = new Paint();
-        paint.setTextSize(30);
-        paint.setTextAlign(Paint.Align.CENTER);
-        paint.setAntiAlias(true);
-        paint.setColor(Color.WHITE);
 	}
 	
 	@Override
 	public void update(float deltaTime) {
-		//creates list of all touch events
-		
 		List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
-		
 		int len = touchEvents.size();
 		
 		for (int i = 0; i < len; i++) {
-			TouchEvent event = touchEvents.get(i);	// **add error detection
+			TouchEvent event = touchEvents.get(i);
 				
 			if (event.type == TouchEvent.TOUCH_UP) {
-		
 				if (menuButton.touchInBounds(event)){
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 					game.setScreen(new MainMenuScreen(majorProjectGame));
@@ -52,12 +44,11 @@ public class TutorialScreen extends Screen {
 	public void paint(float deltaTime) {
 		Graphics g = game.getGraphics();
 		g.drawImage(Assets.tutorial, 0, 0);
-		paint.setTypeface(Assets.plain);
-		menuButton.paint(g, paint);
-
-        VersionOverlay.paint(g, paint);
+		// Cover baked-in menu art so only the standard HUD button is visible.
+		g.drawRect(0, 0, UiButton.MENU_WIDTH, LEGACY_MENU_ART_HEIGHT, Color.BLACK);
+		menuButton.paint(g);
+        VersionOverlay.paint(g);
 	}
-	
 
 	@Override
 	public void backButton() {
@@ -66,19 +57,13 @@ public class TutorialScreen extends Screen {
 
 	@Override
 	public void pause() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void resume() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void dispose() {
-		// TODO Auto-generated method stub
-		
 	}
 }
