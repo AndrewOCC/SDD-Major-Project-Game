@@ -5,16 +5,16 @@ import java.util.List;
 import android.graphics.Color;
 import android.graphics.Paint;
 
-import com.aocc.framework.Game;
 import com.aocc.framework.Graphics;
-import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
+import com.aocc.majorproject.ui.UiButton;
 
 public class TutorialScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
 	Paint paint;
+	private final UiButton menuButton = new UiButton(0, 0, 200, 100, "Menu");
 	
 	public TutorialScreen(MajorProjectGame game) {
 		super(game);
@@ -40,7 +40,7 @@ public class TutorialScreen extends Screen {
 				
 			if (event.type == TouchEvent.TOUCH_UP) {
 		
-				if (PersonalMethods.touchInBounds(event, 0, 0, 200, 100)){
+				if (menuButton.touchInBounds(event)){
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 					game.setScreen(new MainMenuScreen(majorProjectGame));
 				}
@@ -52,10 +52,8 @@ public class TutorialScreen extends Screen {
 	public void paint(float deltaTime) {
 		Graphics g = game.getGraphics();
 		g.drawImage(Assets.tutorial, 0, 0);
-		
-		g.drawRect(0, 0, 200, 100, Color.DKGRAY);
 		paint.setTypeface(Assets.plain);
-        g.drawString("Menu", 100, 65, Color.WHITE, paint);
+		menuButton.paint(g, paint);
 
         VersionOverlay.paint(g, paint);
 	}

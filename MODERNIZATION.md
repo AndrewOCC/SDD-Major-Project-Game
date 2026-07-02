@@ -5,8 +5,10 @@ This game was originally built for Android API 22 (2015). It is being updated in
 ## How to install
 
 1. Enable **Install unknown apps** for your file manager or browser.
-2. Copy the APK for the phase you want to test to your phone.
+2. Download the current debug build from **`releases/latest/MajorProject-debug.apk`** (updated in place on each share).
 3. Open it and install. Only one build needs to be installed at a time (same `applicationId`).
+
+Historical phase APKs remain under `releases/phase*/` for regression comparison only.
 
 ## Phase 1 — Gradle baseline (`releases/phase1-gradle-baseline/`)
 
@@ -110,7 +112,7 @@ Common causes fixed in recent builds:
 - Google Play Games unavailable on device — game continues without Play Games features
 - Zero-size display metrics on some handhelds — scaling now guarded
 
-## Phase 8 — Framerate & viewport independence (`releases/framerate-viewport/`)
+## Phase 8 — Framerate & viewport independence
 
 **What changed**
 - Game simulation now uses elapsed **seconds** (`deltaSeconds`) instead of assuming 60 FPS frame steps.
@@ -118,13 +120,19 @@ Common causes fixed in recent builds:
 - Render loop uses **Choreographer** (VSYNC-aligned) instead of a busy-wait thread.
 - Added `Viewport` letterboxing: 1280×720 world is scaled uniformly with black bars instead of stretched.
 - Touch input uses the same uniform viewport transform as rendering.
+- Added `com.aocc.majorproject.ui` helpers (`UiButton`, `ScoreBar`, `UiBanner`, `UiPanel`, `UiText`) so menu, score, and game-over text render centred in their bounds.
 
 **What to verify**
 - Game speed feels the same on a 60 Hz phone and a 120 Hz handheld (AYN Thor).
 - Circles stay circular on ultrawide screens (no horizontal squash).
 - Touch targets still line up with buttons after letterboxing.
+- Menu, Retry, score bar, and game-over text are centred (not stuck on the left).
 - Version label shows **v1.2.0** in the bottom-right corner.
 
 ### Branch
 
 `cursor/framerate-viewport-a6be`
+
+### Test APK
+
+Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwritten when a new build is shared.

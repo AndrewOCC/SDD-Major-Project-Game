@@ -15,6 +15,10 @@ import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.framework.implementation.RotationHandler;
+import com.aocc.majorproject.ui.ScoreBar;
+import com.aocc.majorproject.ui.UiBanner;
+import com.aocc.majorproject.ui.UiButton;
+import com.aocc.majorproject.ui.UiPanel;
 
 public class GameScreen extends Screen {
 	// Defining GameState Enum
@@ -41,11 +45,17 @@ public class GameScreen extends Screen {
 
     final int ARENA_HEIGHT = 3;
 
-    Button menuButton;
-    Button retryButton;
+    UiButton menuButton;
+    UiButton retryButton;
     Button flatTiltButton;
     Button tiltedTiltButton;
     Button customTiltButton;
+
+    private final ScoreBar scoreBar = new ScoreBar();
+    private final UiBanner promptBanner = new UiBanner(50f);
+    private final UiBanner gameOverBanner = new UiBanner(100f);
+    private final UiBanner scoreBanner = new UiBanner(60f);
+    private UiPanel tiltPanel;
 
 	
 	private float facingAngle = 0;
@@ -73,11 +83,13 @@ public class GameScreen extends Screen {
 		tempEnemyPoint = new Point();
 
         // buttons
-        menuButton = new Button(0,0,4,0,"Menu");
-        retryButton = new Button(540, 500,4,0,"Retry");
+        menuButton = new UiButton(0, 0, 200, 100, "Menu");
+        retryButton = new UiButton(540, 500, 200, 100, "Retry");
         flatTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y, 3, 0, "Flat");
         tiltedTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+150, 3, 0, "Tilted");
         customTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+300, 3, 0, "Custom");
+        tiltPanel = new UiPanel(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275,
+                360 + flatTiltButton.getWidth(), Color.DKGRAY);
 
 
 
@@ -358,10 +370,8 @@ public class GameScreen extends Screen {
 		
 		g.drawARGB(155, 0, 0, 0);
         
-		// Tilt settings rectangle
-		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, 360 + flatTiltButton.getWidth(), Color.DKGRAY);
-        g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-
+		tiltPanel.paintBackground(g);
+        tiltPanel.paintTitle(g, paint, "Tilt Options");
 
         // sound control buttons
 		if(MainMenuScreen.sound == true){
@@ -383,23 +393,14 @@ public class GameScreen extends Screen {
 		
 
         
-        //Text
         paint.setTypeface(Assets.plain);
-        paint.setTextSize(50);
-        g.drawString("Press anywhere to start", 640, 300, Color.WHITE, paint);
-
-	
+        promptBanner.paint(g, paint, "Press anywhere to start",
+                GameConstants.WORLD_WIDTH / 2, 300);
 	}
 
 
 	private void drawRunningUI() {
 		Graphics g = game.getGraphics();
-		
-		paint.setTextSize(40);
-		
-		// no screen clear needed, wallpaper does this
-		
-		//draws rest of screen
 		
 		//powerups
 		p.paint(g, paint);
@@ -410,10 +411,8 @@ public class GameScreen extends Screen {
 		//main character
 		player.paint(g, paint);
 		
-		//UI
 		paint.setTypeface(Assets.plain);
-		g.drawRect(480, 0, 320, 50, Color.argb(100, 255, 255, 255));
-        g.drawString("SCORE: " + score, 640, 40, Color.WHITE, paint);
+		scoreBar.paint(g, paint, score);
 	}
 
 
@@ -432,9 +431,8 @@ public class GameScreen extends Screen {
 		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
 		
-		// Background Rectangle
-		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, 360 + tiltedTiltButton.getWidth(), Color.DKGRAY);
-        g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
+		tiltPanel.paintBackground(g);
+        tiltPanel.paintTitle(g, paint, "Tilt Options");
 		
 		// sound control buttons
 		if(MainMenuScreen.sound == true){
@@ -450,51 +448,30 @@ public class GameScreen extends Screen {
 		}
 		
 		// buttons
-        menuButton.paint(g, paint, player);
+        menuButton.paint(g, paint);
         flatTiltButton.paint(g, paint, player);
         tiltedTiltButton.paint(g, paint, player);
         customTiltButton.paint(g, paint, player);
 
 
-        // text
         paint.setTypeface(Assets.plain);
-
-        paint.setTextSize(50);
-		g.drawString("Press anywhere to resume", 640, 300, Color.WHITE, paint);
-		
-		g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-		
-		
+		promptBanner.paint(g, paint, "Press anywhere to resume",
+                GameConstants.WORLD_WIDTH / 2, 300);
 	}
 
 
 	private void drawGameOverUI() {
 		Graphics g = game.getGraphics();
 		
-		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
 
-
-        // buttons
-        menuButton.paint(g, paint, player);
-        retryButton.paint(g,paint, player);
-
-		// buttons
-		g.drawRect(0, 0, 200, 100, Color.rgb(195, 195, 195));
-        g.drawRect(540, 500, 200, 100, Color.rgb(195, 195, 195));
+        menuButton.paint(g, paint);
+        retryButton.paint(g, paint);
 		g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
 		
-		//text
 		paint.setTypeface(Assets.plain);
-		paint.setTextSize(50);
-		g.drawString("Menu", 100, 70, Color.WHITE, paint);
-        g.drawString("Retry", 640, 570, Color.WHITE, paint);
-		paint.setTextSize(100);
-		g.drawString("Game Over!", 640, 200, Color.WHITE, paint);
-		paint.setTextSize(60);
-		g.drawString("Score: " + score, 640, 400, Color.WHITE, paint);
-
-		
+		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
+		scoreBanner.paint(g, paint, "Score: " + score, GameConstants.WORLD_WIDTH / 2, 400);
 	}
 
 	//OTHER METHODS
