@@ -6,6 +6,10 @@ build/
 # Local SDK config
 local.properties
 
+# Keystore (project debug keystore is committed for consistent sideload builds)
+# *.keystore
+# !majorProject/debug.keystore
+
 # IDE
 .idea/
 *.iml

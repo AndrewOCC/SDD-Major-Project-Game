@@ -127,7 +127,7 @@ Common causes fixed in recent builds:
 - Circles stay circular on ultrawide screens (no horizontal squash).
 - Touch targets still line up with buttons after letterboxing.
 - Menu, Retry, score bar, and game-over text are centred (not stuck on the left).
-- Version label shows **v1.2.0** in the bottom-right corner.
+- Version label shows **v1.2.1** in the bottom-right corner.
 
 ### Branch
 
