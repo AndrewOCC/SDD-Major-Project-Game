@@ -153,11 +153,32 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 
 `cursor/game-session-a6be`
 
-## Phase 7 — Async asset loading (planned)
+## Phase 7 — Async asset loading (`cursor/phase7-async-ci-a6be`)
 
-**Goal**
-- Load images/audio off the main thread with a progress indicator on the loading screen.
-- Avoid jank or ANRs on slower devices when entering the main menu.
+**What changed**
+- Added `AssetLoader` to decode images, sounds, and fonts on a background thread.
+- `LoadingScreen` shows splash art, a progress bar, and percentage while assets load.
+- Music loads on the main thread after background work completes (MediaPlayer requirement).
+- Removed synchronous load-all-in-one-frame behaviour from the old loading screens.
+
+**What to verify**
+- Splash appears immediately, then progress advances smoothly to 100%.
+- Main menu opens without a long frozen frame on first launch.
+- Version shows **v1.4.0**.
+
+### Branch
+
+`cursor/phase7-async-ci-a6be`
+
+## Phase 9 — CI and SDK 35
+
+**What changed**
+- GitHub Actions workflow (`.github/workflows/ci.yml`) runs unit tests and assembles debug on every push/PR.
+- `compileSdk` and `targetSdk` bumped to **35**.
+
+**What to verify**
+- CI passes on GitHub for this branch.
+- App installs and runs on Android 14+ devices.
 
 ## Phase 10 — Modern Android UI shell (deferred, larger task)
 

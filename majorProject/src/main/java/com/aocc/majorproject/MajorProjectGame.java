@@ -1,6 +1,5 @@
 package com.aocc.majorproject;
 
-import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
@@ -16,8 +15,6 @@ public class MajorProjectGame extends AndroidGame {
 	public static int screenRotation;
 	final int TAP_VOL = 10;
 
-	boolean firstTimeCreate = true;
-	Typeface bold, plain;
 	private PlayGamesHelper playGamesHelper;
 
 	@Override
@@ -43,12 +40,7 @@ public class MajorProjectGame extends AndroidGame {
 
 	@Override
 	public Screen getInitScreen() {
-		if (firstTimeCreate) {
-			Assets.loadMusic(this);
-			firstTimeCreate = false;
-		}
-
-		return new LoadingSplashScreen(this);
+		return new LoadingScreen(this);
 	}
 
 	@Override

@@ -1,97 +1,99 @@
 package com.aocc.majorproject;
 
-import android.graphics.Typeface;
+import android.graphics.Color;
+import android.graphics.Paint;
 
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Screen;
-import com.aocc.framework.Graphics.ImageFormat;
-
+import com.aocc.majorproject.ui.UiText;
 
 public class LoadingScreen extends Screen {
-	
-	MajorProjectGame majorProjectGame;
-	
+
+    private static final int BAR_WIDTH = 480;
+    private static final int BAR_HEIGHT = 24;
+    private static final int BAR_X = (GameConstants.WORLD_WIDTH - BAR_WIDTH) / 2;
+    private static final int BAR_Y = 620;
+
+    private final MajorProjectGame majorProjectGame;
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final AssetLoader assetLoader;
+
+    private float progress;
+    private boolean transitionPending;
+    private boolean loadFailed;
+
     public LoadingScreen(MajorProjectGame game) {
         super(game);
         majorProjectGame = game;
-        
-    }
+        assetLoader = new AssetLoader(game, new AssetLoader.Listener() {
+            @Override
+            public void onProgress(int loaded, int total) {
+                progress = loaded / (float) total;
+            }
 
+            @Override
+            public void onComplete() {
+                transitionPending = true;
+            }
+
+            @Override
+            public void onError(Exception error) {
+                loadFailed = true;
+                CrashReporter.log(majorProjectGame, "Asset loading failed", error);
+            }
+        });
+        assetLoader.start();
+    }
 
     @Override
     public void update(float deltaTime) {
-        Graphics g = game.getGraphics();
-        
-    	//loads the resources created in the Assets class
-        Assets.noise = g.newImage("noise.png", ImageFormat.ARGB4444);
-        Assets.menu_bg = g.newImage("menu-bg.png", ImageFormat.RGB565);
-        
-        //fonts used here are "Yerevan" and "Radian" by "Objects Dart (Darren Rigby)"
-        Assets.game_bg = g.newImage("game-bg.png", ImageFormat.RGB565);
-        Assets.sign_in_base = g.newImage("Red-signin_Medium_base.png", ImageFormat.ARGB4444);
-        Assets.sign_in_press = g.newImage("Red-signin_Medium_press.png", ImageFormat.ARGB4444);
-        Assets.gpg_icon_leaderboards = g.newImage("gpg-icon-leaderboards.png", ImageFormat.RGB565);
-        Assets.gpg_icon_achievements = g.newImage("gpg-icon-achievements.png", ImageFormat.RGB565);
-        Assets.tilt_control_flat = g.newImage("tilt-button-flat.png", ImageFormat.ARGB4444);
-        Assets.tilt_control_tilted = g.newImage("tilt-button-tilted.png", ImageFormat.ARGB4444);
-        Assets.tilt_control_custom = g.newImage("tilt-button-custom.png", ImageFormat.ARGB4444);
-        Assets.tilt_control_flat_2 = g.newImage("tilt-button-flat-2.png", ImageFormat.ARGB4444);
-        Assets.tilt_control_tilted_2 = g.newImage("tilt-button-tilted-2.png", ImageFormat.ARGB4444);
-        Assets.tilt_control_custom_2 = g.newImage("tilt-button-custom-2.png", ImageFormat.ARGB4444);
-        Assets.sound = g.newImage("sound.png", ImageFormat.ARGB4444);
-        Assets.sound_muted = g.newImage("sound-muted.png", ImageFormat.ARGB4444);
-        Assets.music = g.newImage("music.png", ImageFormat.ARGB4444);
-        Assets.music = g.newImage("music.png", ImageFormat.ARGB4444);
-        Assets.music_muted = g.newImage("music-muted.png", ImageFormat.ARGB4444);
-        Assets.tutorial = g.newImage("tutorial.png", ImageFormat.RGB565);
-        
-        Assets.tap = game.getAudio().createSound("tap.wav");
-        Assets.zap = game.getAudio().createSound("zap.wav");
-        Assets.burn = game.getAudio().createSound("burn.wav");
-        Assets.powerup = game.getAudio().createSound("powerup.wav");
-        
-        Assets.plain = Typeface.createFromAsset(majorProjectGame.getAssets(), "fonts/power_clear.ttf"); 
-    	Assets.bold = Typeface.create(Assets.plain, Typeface.BOLD);
-
-
-        //loads the main menu screen
-        game.setScreen(new MainMenuScreen(majorProjectGame));
-
-
+        if (transitionPending) {
+            game.setScreen(new MainMenuScreen(majorProjectGame));
+        }
     }
-
 
     @Override
     public void paint(float deltaTime) {
+        Graphics g = game.getGraphics();
 
+        if (Assets.splash != null) {
+            g.drawImage(Assets.splash, 0, 0);
+        } else {
+            g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK);
+        }
 
+        g.drawRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, Color.argb(120, 255, 255, 255));
+        int fillWidth = Math.max(1, Math.round(BAR_WIDTH * progress));
+        g.drawRect(BAR_X, BAR_Y, fillWidth, BAR_HEIGHT, Color.argb(220, 80, 180, 255));
+
+        if (Assets.plain != null) {
+            paint.setTypeface(Assets.plain);
+        }
+        paint.setTextSize(28f);
+        String label = loadFailed ? "Load failed — retrying may help" : "Loading…";
+        UiText.drawCentered(g, paint, label, GameConstants.WORLD_WIDTH / 2, BAR_Y - 24,
+                Color.WHITE);
+        UiText.drawCentered(g, paint, Math.round(progress * 100) + "%",
+                GameConstants.WORLD_WIDTH / 2, BAR_Y + BAR_HEIGHT / 2, Color.WHITE);
+
+        VersionOverlay.paint(g);
     }
-
 
     @Override
     public void pause() {
-
-
     }
-
 
     @Override
     public void resume() {
-
-
     }
-
 
     @Override
     public void dispose() {
-
-
+        assetLoader.shutdown();
     }
-
 
     @Override
     public void backButton() {
-
-
     }
 }
