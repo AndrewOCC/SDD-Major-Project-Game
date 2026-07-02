@@ -8,90 +8,62 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.FragmentActivity
-import com.aocc.framework.Viewport
 import com.aocc.majorproject.ui.ComposeOverlayBridge
 
 class ComposeOverlayHost(
     activity: FragmentActivity,
-    renderView: View,
-    private val viewportProvider: () -> Viewport,
 ) : ComposeOverlayBridge {
 
     private enum class Mode {
         Hidden,
-        MainMenu,
         Settings,
     }
 
     private var mode by mutableStateOf(Mode.Hidden)
-    private var viewportMetrics by mutableStateOf(ViewportMetrics.from(viewportProvider()))
     private var settingsPrompt by mutableStateOf("")
     private var showMenuButton by mutableStateOf(false)
     private var soundOn by mutableStateOf(true)
     private var musicOn by mutableStateOf(true)
     private var tiltMode by mutableIntStateOf(2)
 
-    private var mainMenuListener: ComposeOverlayBridge.MainMenuListener? = null
     private var settingsListener: ComposeOverlayBridge.SettingsListener? = null
 
     val view: ComposeView = ComposeView(activity).apply {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
 
-        renderView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            viewportMetrics = ViewportMetrics.from(viewportProvider())
-        }
-
         setContent {
-            when (mode) {
-                Mode.Hidden -> Unit
-                Mode.MainMenu -> {
-                    val listener = mainMenuListener
-                    if (listener != null) {
-                        MainMenuOverlayContent(
-                            viewport = viewportMetrics,
-                            loggedIn = listener.isLoggedIn(),
-                            onPlay = { listener.onPlay() },
-                            onTutorial = { listener.onTutorial() },
-                            onSignIn = { listener.onSignIn() },
-                            onLeaderboards = { listener.onLeaderboards() },
-                            onAchievements = { listener.onAchievements() },
-                        )
-                    }
-                }
-                Mode.Settings -> {
-                    val listener = settingsListener
-                    if (listener != null) {
-                        SettingsOverlayContent(
-                            viewport = viewportMetrics,
-                            prompt = settingsPrompt,
-                            showMenuButton = showMenuButton,
-                            soundOn = soundOn,
-                            musicOn = musicOn,
-                            tiltMode = tiltMode,
-                            onResume = { listener.onResumeGame() },
-                            onMenu = { listener.onMenu() },
-                            onToggleSound = {
-                                listener.onToggleSound()
-                                refreshFromListener(listener)
-                            },
-                            onToggleMusic = {
-                                listener.onToggleMusic()
-                                refreshFromListener(listener)
-                            },
-                            onFlatTilt = {
-                                listener.onFlatTilt()
-                                refreshFromListener(listener)
-                            },
-                            onTiltedTilt = {
-                                listener.onTiltedTilt()
-                                refreshFromListener(listener)
-                            },
-                            onCustomTilt = {
-                                listener.onCustomTilt()
-                                refreshFromListener(listener)
-                            },
-                        )
-                    }
+            if (mode == Mode.Settings) {
+                val listener = settingsListener
+                if (listener != null) {
+                    SettingsOverlayContent(
+                        prompt = settingsPrompt,
+                        showMenuButton = showMenuButton,
+                        soundOn = soundOn,
+                        musicOn = musicOn,
+                        tiltMode = tiltMode,
+                        onResume = { listener.onResumeGame() },
+                        onMenu = { listener.onMenu() },
+                        onToggleSound = {
+                            listener.onToggleSound()
+                            refreshFromListener(listener)
+                        },
+                        onToggleMusic = {
+                            listener.onToggleMusic()
+                            refreshFromListener(listener)
+                        },
+                        onFlatTilt = {
+                            listener.onFlatTilt()
+                            refreshFromListener(listener)
+                        },
+                        onTiltedTilt = {
+                            listener.onTiltedTilt()
+                            refreshFromListener(listener)
+                        },
+                        onCustomTilt = {
+                            listener.onCustomTilt()
+                            refreshFromListener(listener)
+                        },
+                    )
                 }
             }
         }
@@ -100,11 +72,7 @@ class ComposeOverlayHost(
     }
 
     override fun showMainMenu(listener: ComposeOverlayBridge.MainMenuListener) {
-        mainMenuListener = listener
-        settingsListener = null
-        viewportMetrics = ViewportMetrics.from(viewportProvider())
-        mode = Mode.MainMenu
-        view.visibility = View.VISIBLE
+        hide();
     }
 
     override fun showSettings(
@@ -113,10 +81,8 @@ class ComposeOverlayHost(
         listener: ComposeOverlayBridge.SettingsListener,
     ) {
         settingsListener = listener
-        mainMenuListener = null
         settingsPrompt = prompt
         this.showMenuButton = showMenuButton
-        viewportMetrics = ViewportMetrics.from(viewportProvider())
         refreshFromListener(listener)
         mode = Mode.Settings
         view.visibility = View.VISIBLE
@@ -124,7 +90,6 @@ class ComposeOverlayHost(
 
     override fun hide() {
         mode = Mode.Hidden
-        mainMenuListener = null
         settingsListener = null
         view.visibility = View.GONE
     }

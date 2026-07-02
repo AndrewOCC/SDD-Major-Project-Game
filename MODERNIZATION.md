@@ -206,7 +206,7 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - Main menu buttons respond on AYN Thor and other landscape devices.
 - Version shows **v1.6.0**.
 
-**v1.6.1 update:** Compose overlay restored to the original game art style — game bitmaps, `Assets.plain` font, viewport-aligned world coordinates, and invisible main-menu hit targets sized to match the background button art (440×200).
+**v1.6.2 update:** Main menu navigation restored to canvas touch regions (Play/Tutorial/GPG/sign-in) so taps align with background art. Compose overlay is settings-only. Viewport syncs from root layout; settings overlay letterbox computed from overlay size in pixels.
 
 ### Branch
 

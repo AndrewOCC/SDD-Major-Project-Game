@@ -77,9 +77,17 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         audio = new AndroidAudio(this);
         input = new AndroidInput(this, renderView, viewport);
 
-        composeOverlayHost = new ComposeOverlayHost(this, renderView, () -> viewport);
+        composeOverlayHost = new ComposeOverlayHost(this);
 
         FrameLayout root = new FrameLayout(this);
+        root.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int width = right - left;
+            int height = bottom - top;
+            if (width > 0 && height > 0) {
+                viewport.update(width, height);
+                updateInputViewport(viewport);
+            }
+        });
         root.addView(renderView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));

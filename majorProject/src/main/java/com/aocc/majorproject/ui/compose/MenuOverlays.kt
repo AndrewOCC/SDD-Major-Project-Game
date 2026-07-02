@@ -9,17 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.ui.text.TextStyle
 import com.aocc.majorproject.Assets
-import com.aocc.majorproject.ui.MainMenuLayout
 import com.aocc.majorproject.ui.UiBounds
 import com.aocc.majorproject.ui.UiButton
 
@@ -30,7 +29,6 @@ private val MenuButtonPressedColor = Color(0xFFC3C3C3)
 
 @Composable
 fun SettingsOverlayContent(
-    viewport: ViewportMetrics,
     prompt: String,
     showMenuButton: Boolean,
     soundOn: Boolean,
@@ -45,13 +43,14 @@ fun SettingsOverlayContent(
     onCustomTilt: () -> Unit,
 ) {
     val fontFamily = rememberGameTypeface()
-    val panelBounds = SettingsLayout.outerPanel
-    val fontSizeTitle = worldTextSize(SettingsLayout.titleTextSize)
-    val fontSizePrompt = worldTextSize(SettingsLayout.promptTextSize)
-    val fontSizeTiltLabel = worldTextSize(30f)
-    val fontSizeMenu = worldTextSize(UiButton.MENU_TEXT_SIZE)
 
-    GameWorldOverlay(viewport = viewport) {
+    GameWorldOverlay { world ->
+        val panelBounds = SettingsLayout.outerPanel
+        val fontSizeTitle = world.textSize(SettingsLayout.titleTextSize)
+        val fontSizePrompt = world.textSize(SettingsLayout.promptTextSize)
+        val fontSizeTiltLabel = world.textSize(30f)
+        val fontSizeMenu = world.textSize(UiButton.MENU_TEXT_SIZE)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -60,7 +59,7 @@ fun SettingsOverlayContent(
                     indication = null,
                 ) { onResume() },
         ) {
-            WorldPanel(
+            world.WorldPanel(
                 bounds = panelBounds,
                 background = OuterPanelColor,
                 modifier = Modifier.clickable(
@@ -69,7 +68,7 @@ fun SettingsOverlayContent(
                 ) { /* absorb taps on the panel */ },
             )
 
-            WorldCenteredText(
+            world.WorldCenteredText(
                 text = "Settings",
                 centerX = panelBounds.centerX(),
                 centerY = SettingsLayout.settingsTitleCenterY,
@@ -78,8 +77,8 @@ fun SettingsOverlayContent(
             )
 
             val soundPanel = SettingsLayout.soundPanel
-            WorldPanel(bounds = soundPanel, background = InnerPanelColor)
-            WorldCenteredText(
+            world.WorldPanel(bounds = soundPanel, background = InnerPanelColor)
+            world.WorldCenteredText(
                 text = "Sound",
                 centerX = soundPanel.centerX(),
                 centerY = SettingsLayout.soundTitleCenterY,
@@ -88,8 +87,8 @@ fun SettingsOverlayContent(
             )
 
             val tiltPanel = SettingsLayout.tiltPanel
-            WorldPanel(bounds = tiltPanel, background = InnerPanelColor)
-            WorldCenteredText(
+            world.WorldPanel(bounds = tiltPanel, background = InnerPanelColor)
+            world.WorldCenteredText(
                 text = "Tilt Options",
                 centerX = tiltPanel.centerX(),
                 centerY = SettingsLayout.tiltTitleCenterY,
@@ -97,7 +96,7 @@ fun SettingsOverlayContent(
                 fontFamily = fontFamily,
             )
 
-            WorldClickTarget(bounds = SettingsLayout.soundIcon, onClick = onToggleSound) {
+            world.WorldClickTarget(bounds = SettingsLayout.soundIcon, onClick = onToggleSound) {
                 GameImage(
                     image = if (soundOn) Assets.sound else Assets.sound_muted,
                     modifier = Modifier.fillMaxSize(),
@@ -105,7 +104,7 @@ fun SettingsOverlayContent(
                 )
             }
 
-            WorldClickTarget(bounds = SettingsLayout.musicIcon, onClick = onToggleMusic) {
+            world.WorldClickTarget(bounds = SettingsLayout.musicIcon, onClick = onToggleMusic) {
                 GameImage(
                     image = if (musicOn) Assets.music else Assets.music_muted,
                     modifier = Modifier.fillMaxSize(),
@@ -113,7 +112,7 @@ fun SettingsOverlayContent(
                 )
             }
 
-            TiltOption(
+            world.TiltOption(
                 bounds = SettingsLayout.flatTiltButton,
                 label = "Flat",
                 selected = tiltMode == 1,
@@ -123,7 +122,7 @@ fun SettingsOverlayContent(
                 fontFamily = fontFamily,
                 onClick = onFlatTilt,
             )
-            TiltOption(
+            world.TiltOption(
                 bounds = SettingsLayout.tiltedTiltButton,
                 label = "Tilted",
                 selected = tiltMode == 2,
@@ -133,7 +132,7 @@ fun SettingsOverlayContent(
                 fontFamily = fontFamily,
                 onClick = onTiltedTilt,
             )
-            TiltOption(
+            world.TiltOption(
                 bounds = SettingsLayout.customTiltButton,
                 label = "Custom",
                 selected = tiltMode == 3,
@@ -145,7 +144,7 @@ fun SettingsOverlayContent(
                 onClick = onCustomTilt,
             )
 
-            WorldCenteredText(
+            world.WorldCenteredText(
                 text = prompt,
                 centerX = panelBounds.centerX(),
                 centerY = SettingsLayout.promptCenterY,
@@ -154,7 +153,7 @@ fun SettingsOverlayContent(
             )
 
             if (showMenuButton) {
-                GameMenuButton(
+                world.GameMenuButton(
                     bounds = SettingsLayout.menuButton,
                     label = "Menu",
                     fontSize = fontSizeMenu,
@@ -167,54 +166,7 @@ fun SettingsOverlayContent(
 }
 
 @Composable
-fun MainMenuOverlayContent(
-    viewport: ViewportMetrics,
-    loggedIn: Boolean,
-    onPlay: () -> Unit,
-    onTutorial: () -> Unit,
-    onSignIn: () -> Unit,
-    onLeaderboards: () -> Unit,
-    onAchievements: () -> Unit,
-) {
-    GameWorldOverlay(viewport = viewport) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            WorldClickTarget(bounds = MainMenuLayout.playButton(), onClick = onPlay)
-            WorldClickTarget(bounds = MainMenuLayout.tutorialButton(), onClick = onTutorial)
-
-            WorldClickTarget(
-                bounds = MainMenuLayout.leaderboardsButton(),
-                onClick = onLeaderboards,
-            ) {
-                GameImage(
-                    image = Assets.gpg_icon_leaderboards,
-                    modifier = Modifier.fillMaxSize(),
-                    contentDescription = "Leaderboards",
-                )
-            }
-
-            WorldClickTarget(
-                bounds = MainMenuLayout.achievementsButton(),
-                onClick = onAchievements,
-            ) {
-                GameImage(
-                    image = Assets.gpg_icon_achievements,
-                    modifier = Modifier.fillMaxSize(),
-                    contentDescription = "Achievements",
-                )
-            }
-
-            if (!loggedIn) {
-                SignInButton(
-                    bounds = MainMenuLayout.signInButton(),
-                    onClick = onSignIn,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WorldPanel(
+private fun WorldLayoutScope.WorldPanel(
     bounds: UiBounds,
     background: Color,
     modifier: Modifier = Modifier,
@@ -223,7 +175,7 @@ private fun WorldPanel(
 }
 
 @Composable
-private fun WorldClickTarget(
+private fun WorldLayoutScope.WorldClickTarget(
     bounds: UiBounds,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -237,7 +189,7 @@ private fun WorldClickTarget(
 }
 
 @Composable
-private fun TiltOption(
+private fun WorldLayoutScope.TiltOption(
     bounds: UiBounds,
     label: String,
     selected: Boolean,
@@ -284,7 +236,7 @@ private fun TiltOption(
 }
 
 @Composable
-private fun GameMenuButton(
+private fun WorldLayoutScope.GameMenuButton(
     bounds: UiBounds,
     label: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
@@ -315,24 +267,7 @@ private fun GameMenuButton(
 }
 
 @Composable
-private fun SignInButton(
-    bounds: UiBounds,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed = interactionSource.collectIsPressedAsState().value
-
-    WorldClickTarget(bounds = bounds, onClick = onClick) {
-        GameImage(
-            image = if (pressed) Assets.sign_in_press else Assets.sign_in_base,
-            modifier = Modifier.fillMaxSize(),
-            contentDescription = "Sign in",
-        )
-    }
-}
-
-@Composable
-private fun WorldCenteredText(
+private fun WorldLayoutScope.WorldCenteredText(
     text: String,
     centerX: Int,
     centerY: Int,
