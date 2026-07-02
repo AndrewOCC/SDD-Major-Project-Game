@@ -14,7 +14,7 @@ public class TutorialScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
 	Paint paint;
-	private final UiButton menuButton = new UiButton(0, 0, 200, 100, "Menu");
+	private final UiButton menuButton = UiButton.menuAt(0, 0);
 	
 	public TutorialScreen(MajorProjectGame game) {
 		super(game);

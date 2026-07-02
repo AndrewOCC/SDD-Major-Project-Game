@@ -85,8 +85,8 @@ public class GameScreen extends Screen {
 		tempEnemyPoint = new Point();
 
         // buttons
-        menuButton = new UiButton(0, 0, 200, 100, "Menu");
-        retryButton = new UiButton(540, 500, 200, 100, "Retry");
+        menuButton = UiButton.menuAt(0, 0);
+        retryButton = new UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry");
         flatTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y, 3, 0, "Flat");
         tiltedTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+150, 3, 0, "Tilted");
         customTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+300, 3, 0, "Custom");
@@ -246,7 +246,7 @@ public class GameScreen extends Screen {
 		    if (event.type == TouchEvent.TOUCH_UP) {
 
                 // 'Menu' Button
-		    	if (PersonalMethods.touchInBounds(event, 0, 0, 200, 100)){
+		    	if (menuButton.touchInBounds(event)) {
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 					reset();
 					goToMenu();
