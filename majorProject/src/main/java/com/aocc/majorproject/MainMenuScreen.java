@@ -8,6 +8,7 @@ import com.aocc.framework.Input.TouchEvent;
 import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.MainMenuLayout;
 import com.aocc.majorproject.ui.UiBounds;
+import com.aocc.majorproject.ui.UiSelectionHighlight;
 
 public class MainMenuScreen extends Screen {
 
@@ -15,7 +16,6 @@ public class MainMenuScreen extends Screen {
 
 	int signInPressed = -1;
 	private int selectedMenuIndex = 0;
-	private static final int HIGHLIGHT_PADDING = 6;
 
 	public MainMenuScreen(MajorProjectGame game) {
 		super(game);
@@ -177,13 +177,12 @@ public class MainMenuScreen extends Screen {
 	}
 
 	private void paintSelectionHighlight(Graphics g) {
-		UiBounds bounds = getMenuItemBounds(selectedMenuIndex);
+		UiBounds bounds = MainMenuLayout.highlightForIndex(
+				selectedMenuIndex, !majorProjectGame.isLoggedIn());
 		if (bounds == null) {
 			return;
 		}
-		g.drawRect(bounds.x - HIGHLIGHT_PADDING, bounds.y - HIGHLIGHT_PADDING,
-				bounds.width + HIGHLIGHT_PADDING * 2, bounds.height + HIGHLIGHT_PADDING * 2,
-				android.graphics.Color.rgb(255, 220, 80));
+		UiSelectionHighlight.paintRect(g, bounds);
 	}
 
 	@Override

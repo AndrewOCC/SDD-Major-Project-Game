@@ -19,6 +19,7 @@ import com.aocc.majorproject.ui.SettingsPanel;
 import com.aocc.majorproject.ui.UiBanner;
 import com.aocc.majorproject.ui.UiButton;
 import com.aocc.majorproject.ui.UiBounds;
+import com.aocc.majorproject.ui.UiSelectionHighlight;
 
 public class GameScreen extends Screen {
 
@@ -52,7 +53,6 @@ public class GameScreen extends Screen {
 	private float facingAngle = 0;
 	private int gameOverSelection = 0;
 	private static final int GAME_OVER_ITEM_COUNT = 3;
-	private static final int HIGHLIGHT_PADDING = 4;
 
 	public GameScreen(MajorProjectGame game) {
 		super(game);
@@ -355,9 +355,7 @@ public class GameScreen extends Screen {
 		if (bounds == null) {
 			return;
 		}
-		g.drawRect(bounds.x - HIGHLIGHT_PADDING, bounds.y - HIGHLIGHT_PADDING,
-				bounds.width + HIGHLIGHT_PADDING * 2, bounds.height + HIGHLIGHT_PADDING * 2,
-				Color.rgb(255, 220, 80));
+		UiSelectionHighlight.paintRect(g, bounds);
 	}
 
 	@Override

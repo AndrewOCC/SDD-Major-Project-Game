@@ -31,7 +31,6 @@ public class SettingsPanel {
     private static final int INNER_PADDING = 24;
     private static final int TILT_BUTTON_SPACING = 126;
     private static final int ITEM_COUNT = 6;
-    private static final int HIGHLIGHT_PADDING = 4;
 
     private final UiPanel outerPanel;
     private final UiPanel soundPanel;
@@ -128,9 +127,12 @@ public class SettingsPanel {
         if (bounds == null) {
             return;
         }
-        g.drawRect(bounds.x - HIGHLIGHT_PADDING, bounds.y - HIGHLIGHT_PADDING,
-                bounds.width + HIGHLIGHT_PADDING * 2, bounds.height + HIGHLIGHT_PADDING * 2,
-                Color.rgb(255, 220, 80));
+        if (selectedIndex >= 2 && selectedIndex <= 4) {
+            UiSelectionHighlight.paintCircle(g, bounds.centerX(), bounds.centerY(),
+                    bounds.width / 2);
+            return;
+        }
+        UiSelectionHighlight.paintRect(g, bounds);
     }
 
     public boolean handleTouch(Input.TouchEvent event, Player player) {
