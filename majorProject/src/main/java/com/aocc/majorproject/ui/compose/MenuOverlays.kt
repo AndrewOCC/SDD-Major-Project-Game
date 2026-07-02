@@ -1,55 +1,36 @@
 package com.aocc.majorproject.ui.compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.MusicOff
-import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.ScreenRotation
-import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.text.TextStyle
+import com.aocc.majorproject.Assets
+import com.aocc.majorproject.ui.MainMenuLayout
+import com.aocc.majorproject.ui.UiBounds
+import com.aocc.majorproject.ui.UiButton
 
-private val PanelBackground = Color(0xB3000000)
-private val ColumnBackground = Color(0xFF444444)
-private val Accent = Color(0xFFCCCCCC)
-private val Selected = Color(0xFFFF5252)
+private val OuterPanelColor = Color(0xB3000000)
+private val InnerPanelColor = Color(0xFF444444)
+private val MenuButtonColor = Color(0xFF444444)
+private val MenuButtonPressedColor = Color(0xFFC3C3C3)
 
 @Composable
 fun SettingsOverlayContent(
+    viewport: ViewportMetrics,
     prompt: String,
     showMenuButton: Boolean,
     soundOn: Boolean,
@@ -63,216 +44,131 @@ fun SettingsOverlayContent(
     onTiltedTilt: () -> Unit,
     onCustomTilt: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onResume() },
-    ) {
-        if (showMenuButton) {
-            TextButton(
-                onClick = onMenu,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
-            ) {
-                Text("Menu", color = Color.White, fontSize = 18.sp)
-            }
-        }
+    val fontFamily = rememberGameTypeface()
+    val panelBounds = SettingsLayout.outerPanel
+    val fontSizeTitle = worldTextSize(SettingsLayout.titleTextSize)
+    val fontSizePrompt = worldTextSize(SettingsLayout.promptTextSize)
+    val fontSizeTiltLabel = worldTextSize(30f)
+    val fontSizeMenu = worldTextSize(UiButton.MENU_TEXT_SIZE)
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Surface(
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { /* consume taps on the panel */ },
-                shape = RoundedCornerShape(12.dp),
-                color = PanelBackground,
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "Settings",
-                        color = Color.White,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        textAlign = TextAlign.Center,
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        SettingsColumn(
-                            title = "Sound",
-                            modifier = Modifier.weight(0.35f),
-                        ) {
-                            IconToggleButton(
-                                enabled = soundOn,
-                                enabledIcon = Icons.AutoMirrored.Filled.VolumeUp,
-                                disabledIcon = Icons.AutoMirrored.Filled.VolumeOff,
-                                contentDescription = "Sound effects",
-                                onClick = onToggleSound,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            IconToggleButton(
-                                enabled = musicOn,
-                                enabledIcon = Icons.Filled.MusicNote,
-                                disabledIcon = Icons.Filled.MusicOff,
-                                contentDescription = "Music",
-                                onClick = onToggleMusic,
-                            )
-                        }
-
-                        SettingsColumn(
-                            title = "Tilt Options",
-                            modifier = Modifier.weight(0.65f),
-                        ) {
-                            TiltOptionRow(
-                                label = "Flat",
-                                selected = tiltMode == 1,
-                                icon = Icons.Filled.Straighten,
-                                onClick = onFlatTilt,
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            TiltOptionRow(
-                                label = "Tilted",
-                                selected = tiltMode == 2,
-                                icon = Icons.Filled.ScreenRotation,
-                                onClick = onTiltedTilt,
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            TiltOptionRow(
-                                label = "Custom",
-                                selected = tiltMode == 3,
-                                icon = Icons.Filled.Tune,
-                                onClick = onCustomTilt,
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = prompt,
-                color = Color.White,
-                fontSize = 22.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingsColumn(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        color = ColumnBackground,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = title,
-                color = Accent,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun IconToggleButton(
-    enabled: Boolean,
-    enabledIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    disabledIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(72.dp)
-            .clip(CircleShape)
-            .background(if (enabled) Color(0xFF666666) else Color(0xFF333333)),
-    ) {
-        Icon(
-            imageVector = if (enabled) enabledIcon else disabledIcon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(36.dp),
-        )
-    }
-}
-
-@Composable
-private fun TiltOptionRow(
-    label: String,
-    selected: Boolean,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 6.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    GameWorldOverlay(viewport = viewport) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(if (selected) Selected.copy(alpha = 0.25f) else Color(0xFF555555)),
-            contentAlignment = Alignment.Center,
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { onResume() },
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (selected) Selected else Color.White,
-                modifier = Modifier.size(28.dp),
+            WorldPanel(
+                bounds = panelBounds,
+                background = OuterPanelColor,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { /* absorb taps on the panel */ },
             )
+
+            WorldCenteredText(
+                text = "Settings",
+                centerX = panelBounds.centerX(),
+                centerY = SettingsLayout.settingsTitleCenterY,
+                fontSize = fontSizeTitle,
+                fontFamily = fontFamily,
+            )
+
+            val soundPanel = SettingsLayout.soundPanel
+            WorldPanel(bounds = soundPanel, background = InnerPanelColor)
+            WorldCenteredText(
+                text = "Sound",
+                centerX = soundPanel.centerX(),
+                centerY = SettingsLayout.soundTitleCenterY,
+                fontSize = fontSizeTitle,
+                fontFamily = fontFamily,
+            )
+
+            val tiltPanel = SettingsLayout.tiltPanel
+            WorldPanel(bounds = tiltPanel, background = InnerPanelColor)
+            WorldCenteredText(
+                text = "Tilt Options",
+                centerX = tiltPanel.centerX(),
+                centerY = SettingsLayout.tiltTitleCenterY,
+                fontSize = fontSizeTitle,
+                fontFamily = fontFamily,
+            )
+
+            WorldClickTarget(bounds = SettingsLayout.soundIcon, onClick = onToggleSound) {
+                GameImage(
+                    image = if (soundOn) Assets.sound else Assets.sound_muted,
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "Sound effects",
+                )
+            }
+
+            WorldClickTarget(bounds = SettingsLayout.musicIcon, onClick = onToggleMusic) {
+                GameImage(
+                    image = if (musicOn) Assets.music else Assets.music_muted,
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "Music",
+                )
+            }
+
+            TiltOption(
+                bounds = SettingsLayout.flatTiltButton,
+                label = "Flat",
+                selected = tiltMode == 1,
+                selectedImage = Assets.tilt_control_flat_2,
+                defaultImage = Assets.tilt_control_flat,
+                fontSize = fontSizeTiltLabel,
+                fontFamily = fontFamily,
+                onClick = onFlatTilt,
+            )
+            TiltOption(
+                bounds = SettingsLayout.tiltedTiltButton,
+                label = "Tilted",
+                selected = tiltMode == 2,
+                selectedImage = Assets.tilt_control_tilted_2,
+                defaultImage = Assets.tilt_control_tilted,
+                fontSize = fontSizeTiltLabel,
+                fontFamily = fontFamily,
+                onClick = onTiltedTilt,
+            )
+            TiltOption(
+                bounds = SettingsLayout.customTiltButton,
+                label = "Custom",
+                selected = tiltMode == 3,
+                selectedImage = Assets.tilt_control_custom,
+                defaultImage = Assets.tilt_control_custom,
+                showSelectionRing = true,
+                fontSize = fontSizeTiltLabel,
+                fontFamily = fontFamily,
+                onClick = onCustomTilt,
+            )
+
+            WorldCenteredText(
+                text = prompt,
+                centerX = panelBounds.centerX(),
+                centerY = SettingsLayout.promptCenterY,
+                fontSize = fontSizePrompt,
+                fontFamily = fontFamily,
+            )
+
+            if (showMenuButton) {
+                GameMenuButton(
+                    bounds = SettingsLayout.menuButton,
+                    label = "Menu",
+                    fontSize = fontSizeMenu,
+                    fontFamily = fontFamily,
+                    onClick = onMenu,
+                )
+            }
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = label,
-            color = if (selected) Selected else Color.White,
-            fontSize = 18.sp,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            imageVector = if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
-            contentDescription = null,
-            tint = if (selected) Selected else Color(0xFF888888),
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 
 @Composable
 fun MainMenuOverlayContent(
+    viewport: ViewportMetrics,
     loggedIn: Boolean,
     onPlay: () -> Unit,
     onTutorial: () -> Unit,
@@ -280,69 +176,181 @@ fun MainMenuOverlayContent(
     onLeaderboards: () -> Unit,
     onAchievements: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (!loggedIn) {
-            TextButton(
-                onClick = onSignIn,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
+    GameWorldOverlay(viewport = viewport) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            WorldClickTarget(bounds = MainMenuLayout.playButton(), onClick = onPlay)
+            WorldClickTarget(bounds = MainMenuLayout.tutorialButton(), onClick = onTutorial)
+
+            WorldClickTarget(
+                bounds = MainMenuLayout.leaderboardsButton(),
+                onClick = onLeaderboards,
             ) {
-                Text("Sign in", color = Color.White, fontSize = 16.sp)
+                GameImage(
+                    image = Assets.gpg_icon_leaderboards,
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "Leaderboards",
+                )
             }
-        }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            MenuIconButton(label = "Leaderboards", onClick = onLeaderboards)
-            MenuIconButton(label = "Achievements", onClick = onAchievements)
-        }
+            WorldClickTarget(
+                bounds = MainMenuLayout.achievementsButton(),
+                onClick = onAchievements,
+            ) {
+                GameImage(
+                    image = Assets.gpg_icon_achievements,
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "Achievements",
+                )
+            }
 
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 85.dp),
-            horizontalArrangement = Arrangement.spacedBy(40.dp),
-        ) {
-            MainMenuButton(label = "Play", onClick = onPlay)
-            MainMenuButton(label = "Tutorial", onClick = onTutorial)
+            if (!loggedIn) {
+                SignInButton(
+                    bounds = MainMenuLayout.signInButton(),
+                    onClick = onSignIn,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun MainMenuButton(label: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xCC333333),
-        modifier = Modifier
-            .width(180.dp)
-            .height(80.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
+private fun WorldPanel(
+    bounds: UiBounds,
+    background: Color,
+    modifier: Modifier = Modifier,
+) {
+    WorldBox(bounds = bounds, modifier = modifier.background(background)) {}
+}
+
+@Composable
+private fun WorldClickTarget(
+    bounds: UiBounds,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit = {},
+) {
+    WorldBox(
+        bounds = bounds,
+        modifier = modifier.clickable(onClick = onClick),
+        content = content,
+    )
+}
+
+@Composable
+private fun TiltOption(
+    bounds: UiBounds,
+    label: String,
+    selected: Boolean,
+    selectedImage: com.aocc.framework.Image?,
+    defaultImage: com.aocc.framework.Image?,
+    showSelectionRing: Boolean = false,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fontFamily: androidx.compose.ui.text.font.FontFamily,
+    onClick: () -> Unit,
+) {
+    WorldClickTarget(bounds = bounds, onClick = onClick) {
+        if (selected && showSelectionRing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(2.dp, Color.Red, CircleShape),
+            )
+        }
+        GameImage(
+            image = if (selected) selectedImage else defaultImage,
+            modifier = Modifier.fillMaxSize(),
+            contentDescription = label,
+        )
+    }
+
+    val labelBounds = UiBounds(
+        bounds.x + bounds.width + SettingsLayout.tiltLabelOffsetX,
+        bounds.y,
+        160,
+        bounds.height,
+    )
+    WorldBox(bounds = labelBounds) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+            BasicText(
                 text = label,
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
+                style = TextStyle(
+                    color = Color.Black,
+                    fontSize = fontSize,
+                    fontFamily = fontFamily,
+                ),
             )
         }
     }
 }
 
 @Composable
-private fun MenuIconButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(label, color = Color.White, fontSize = 14.sp)
+private fun GameMenuButton(
+    bounds: UiBounds,
+    label: String,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fontFamily: androidx.compose.ui.text.font.FontFamily,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed = interactionSource.collectIsPressedAsState().value
+
+    WorldBox(
+        bounds = bounds,
+        modifier = Modifier
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .background(if (pressed) MenuButtonPressedColor else MenuButtonColor),
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            BasicText(
+                text = label,
+                style = TextStyle(
+                    color = Color.White,
+                    fontSize = fontSize,
+                    fontFamily = fontFamily,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+        }
     }
 }
 
 @Composable
-fun GameMenuTheme(content: @Composable () -> Unit) {
-    MaterialTheme(content = content)
+private fun SignInButton(
+    bounds: UiBounds,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed = interactionSource.collectIsPressedAsState().value
+
+    WorldClickTarget(bounds = bounds, onClick = onClick) {
+        GameImage(
+            image = if (pressed) Assets.sign_in_press else Assets.sign_in_base,
+            modifier = Modifier.fillMaxSize(),
+            contentDescription = "Sign in",
+        )
+    }
+}
+
+@Composable
+private fun WorldCenteredText(
+    text: String,
+    centerX: Int,
+    centerY: Int,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fontFamily: androidx.compose.ui.text.font.FontFamily,
+) {
+    val bounds = UiBounds(centerX - 250, centerY - 24, 500, 48)
+    WorldBox(bounds = bounds) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            BasicText(
+                text = text,
+                style = TextStyle(
+                    color = Color.White,
+                    fontSize = fontSize,
+                    fontFamily = fontFamily,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+        }
+    }
 }

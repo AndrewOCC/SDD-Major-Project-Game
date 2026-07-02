@@ -10,7 +10,6 @@ public class MainMenuScreen extends Screen {
 	MajorProjectGame majorProjectGame;
 	private final ComposeOverlayBridge overlay;
 
-	int signInPressed = -1;
 	public static int tapVol = 10;
 
     public static boolean music;
