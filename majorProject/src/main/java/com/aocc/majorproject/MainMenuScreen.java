@@ -5,14 +5,11 @@ import java.util.List;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
-import com.aocc.framework.implementation.AndroidGame;
-import com.aocc.majorproject.ui.ComposeOverlayBridge;
 import com.aocc.majorproject.ui.MainMenuLayout;
 
 public class MainMenuScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
-	private final ComposeOverlayBridge overlay;
 
 	int signInPressed = -1;
 	public static int tapVol = 10;
@@ -24,16 +21,14 @@ public class MainMenuScreen extends Screen {
 	public MainMenuScreen(MajorProjectGame game) {
 		super(game);
 		majorProjectGame = game;
-		overlay = ((AndroidGame) game).getComposeOverlay();
 
         if (majorProjectGame.isMusicActive()) {
             music = false;
         } else {
             music = true;
         }
-
 	}
-    
+
 	@Override
 	public void update(float deltaTime) {
 		List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
@@ -47,28 +42,23 @@ public class MainMenuScreen extends Screen {
 		    		Assets.tap.play(tapVol);
 		        	game.setScreen(new GameScreen(majorProjectGame));
 		        }
-
 		    	if (MainMenuLayout.isTutorial(event)) {
 		    		Assets.tap.play(tapVol);
 		        	game.setScreen(new TutorialScreen(majorProjectGame));
 		        }
-
 		    	if (!majorProjectGame.isLoggedIn() && MainMenuLayout.isSignIn(event)) {
 		    		Assets.tap.play(tapVol);
 		    		signInPressed = i;
 		    		majorProjectGame.onSignInButtonClicked();
 		    	}
-
 		    	if (MainMenuLayout.isLeaderboards(event)) {
 		    		Assets.tap.play(tapVol);
 		    		majorProjectGame.onShowLeaderboardsRequested("");
 		        }
-
 		    	if (MainMenuLayout.isAchievements(event)) {
 		    		Assets.tap.play(tapVol);
 		    		majorProjectGame.onShowAchievementsRequested("");
 		        }
-
 			} else {
 				signInPressed = -1;
 			}
@@ -100,22 +90,18 @@ public class MainMenuScreen extends Screen {
 
 	@Override
 	public void pause() {
-		overlay.hide();
 	}
 
 	@Override
 	public void resume() {
-		overlay.hide();
 	}
 
 	@Override
 	public void dispose() {
-		overlay.hide();
 	}
 
 	@Override
 	public void backButton() {
 		android.os.Process.killProcess(android.os.Process.myPid());
 	}
-
 }
