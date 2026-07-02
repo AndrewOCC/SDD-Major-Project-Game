@@ -90,6 +90,9 @@ public class MainMenuScreen extends Screen {
         		g.drawImage(Assets.sign_in_base, 7, 7);
         	}
         }
+
+        paint.setTypeface(Assets.plain);
+        VersionOverlay.paint(g, paint);
 	}
 
 	@Override
