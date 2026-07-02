@@ -180,25 +180,66 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - CI passes on GitHub for this branch.
 - App installs and runs on Android 14+ devices.
 
-## Phase 10 — Modern Android UI shell (deferred, larger task)
+## Phase 10 — Anchor-based UI layout (`cursor/ui-layout-a6be`)
 
-Hold off further canvas UI layout work (main-menu touch mapping on ultrawide, composed tilt/sound panels, scrolling settings) until this phase.
+**What changed**
+- `UiLayout` / `MainMenuLayout` — menu buttons and GPG icons anchored to the 1280×720 world rectangle (centred play/tutorial row, right-aligned GPG icons).
+- `SettingsPanel` — centred container composing a **Sound** column (icons with gap) and **Tilt Options** column for ready/pause screens.
+- Touch targets now match layout regions on ultrawide/letterboxed displays.
 
-**Problem today**
-- Game screens draw directly to a 1280×720 framebuffer with hard-coded pixel coordinates.
-- Works for gameplay, but menus/settings do not scale or compose cleanly on ultrawide or notched devices without reinventing a layout system.
+**What to verify**
+- Play and Tutorial taps register on ultrawide devices (AYN Thor).
+- Pause/ready settings panel is centred with sound icons spaced apart.
+- Version shows **v1.5.0**.
 
-**Options to evaluate**
+## Phase 11 — Jetpack Compose menus (`cursor/ui-layout-a6be`)
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Jetpack Compose** | Modern declarative UI, scrolling lists, Material 3, good for settings/menus | Learning curve; game canvas would stay separate; hybrid Activity/Compose setup |
-| **Traditional Views + ConstraintLayout** | Familiar XML, `ScrollView`/`RecyclerView` for long menus, works alongside SurfaceView | More boilerplate than Compose; less flexible for dynamic UI |
-| **Stay on canvas + custom layout engine** | Keeps single render path | Reinvents Compose; poor fit for scrolling settings |
+**What changed**
+- Hybrid layout: canvas game loop with a transparent Jetpack Compose overlay for menus and settings.
+- Ready/pause settings use a Compose panel with sound toggles and tilt options in a proper column layout; the tap-to-start/resume prompt sits **below** the panel (no overlap).
+- Main menu Play, Tutorial, sign-in, and Play Games shortcuts are Compose buttons over the canvas background art.
+- Shared preference logic moved to `GameSettings`; canvas `SettingsPanel` removed.
 
-**Recommendation when we pick this up**
-- Keep the **game loop on the existing SurfaceView/canvas** (performance, minimal risk).
-- Build **menus, pause/settings, and how-to-play** as a **Compose overlay or separate Compose screens** hosted in the same Activity.
-- Use Compose for scrolling leaderboards/settings; map touches through the existing `Viewport` only for in-game HUD.
+**What to verify**
+- Settings panel no longer overlaps "Press anywhere to start/resume".
+- All three tilt options fit inside the panel on ultrawide devices.
+- Main menu buttons respond on AYN Thor and other landscape devices.
+- Version shows **v1.6.0**.
 
-This phase is intentionally separate and larger — do not block Phases 5–7 on it.
+**v1.6.2 update:** Main menu navigation restored to canvas touch regions (Play/Tutorial/GPG/sign-in) so taps align with background art. Compose overlay is settings-only. Viewport syncs from root layout; settings overlay letterbox computed from overlay size in pixels.
+
+### Branch
+
+`cursor/ui-layout-a6be`
+
+## Phase 12 — Native resolution rendering (`cursor/native-resolution-a6be`)
+
+**What changed**
+- Removed the fixed 1280×720 off-screen framebuffer; frames render directly to the device surface at native pixel resolution.
+- `AndroidGraphics` applies the viewport transform (`translate` + `scale`) so all game code keeps using world coordinates (1280×720).
+- Assets draw at world sizes and scale up crisply on high-DPI displays (`FILTER_BITMAP_FLAG`).
+- `drawARGB` overlays now cover the world rectangle only (correct with scaled canvas).
+- Game logic, UI layout, and touch mapping unchanged — still resolution-independent.
+
+**What to verify**
+- Graphics look sharp on high-resolution handhelds (not soft 720p upscale).
+- Touch targets still align on ultrawide letterboxed displays.
+- Version shows **v1.7.0**.
+
+### Branch
+
+`cursor/native-resolution-a6be`
+
+## Phase 12b — 1× / 2× asset tiers (`cursor/native-resolution-a6be`)
+
+**What changed**
+- `AssetScale` picks **1×** or **2×** bitmaps at load time from viewport scale (threshold 1.5×).
+- High-density art lives in `assets/2x/` with the same filenames as 1×; falls back to 1× if missing.
+- `AndroidImage` tracks pixel scale; `drawImage` maps 2× bitmaps into the same world layout size (pixels ÷ 2).
+- Initial `2x/` variants generated for all game PNGs (UI icons, backgrounds, splash, tutorial).
+
+**Adding sharper art later**
+- Replace files under `majorProject/src/main/assets/2x/` — no code changes needed.
+- Devices with viewport scale ≥ 1.5 load 2× automatically; others stay on 1×.
+
+**v1.7.2 performance fix:** Paint into a letterbox-sized RGB_565 off-screen buffer (one scale pass), then a single blit to the surface — restores frame rate vs direct-to-surface rendering. Full-screen backgrounds stay 1×; 2× only for UI sprites.

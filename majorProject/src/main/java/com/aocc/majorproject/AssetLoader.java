@@ -34,6 +34,7 @@ public final class AssetLoader {
     private final Graphics graphics;
     private final Audio audio;
     private final Listener listener;
+    private final int pixelScale;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicInteger loadedSteps = new AtomicInteger();
     private final AtomicBoolean started = new AtomicBoolean(false);
@@ -45,6 +46,8 @@ public final class AssetLoader {
         this.graphics = game.getGraphics();
         this.audio = game.getAudio();
         this.listener = listener;
+        this.pixelScale = AssetScale.tierFromViewport(game.getViewport().getScale());
+        Assets.loadedPixelScale = this.pixelScale;
     }
 
     public void start() {
@@ -94,51 +97,61 @@ public final class AssetLoader {
         return TOTAL_STEPS;
     }
 
+    public int getPixelScale() {
+        return pixelScale;
+    }
+
     public void shutdown() {
         executor.shutdownNow();
     }
 
     private void loadSplash() {
-        Assets.splash = graphics.newImage("splash.png", ImageFormat.RGB565);
+        Assets.splash = loadImage("splash.png", ImageFormat.RGB565, false);
         stepComplete();
     }
 
     private void loadImages() {
-        Assets.noise = graphics.newImage("noise.png", ImageFormat.ARGB4444);
+        Assets.noise = loadImage("noise.png", ImageFormat.ARGB4444, false);
         stepComplete();
-        Assets.menu_bg = graphics.newImage("menu-bg.png", ImageFormat.RGB565);
+        Assets.menu_bg = loadImage("menu-bg.png", ImageFormat.RGB565, false);
         stepComplete();
-        Assets.game_bg = graphics.newImage("game-bg.png", ImageFormat.RGB565);
+        Assets.game_bg = loadImage("game-bg.png", ImageFormat.RGB565, false);
         stepComplete();
-        Assets.sign_in_base = graphics.newImage("Red-signin_Medium_base.png", ImageFormat.ARGB4444);
+        Assets.sign_in_base = loadImage("Red-signin_Medium_base.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.sign_in_press = graphics.newImage("Red-signin_Medium_press.png", ImageFormat.ARGB4444);
+        Assets.sign_in_press = loadImage("Red-signin_Medium_press.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.gpg_icon_leaderboards = graphics.newImage("gpg-icon-leaderboards.png", ImageFormat.RGB565);
+        Assets.gpg_icon_leaderboards = loadImage("gpg-icon-leaderboards.png", ImageFormat.RGB565, true);
         stepComplete();
-        Assets.gpg_icon_achievements = graphics.newImage("gpg-icon-achievements.png", ImageFormat.RGB565);
+        Assets.gpg_icon_achievements = loadImage("gpg-icon-achievements.png", ImageFormat.RGB565, true);
         stepComplete();
-        Assets.tilt_control_flat = graphics.newImage("tilt-button-flat.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_flat = loadImage("tilt-button-flat.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tilt_control_tilted = graphics.newImage("tilt-button-tilted.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_tilted = loadImage("tilt-button-tilted.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tilt_control_custom = graphics.newImage("tilt-button-custom.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_custom = loadImage("tilt-button-custom.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tilt_control_flat_2 = graphics.newImage("tilt-button-flat-2.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_flat_2 = loadImage("tilt-button-flat-2.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tilt_control_tilted_2 = graphics.newImage("tilt-button-tilted-2.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_tilted_2 = loadImage("tilt-button-tilted-2.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tilt_control_custom_2 = graphics.newImage("tilt-button-custom-2.png", ImageFormat.ARGB4444);
+        Assets.tilt_control_custom_2 = loadImage("tilt-button-custom-2.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.sound = graphics.newImage("sound.png", ImageFormat.ARGB4444);
+        Assets.sound = loadImage("sound.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.sound_muted = graphics.newImage("sound-muted.png", ImageFormat.ARGB4444);
-        Assets.music = graphics.newImage("music.png", ImageFormat.ARGB4444);
+        Assets.sound_muted = loadImage("sound-muted.png", ImageFormat.ARGB4444, true);
+        Assets.music = loadImage("music.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.music_muted = graphics.newImage("music-muted.png", ImageFormat.ARGB4444);
+        Assets.music_muted = loadImage("music-muted.png", ImageFormat.ARGB4444, true);
         stepComplete();
-        Assets.tutorial = graphics.newImage("tutorial.png", ImageFormat.RGB565);
+        Assets.tutorial = loadImage("tutorial.png", ImageFormat.RGB565, false);
         stepComplete();
+    }
+
+    /** Full-screen backgrounds stay at 1×; UI sprites may use 2×. */
+    private com.aocc.framework.Image loadImage(String path, ImageFormat format, boolean allow2x) {
+        int scale = allow2x ? pixelScale : 1;
+        return graphics.newImage(path, format, scale);
     }
 
     private void loadSounds() {

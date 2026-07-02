@@ -12,6 +12,15 @@ public interface Graphics {
 
 	public Image newImage(String fileName, ImageFormat format);
 
+	/**
+	 * Loads a bitmap, preferring a 2× asset in {@code 2x/<fileName>} when
+	 * {@code pixelScale} is 2 and that file exists. Default implementation
+	 * ignores {@code pixelScale}.
+	 */
+	default Image newImage(String fileName, ImageFormat format, int pixelScale) {
+		return newImage(fileName, format);
+	}
+
 	public void clearScreen(int color);
 
 	public void drawLine(int x, int y, int x2, int y2, int color);

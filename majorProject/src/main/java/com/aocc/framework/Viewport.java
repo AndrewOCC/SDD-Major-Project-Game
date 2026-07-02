@@ -52,6 +52,14 @@ public class Viewport {
         return scale;
     }
 
+    public float getOffsetX() {
+        return offsetX;
+    }
+
+    public float getOffsetY() {
+        return offsetY;
+    }
+
     public int getViewWidth() {
         return viewWidth;
     }
