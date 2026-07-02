@@ -18,6 +18,7 @@ import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Image;
 import com.aocc.framework.Viewport;
+import com.aocc.majorproject.AssetScale;
 
 //EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
 
@@ -63,7 +64,28 @@ public class AndroidGraphics implements Graphics {
 
     @Override
     public Image newImage(String fileName, ImageFormat format) {
-        Config config = null;
+        return newImage(fileName, format, 1);
+    }
+
+    @Override
+    public Image newImage(String fileName, ImageFormat format, int pixelScale) {
+        boolean has2x = assetExists(AssetScale.TWO_X_FOLDER + fileName);
+        String path = AssetScale.resolvePath(fileName, pixelScale, has2x);
+        int effectiveScale = AssetScale.effectivePixelScale(pixelScale, has2x);
+        return decodeImage(path, format, effectiveScale);
+    }
+
+    private boolean assetExists(String path) {
+        try {
+            assets.open(path).close();
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private Image decodeImage(String fileName, ImageFormat format, int pixelScale) {
+        Config config;
         if (format == ImageFormat.RGB565)
             config = Config.RGB_565;
         else if (format == ImageFormat.ARGB4444)
@@ -75,7 +97,7 @@ public class AndroidGraphics implements Graphics {
         options.inPreferredConfig = config;
 
         InputStream in = null;
-        Bitmap bitmap = null;
+        Bitmap bitmap;
         try {
             in = assets.open(fileName);
             bitmap = BitmapFactory.decodeStream(in, null, options);
@@ -101,7 +123,7 @@ public class AndroidGraphics implements Graphics {
         else
             format = ImageFormat.ARGB8888;
 
-        return new AndroidImage(bitmap, format);
+        return new AndroidImage(bitmap, format, pixelScale);
     }
 
     @Override
@@ -158,8 +180,11 @@ public class AndroidGraphics implements Graphics {
         requireCanvas().drawText(text, x, y, textPaint);
     }
 
-    public void drawImage(Image Image, int x, int y, int srcX, int srcY,
+    public void drawImage(Image image, int x, int y, int srcX, int srcY,
             int srcWidth, int srcHeight) {
+        AndroidImage androidImage = (AndroidImage) image;
+        int scale = androidImage.getPixelScale();
+
         srcRect.left = srcX;
         srcRect.top = srcY;
         srcRect.right = srcX + srcWidth;
@@ -167,19 +192,26 @@ public class AndroidGraphics implements Graphics {
 
         dstRect.left = x;
         dstRect.top = y;
-        dstRect.right = x + srcWidth;
-        dstRect.bottom = y + srcHeight;
+        dstRect.right = x + srcWidth / scale;
+        dstRect.bottom = y + srcHeight / scale;
 
-        requireCanvas().drawBitmap(((AndroidImage) Image).bitmap, srcRect, dstRect,
+        requireCanvas().drawBitmap(androidImage.getBitmap(), srcRect, dstRect,
                 bitmapPaint);
     }
 
     @Override
-    public void drawImage(Image Image, int x, int y) {
-        requireCanvas().drawBitmap(((AndroidImage) Image).bitmap, x, y, bitmapPaint);
+    public void drawImage(Image image, int x, int y) {
+        AndroidImage androidImage = (AndroidImage) image;
+        dstRect.left = x;
+        dstRect.top = y;
+        dstRect.right = x + androidImage.getWidth();
+        dstRect.bottom = y + androidImage.getHeight();
+        requireCanvas().drawBitmap(androidImage.getBitmap(), null, dstRect, bitmapPaint);
     }
 
-    public void drawScaledImage(Image Image, int x, int y, int width, int height, int srcX, int srcY, int srcWidth, int srcHeight) {
+    public void drawScaledImage(Image image, int x, int y, int width, int height, int srcX, int srcY, int srcWidth, int srcHeight) {
+        AndroidImage androidImage = (AndroidImage) image;
+
         srcRect.left = srcX;
         srcRect.top = srcY;
         srcRect.right = srcX + srcWidth;
@@ -190,7 +222,7 @@ public class AndroidGraphics implements Graphics {
         dstRect.right = x + width;
         dstRect.bottom = y + height;
 
-        requireCanvas().drawBitmap(((AndroidImage) Image).bitmap, srcRect, dstRect, bitmapPaint);
+        requireCanvas().drawBitmap(androidImage.getBitmap(), srcRect, dstRect, bitmapPaint);
     }
 
     @Override

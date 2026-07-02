@@ -229,3 +229,20 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 ### Branch
 
 `cursor/native-resolution-a6be`
+
+## Phase 12b — 1× / 2× asset tiers (`cursor/native-resolution-a6be`)
+
+**What changed**
+- `AssetScale` picks **1×** or **2×** bitmaps at load time from viewport scale (threshold 1.5×).
+- High-density art lives in `assets/2x/` with the same filenames as 1×; falls back to 1× if missing.
+- `AndroidImage` tracks pixel scale; `drawImage` maps 2× bitmaps into the same world layout size (pixels ÷ 2).
+- Initial `2x/` variants generated for all game PNGs (UI icons, backgrounds, splash, tutorial).
+
+**Adding sharper art later**
+- Replace files under `majorProject/src/main/assets/2x/` — no code changes needed.
+- Devices with viewport scale ≥ 1.5 load 2× automatically; others stay on 1×.
+
+**What to verify**
+- Version shows **v1.7.1**
+- UI sprites look sharper on high-DPI handhelds (AYN Thor)
+- Layout unchanged (same world-coordinate sizes)
