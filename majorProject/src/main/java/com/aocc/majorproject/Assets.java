@@ -50,10 +50,12 @@ public class Assets {
 		for (String musicFile : MUSIC_FILES) {
 			try {
 				darude = majorProjectGame.getAudio().createMusic(musicFile);
-				if (!majorProjectGame.isMusicActive()) {
+				if (GamePreferences.music && !majorProjectGame.isMusicActive()) {
 					darude.setVolume(0.85f);
 					darude.setLooping(true);
 					darude.play();
+				} else if (!GamePreferences.music) {
+					darude.setVolume(0);
 				}
 				return;
 			} catch (RuntimeException e) {

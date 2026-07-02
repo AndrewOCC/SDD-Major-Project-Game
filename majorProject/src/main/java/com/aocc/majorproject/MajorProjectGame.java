@@ -3,12 +3,15 @@ package com.aocc.majorproject;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 
 import com.aocc.framework.Screen;
 import com.aocc.framework.implementation.AndroidGame;
+import com.aocc.majorproject.display.SecondaryDisplayManager;
+import com.aocc.majorproject.input.GamepadInput;
 
 public class MajorProjectGame extends AndroidGame {
 
@@ -16,12 +19,16 @@ public class MajorProjectGame extends AndroidGame {
 	final int TAP_VOL = 10;
 
 	private PlayGamesHelper playGamesHelper;
+	private SecondaryDisplayManager secondaryDisplayManager;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		CrashReporter.install(this);
+		GamePreferences.load(this);
 		super.onCreate(savedInstanceState);
 		CrashReporter.showPreviousCrashIfPresent(this);
+
+		secondaryDisplayManager = new SecondaryDisplayManager(this);
 
 		try {
 			playGamesHelper = new PlayGamesHelper(this);
@@ -41,6 +48,31 @@ public class MajorProjectGame extends AndroidGame {
 	@Override
 	public Screen getInitScreen() {
 		return new LoadingScreen(this);
+	}
+
+	@Override
+	public void setScreen(Screen screen) {
+		super.setScreen(screen);
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.updateForScreen(screen);
+		}
+	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event) {
+		if (event.getAction() == KeyEvent.ACTION_DOWN && getGamepadInput().onKeyDown(event)) {
+			return true;
+		}
+		return super.dispatchKeyEvent(event);
+	}
+
+	@Override
+	protected void onDestroy() {
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.shutdown();
+			secondaryDisplayManager = null;
+		}
+		super.onDestroy();
 	}
 
 	@Override
@@ -66,6 +98,10 @@ public class MajorProjectGame extends AndroidGame {
         getCurrentScreen().pause();
 		super.onPause();
 		Assets.pauseMusic();
+	}
+
+	public SecondaryDisplayManager getSecondaryDisplayManager() {
+		return secondaryDisplayManager;
 	}
 
 	public void onShowLeaderboardsRequested(String ID) {

@@ -5,33 +5,30 @@ import java.util.List;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
+import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.MainMenuLayout;
+import com.aocc.majorproject.ui.UiBounds;
 
 public class MainMenuScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
 
 	int signInPressed = -1;
-	public static int tapVol = 10;
-
-    public static boolean music;
-    public static boolean sound = true;
-
+	private int selectedMenuIndex = 0;
+	private static final int HIGHLIGHT_PADDING = 6;
 
 	public MainMenuScreen(MajorProjectGame game) {
 		super(game);
 		majorProjectGame = game;
-
-        if (majorProjectGame.isMusicActive()) {
-            music = false;
-        } else {
-            music = true;
-        }
 	}
 
 	@Override
 	public void update(float deltaTime) {
-		List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
+		handleGamepad(majorProjectGame.getGamepadInput().consumeActions());
+		handleTouch(game.getInput().getTouchEvents());
+	}
+
+	private void handleTouch(List<TouchEvent> touchEvents) {
 		int len = touchEvents.size();
 
 		for (int i = 0; i < len; i++) {
@@ -39,30 +36,120 @@ public class MainMenuScreen extends Screen {
 
 			if (event.type == TouchEvent.TOUCH_UP) {
 		    	if (MainMenuLayout.isPlay(event)) {
-		    		Assets.tap.play(tapVol);
-		        	game.setScreen(new GameScreen(majorProjectGame));
+		    		startGame();
 		        }
 		    	if (MainMenuLayout.isTutorial(event)) {
-		    		Assets.tap.play(tapVol);
-		        	game.setScreen(new TutorialScreen(majorProjectGame));
+		    		startTutorial();
 		        }
 		    	if (!majorProjectGame.isLoggedIn() && MainMenuLayout.isSignIn(event)) {
-		    		Assets.tap.play(tapVol);
+		    		playTap();
 		    		signInPressed = i;
 		    		majorProjectGame.onSignInButtonClicked();
 		    	}
 		    	if (MainMenuLayout.isLeaderboards(event)) {
-		    		Assets.tap.play(tapVol);
-		    		majorProjectGame.onShowLeaderboardsRequested("");
+		    		openLeaderboards();
 		        }
 		    	if (MainMenuLayout.isAchievements(event)) {
-		    		Assets.tap.play(tapVol);
-		    		majorProjectGame.onShowAchievementsRequested("");
+		    		openAchievements();
 		        }
 			} else {
 				signInPressed = -1;
 			}
     	}
+	}
+
+	private void handleGamepad(List<GamepadInput.Action> actions) {
+		int itemCount = getMenuItemCount();
+		for (GamepadInput.Action action : actions) {
+			switch (action) {
+				case UP:
+					selectedMenuIndex = (selectedMenuIndex + itemCount - 1) % itemCount;
+					break;
+				case DOWN:
+					selectedMenuIndex = (selectedMenuIndex + 1) % itemCount;
+					break;
+				case CONFIRM:
+					activateMenuItem(selectedMenuIndex);
+					break;
+				case CANCEL:
+					backButton();
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	private int getMenuItemCount() {
+		return majorProjectGame.isLoggedIn() ? 4 : 5;
+	}
+
+	private void activateMenuItem(int index) {
+		if (!majorProjectGame.isLoggedIn()) {
+			switch (index) {
+				case 0 -> startGame();
+				case 1 -> startTutorial();
+				case 2 -> {
+					playTap();
+					majorProjectGame.onSignInButtonClicked();
+				}
+				case 3 -> openLeaderboards();
+				case 4 -> openAchievements();
+				default -> { }
+			}
+		} else {
+			switch (index) {
+				case 0 -> startGame();
+				case 1 -> startTutorial();
+				case 2 -> openLeaderboards();
+				case 3 -> openAchievements();
+				default -> { }
+			}
+		}
+	}
+
+	private UiBounds getMenuItemBounds(int index) {
+		if (!majorProjectGame.isLoggedIn()) {
+			return switch (index) {
+				case 0 -> MainMenuLayout.playButton();
+				case 1 -> MainMenuLayout.tutorialButton();
+				case 2 -> MainMenuLayout.signInButton();
+				case 3 -> MainMenuLayout.leaderboardsButton();
+				case 4 -> MainMenuLayout.achievementsButton();
+				default -> null;
+			};
+		}
+		return switch (index) {
+			case 0 -> MainMenuLayout.playButton();
+			case 1 -> MainMenuLayout.tutorialButton();
+			case 2 -> MainMenuLayout.leaderboardsButton();
+			case 3 -> MainMenuLayout.achievementsButton();
+			default -> null;
+		};
+	}
+
+	private void startGame() {
+		playTap();
+		game.setScreen(new GameScreen(majorProjectGame));
+	}
+
+	private void startTutorial() {
+		playTap();
+		game.setScreen(new TutorialScreen(majorProjectGame));
+	}
+
+	private void openLeaderboards() {
+		playTap();
+		majorProjectGame.onShowLeaderboardsRequested("");
+	}
+
+	private void openAchievements() {
+		playTap();
+		majorProjectGame.onShowAchievementsRequested("");
+	}
+
+	private void playTap() {
+		Assets.tap.play(GamePreferences.getTapVolume());
 	}
 
 	@Override
@@ -85,7 +172,18 @@ public class MainMenuScreen extends Screen {
         	}
         }
 
+		paintSelectionHighlight(g);
         VersionOverlay.paint(g);
+	}
+
+	private void paintSelectionHighlight(Graphics g) {
+		UiBounds bounds = getMenuItemBounds(selectedMenuIndex);
+		if (bounds == null) {
+			return;
+		}
+		g.drawRect(bounds.x - HIGHLIGHT_PADDING, bounds.y - HIGHLIGHT_PADDING,
+				bounds.width + HIGHLIGHT_PADDING * 2, bounds.height + HIGHLIGHT_PADDING * 2,
+				android.graphics.Color.rgb(255, 220, 80));
 	}
 
 	@Override

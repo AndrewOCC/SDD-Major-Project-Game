@@ -5,6 +5,7 @@ import java.util.Random;
 
 import android.graphics.Paint;
 import com.aocc.framework.Graphics;
+import com.aocc.majorproject.GamePreferences;
 
 // This controller allows one call in the GameScreen class to update or paint every 
 // enemy through a LinkedList; it also allows the easy creation and deletion of enemies
@@ -40,7 +41,7 @@ public class EnemyController {
 	
 	public void removeEnemy(int i){
 		e.remove(i);
-		Assets.zap.play(MainMenuScreen.tapVol);
+		Assets.zap.play(GamePreferences.getTapVolume());
 	}
 	
 	public void removeAllEnemies(){

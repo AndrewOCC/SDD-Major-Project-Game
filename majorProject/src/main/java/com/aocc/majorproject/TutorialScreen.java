@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
+import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.UiButton;
 
 public class TutorialScreen extends Screen {
@@ -33,11 +34,21 @@ public class TutorialScreen extends Screen {
 				
 			if (event.type == TouchEvent.TOUCH_UP) {
 				if (menuButton.touchInBounds(event)){
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-					game.setScreen(new MainMenuScreen(majorProjectGame));
+		    		goToMenu();
 				}
 			}
 		}
+
+		for (GamepadInput.Action action : majorProjectGame.getGamepadInput().consumeActions()) {
+			if (action == GamepadInput.Action.CONFIRM || action == GamepadInput.Action.CANCEL) {
+				goToMenu();
+			}
+		}
+	}
+
+	private void goToMenu() {
+		Assets.tap.play(GamePreferences.getTapVolume());
+		game.setScreen(new MainMenuScreen(majorProjectGame));
 	}
 	
 	@Override
