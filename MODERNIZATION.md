@@ -180,25 +180,31 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - CI passes on GitHub for this branch.
 - App installs and runs on Android 14+ devices.
 
-## Phase 10 — Modern Android UI shell (deferred, larger task)
+## Phase 10 — Anchor-based UI layout (`cursor/ui-layout-a6be`)
 
-Hold off further canvas UI layout work (main-menu touch mapping on ultrawide, composed tilt/sound panels, scrolling settings) until this phase.
+**What changed**
+- `UiLayout` / `MainMenuLayout` — menu buttons and GPG icons anchored to the 1280×720 world rectangle (centred play/tutorial row, right-aligned GPG icons).
+- `SettingsPanel` — centred container composing a **Sound** column (icons with gap) and **Tilt Options** column for ready/pause screens.
+- Touch targets now match layout regions on ultrawide/letterboxed displays.
 
-**Problem today**
-- Game screens draw directly to a 1280×720 framebuffer with hard-coded pixel coordinates.
-- Works for gameplay, but menus/settings do not scale or compose cleanly on ultrawide or notched devices without reinventing a layout system.
+**What to verify**
+- Play and Tutorial taps register on ultrawide devices (AYN Thor).
+- Pause/ready settings panel is centred with sound icons spaced apart.
+- Version shows **v1.5.0**.
 
-**Options to evaluate**
+**Future (Compose overlay)**
+- Scrolling settings, leaderboards browser, and richer menus can migrate to Jetpack Compose screens over the canvas game loop in a follow-up.
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Jetpack Compose** | Modern declarative UI, scrolling lists, Material 3, good for settings/menus | Learning curve; game canvas would stay separate; hybrid Activity/Compose setup |
-| **Traditional Views + ConstraintLayout** | Familiar XML, `ScrollView`/`RecyclerView` for long menus, works alongside SurfaceView | More boilerplate than Compose; less flexible for dynamic UI |
-| **Stay on canvas + custom layout engine** | Keeps single render path | Reinvents Compose; poor fit for scrolling settings |
+### Branch
 
-**Recommendation when we pick this up**
-- Keep the **game loop on the existing SurfaceView/canvas** (performance, minimal risk).
-- Build **menus, pause/settings, and how-to-play** as a **Compose overlay or separate Compose screens** hosted in the same Activity.
-- Use Compose for scrolling leaderboards/settings; map touches through the existing `Viewport` only for in-game HUD.
+`cursor/ui-layout-a6be`
 
-This phase is intentionally separate and larger — do not block Phases 5–7 on it.
+## Phase 11 — Jetpack Compose menus (planned)
+
+Canvas anchor layout (Phase 10) covers in-game HUD and settings panels. A follow-up Compose phase can add:
+
+- Scrolling settings and long-form menus
+- Richer how-to-play / tutorial flows
+- Hybrid Activity: SurfaceView game loop + Compose overlay for menus
+
+See the Compose evaluation table in git history (`MODERNIZATION.md` prior to Phase 10 merge).
