@@ -13,9 +13,10 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
+import com.aocc.framework.implementation.AndroidGame;
 import com.aocc.majorproject.ui.ComboMeter;
+import com.aocc.majorproject.ui.ComposeOverlayBridge;
 import com.aocc.majorproject.ui.ScoreBar;
-import com.aocc.majorproject.ui.SettingsPanel;
 import com.aocc.majorproject.ui.UiBanner;
 import com.aocc.majorproject.ui.UiButton;
 
@@ -38,13 +39,11 @@ public class GameScreen extends Screen {
 
     final int ARENA_HEIGHT = 3;
 
-    UiButton menuButton;
     UiButton retryButton;
-    private final SettingsPanel settingsPanel = new SettingsPanel();
+    private final ComposeOverlayBridge overlay;
 
     private final ScoreBar scoreBar = new ScoreBar();
     private final ComboMeter comboMeter = new ComboMeter();
-    private final UiBanner promptBanner = new UiBanner(50f);
     private final UiBanner gameOverBanner = new UiBanner(100f);
     private final UiBanner scoreBanner = new UiBanner(60f);
 
@@ -54,6 +53,7 @@ public class GameScreen extends Screen {
 		super(game);
 		
 		majorProjectGame = game;
+		overlay = ((AndroidGame) game).getComposeOverlay();
 		
 		// Initialise game objects
 		player = session.getPlayer();
@@ -62,8 +62,6 @@ public class GameScreen extends Screen {
 		p = new PowerUp(1, session);
 		tempEnemyPoint = new Point();
 
-        // buttons
-        menuButton = UiButton.menuAt(0, 0);
         retryButton = new UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry");
 		
 		// Define a paint object
@@ -95,20 +93,9 @@ public class GameScreen extends Screen {
 	}
 
 	private void updateReady(List<TouchEvent> touchEvents) {
-		int len = touchEvents.size();
-		
-		for (int i = 0; i < len; i++) {
-			TouchEvent event = touchEvents.get(i);
-		    if (event.type == TouchEvent.TOUCH_UP){
-		    	if (settingsPanel.handleTouch(event, player)) {
-		    		continue;
-		    	}
-		    	Assets.tap.play(MainMenuScreen.tapVol);
-		    	state = GameState.Running;
-	    	}
-		}
+		// Ready/pause settings and tap-to-start are handled by the Compose overlay.
 	}
-	
+
 	private void updateRunning(List<TouchEvent> touchEvents, float deltaSeconds) {
 		float step = GameConstants.secondsToSteps(deltaSeconds);
 
@@ -160,33 +147,14 @@ public class GameScreen extends Screen {
 		// Game Logic
 		if (session.isGameOverFlag()) {
 			state = GameState.GameOver;
+			hideOverlay();
 		}	
 		
 	}
 
 
 	private void updatePaused(List<TouchEvent> touchEvents) {
-		int len = touchEvents.size();
-		
-		for (int i = 0; i < len; i++) {
-			TouchEvent event = touchEvents.get(i);
-		    if (event.type == TouchEvent.TOUCH_UP) {
-		    	if (menuButton.touchInBounds(event)) {
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-					reset();
-					goToMenu();
-					return;
-		    	}
-		    	if (settingsPanel.handleTouch(event, player)) {
-		    		continue;
-		    	}
-                Assets.tap.play(MainMenuScreen.tapVol);
-                state = GameState.Running;
-                if (MainMenuScreen.music == true){
-                    Assets.setMusicVolume(0.85f);
-                }
-	    	}
-		}
+		// Pause settings and tap-to-resume are handled by the Compose overlay.
 	}
 
 
@@ -206,7 +174,7 @@ public class GameScreen extends Screen {
 		    if (event.type == TouchEvent.TOUCH_UP) {
 		    	
 		    	//Menu button
-		    	if (menuButton.touchInBounds(event)) {
+		    	if (PersonalMethods.touchInBounds(event, 0, 0, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT)) {
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 					// Game over events
 					reset();
@@ -254,15 +222,8 @@ public class GameScreen extends Screen {
 
 	private void drawReadyUI() {
 		Graphics g = game.getGraphics();
-		
 		g.drawARGB(155, 0, 0, 0);
-		settingsPanel.paint(g, paint, player);
-
-        paint.setTypeface(Assets.plain);
-        promptBanner.paint(g, paint, "Press anywhere to start",
-                GameConstants.WORLD_WIDTH / 2, 300);
 	}
-
 
 	private void drawRunningUI() {
 		Graphics g = game.getGraphics();
@@ -296,14 +257,6 @@ public class GameScreen extends Screen {
 		
 		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
-		settingsPanel.paint(g, paint, player);
-
-        menuButton.paint(g);
-
-
-        paint.setTypeface(Assets.plain);
-		promptBanner.paint(g, paint, "Press anywhere to resume",
-                GameConstants.WORLD_WIDTH / 2, 300);
 	}
 
 
@@ -312,14 +265,17 @@ public class GameScreen extends Screen {
 		
 		g.drawARGB(155, 0, 0, 0);
 
-        menuButton.paint(g);
         retryButton.paint(g);
 		g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
 		
 		paint.setTypeface(Assets.plain);
 		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
 		scoreBanner.paint(g, paint, "Score: " + session.getScore(), GameConstants.WORLD_WIDTH / 2, 400);
+
+		UiButton menuButton = UiButton.menuAt(0, 0);
+		menuButton.paint(g);
 	}
+
 
 	//OTHER METHODS
 	@Override
@@ -329,6 +285,7 @@ public class GameScreen extends Screen {
             if (MainMenuScreen.music == true){
             	Assets.setMusicVolume(0.25f); 
             }
+            showSettingsOverlay("Press anywhere to resume", true);
 		}
 	}
 
@@ -338,10 +295,12 @@ public class GameScreen extends Screen {
             Assets.playMusic();
             Assets.setMusicVolume(0.25f);
         }
+        syncOverlay();
 	}
 
 	@Override
 	public void dispose() {
+		hideOverlay();
 	}
 	
 	public void reset() {
@@ -373,7 +332,7 @@ public class GameScreen extends Screen {
 		if (state == GameState.Running) {
 			pause();
 		} else if (state == GameState.Paused) {
-			resume();
+			resumeRunningFromOverlay();
 		} else if (state == GameState.GameOver) {
 			// Game over events
 			reset();
@@ -397,5 +356,96 @@ public class GameScreen extends Screen {
 	public void setFacingAngle(float facingAngle) {
 		this.facingAngle = facingAngle;
 	}
+
+	private void syncOverlay() {
+		if (state == GameState.Ready) {
+			showSettingsOverlay("Press anywhere to start", false);
+		} else if (state == GameState.Paused) {
+			showSettingsOverlay("Press anywhere to resume", true);
+		} else {
+			hideOverlay();
+		}
+	}
+
+	private void showSettingsOverlay(String prompt, boolean showMenuButton) {
+		overlay.showSettings(prompt, showMenuButton, settingsListener);
+	}
+
+	private void hideOverlay() {
+		overlay.hide();
+	}
+
+	private void resumeRunningFromOverlay() {
+		Assets.tap.play(MainMenuScreen.tapVol);
+		state = GameState.Running;
+		hideOverlay();
+		if (MainMenuScreen.music) {
+			Assets.setMusicVolume(0.85f);
+		}
+	}
+
+	private final ComposeOverlayBridge.SettingsListener settingsListener =
+			new ComposeOverlayBridge.SettingsListener() {
+				@Override
+				public void onResumeGame() {
+					if (state == GameState.Ready || state == GameState.Paused) {
+						resumeRunningFromOverlay();
+					}
+				}
+
+				@Override
+				public void onMenu() {
+					if (state == GameState.Paused) {
+						Assets.tap.play(MainMenuScreen.tapVol);
+						reset();
+						goToMenu();
+					}
+				}
+
+				@Override
+				public void onToggleSound() {
+					GameSettings.toggleSound();
+					overlay.refreshSettings();
+				}
+
+				@Override
+				public void onToggleMusic() {
+					GameSettings.toggleMusic();
+					overlay.refreshSettings();
+				}
+
+				@Override
+				public void onFlatTilt() {
+					GameSettings.applyFlatTilt(player);
+					overlay.refreshSettings();
+				}
+
+				@Override
+				public void onTiltedTilt() {
+					GameSettings.applyTiltedTilt(player);
+					overlay.refreshSettings();
+				}
+
+				@Override
+				public void onCustomTilt() {
+					GameSettings.applyCustomTilt(player);
+					overlay.refreshSettings();
+				}
+
+				@Override
+				public boolean isSoundOn() {
+					return MainMenuScreen.sound;
+				}
+
+				@Override
+				public boolean isMusicOn() {
+					return MainMenuScreen.music;
+				}
+
+				@Override
+				public int getTiltMode() {
+					return player.getTiltMode();
+				}
+			};
 	
 }

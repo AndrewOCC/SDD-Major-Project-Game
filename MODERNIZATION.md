@@ -192,19 +192,20 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - Pause/ready settings panel is centred with sound icons spaced apart.
 - Version shows **v1.5.0**.
 
-**Future (Compose overlay)**
-- Scrolling settings, leaderboards browser, and richer menus can migrate to Jetpack Compose screens over the canvas game loop in a follow-up.
+## Phase 11 — Jetpack Compose menus (`cursor/ui-layout-a6be`)
+
+**What changed**
+- Hybrid layout: canvas game loop with a transparent Jetpack Compose overlay for menus and settings.
+- Ready/pause settings use a Compose panel with sound toggles and tilt options in a proper column layout; the tap-to-start/resume prompt sits **below** the panel (no overlap).
+- Main menu Play, Tutorial, sign-in, and Play Games shortcuts are Compose buttons over the canvas background art.
+- Shared preference logic moved to `GameSettings`; canvas `SettingsPanel` removed.
+
+**What to verify**
+- Settings panel no longer overlaps "Press anywhere to start/resume".
+- All three tilt options fit inside the panel on ultrawide devices.
+- Main menu buttons respond on AYN Thor and other landscape devices.
+- Version shows **v1.6.0**.
 
 ### Branch
 
 `cursor/ui-layout-a6be`
-
-## Phase 11 — Jetpack Compose menus (planned)
-
-Canvas anchor layout (Phase 10) covers in-game HUD and settings panels. A follow-up Compose phase can add:
-
-- Scrolling settings and long-form menus
-- Richer how-to-play / tutorial flows
-- Hybrid Activity: SurfaceView game loop + Compose overlay for menus
-
-See the Compose evaluation table in git history (`MODERNIZATION.md` prior to Phase 10 merge).
