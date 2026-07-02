@@ -1,6 +1,5 @@
 package com.aocc.majorproject;
 
-import java.util.LinkedList;
 import java.util.Random;
 
 import java.util.List;
@@ -31,8 +30,9 @@ public class GameScreen extends Screen {
 	
 	// Variable Setup
 	Paint paint;
-	static Player player;
-	EnemyController c;		// controller object for enemies
+	private final GameSession session = new GameSession();
+	private Player player;
+	EnemyController c;
 	Random r;				// object for random number generation
 	PowerUp p;				// DEBUG powerup object (will most likely be replaced by controller)
 	Point tempEnemyPoint;	// holds x/y values for new enemies before creation
@@ -61,27 +61,17 @@ public class GameScreen extends Screen {
 
 	
 	private float facingAngle = 0;
-	private static float updateCount = 0;
-	private static float enemyCounter = 300;
-	private static int score = 0;
-	private static boolean scoreUploaded = false;
 
-	private static int speed = 0;
-
-	private static boolean gameOverFlag = false;
-	
-	static LinkedList<Enemy> e = new LinkedList<Enemy>();
-	
-	public GameScreen(MajorProjectGame game) {		//starts up the game
+	public GameScreen(MajorProjectGame game) {
 		super(game);
 		
 		majorProjectGame = game;
 		
 		// Initialise game objects
-		player = new Player();
-		c = new EnemyController();
+		player = session.getPlayer();
+		c = new EnemyController(session);
 		r = new Random();
-		p = new PowerUp(1);
+		p = new PowerUp(1, session);
 		tempEnemyPoint = new Point();
 
         // buttons
@@ -185,8 +175,8 @@ public class GameScreen extends Screen {
 		// User Input
 		
 		// update count: allows events to occur every few updates an on-update basis
-		updateCount += step;
-		enemyCounter += step;
+		session.addUpdateCount(step);
+		session.addEnemyCounter(step);
 		
 		// Calls individual update methods for each object
 		player.update(deltaSeconds);
@@ -196,15 +186,15 @@ public class GameScreen extends Screen {
 		// Check important events
 		
 		// UPDATING SPEED
-		if (speed < 25 && updateCount >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
-			speed ++;
-			updateCount -= GameConstants.SPEED_RAMP_INTERVAL_FRAMES;
+		if (session.getSpeed() < 25 && session.getUpdateCount() >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
+			session.incrementSpeed();
+			session.subtractUpdateCount(GameConstants.SPEED_RAMP_INTERVAL_FRAMES);
 			c.increaseEnemyTopSpeed();
 		}
 		
 		
 		// ENEMIES
-		if (enemyCounter > EnemyController.nextEnemySpawn){ // determines if enough time has passed for a new enemy
+		if (session.getEnemyCounter() > c.getNextEnemySpawn()){
 			
 			tempEnemyPoint.x = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50;
 			tempEnemyPoint.y = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50;
@@ -217,7 +207,7 @@ public class GameScreen extends Screen {
 			} else {
 				c.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 1);
 			}
-			enemyCounter = 0;
+			session.resetEnemyCounter();
 		}
 		// CHECKING FOR ACHIEVEMENTS
 
@@ -228,7 +218,7 @@ public class GameScreen extends Screen {
 
 
 		// Game Logic
-		if (gameOverFlag == true) {
+		if (session.isGameOverFlag()) {
 			state = GameState.GameOver;
 		}	
 		
@@ -308,9 +298,9 @@ public class GameScreen extends Screen {
 	private void updateGameOver(List<TouchEvent> touchEvents) {
 
 
-		if (scoreUploaded = false){
-			majorProjectGame.onEnteredScore(score);
-			scoreUploaded = true;
+		if (!session.isScoreUploaded()){
+			majorProjectGame.onEnteredScore(session.getScore());
+			session.setScoreUploaded(true);
 		}
 
 
@@ -415,7 +405,7 @@ public class GameScreen extends Screen {
 		
 		paint.setTypeface(Assets.plain);
 		comboMeter.paint(g, paint, player.getCombo());
-		scoreBar.paint(g, paint, score);
+		scoreBar.paint(g, paint, session.getScore());
 	}
 
 
@@ -474,7 +464,7 @@ public class GameScreen extends Screen {
 		
 		paint.setTypeface(Assets.plain);
 		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
-		scoreBanner.paint(g, paint, "Score: " + score, GameConstants.WORLD_WIDTH / 2, 400);
+		scoreBanner.paint(g, paint, "Score: " + session.getScore(), GameConstants.WORLD_WIDTH / 2, 400);
 	}
 
 	//OTHER METHODS
@@ -500,24 +490,16 @@ public class GameScreen extends Screen {
 	public void dispose() {
 	}
 	
-	public void reset() {	// sets all objects to null for new game
+	public void reset() {
 		paint = null;
 		player = null;
 		c = null;
 		r = null;
 		p = null;
-        e = null;
 		tempEnemyPoint = null;
 		state = null;
-		score = 0;
 		facingAngle = 0;
-		enemyCounter = 0;
-		scoreUploaded = false;
-		
-		gameOverFlag = false;
-		updateCount = 0;
-		
-		// Garbage collector clears memory
+		session.resetForNewRun();
 		System.gc();
 	}
 
@@ -548,39 +530,8 @@ public class GameScreen extends Screen {
 		}
 	}
 
-    public static int getEnemyCounter() {
-        return (int) enemyCounter;
-    }
-
-    public static void setEnemyCounter(int enemyCounter) {
-        GameScreen.enemyCounter = enemyCounter;
-    }
-
-    public static int getScore() {
-        return score;
-    }
-
-    public static void setScore(int score) {
-        GameScreen.score = score;
-    }
-
-	public static int getUpdateCount() {
-		return (int) updateCount;
-	}
-
-
-	public static Player getPlayer() {
-		return player;
-	}
-
-
-	public static void setPlayer(Player player) {
-		GameScreen.player = player;
-	}
-
-
 	public boolean isGameOverFlag() {
-		return gameOverFlag;
+		return session.isGameOverFlag();
 	}
 
 
@@ -589,27 +540,8 @@ public class GameScreen extends Screen {
 	}
 
 
-	public static void setGameOverFlag(boolean gameOverFlag) {
-		GameScreen.gameOverFlag = gameOverFlag;
-	}
-
-
 	public void setFacingAngle(float facingAngle) {
 		this.facingAngle = facingAngle;
-	}
-
-
-	public static void setUpdateCount(int updateCount) {
-		GameScreen.updateCount = updateCount;
-	}
-
-
-	public static int getSpeed() {
-		return speed;
-	}
-
-	public static void setSpeed(int speed) {
-		GameScreen.speed = speed;
 	}
 	
 }

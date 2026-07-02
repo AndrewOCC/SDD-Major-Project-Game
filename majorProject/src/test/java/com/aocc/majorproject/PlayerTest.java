@@ -18,14 +18,14 @@ public class PlayerTest {
 
     private static final float ONE_FRAME = 1f / GameConstants.REFERENCE_FPS;
 
+    private GameSession session;
     private Player player;
 
     @Before
     public void setUp() {
-        GameScreen.setGameOverFlag(false);
-        GameScreen.setPlayer(new Player());
+        session = new GameSession();
         setRotation(0f, 0f);
-        player = new Player();
+        player = session.getPlayer();
     }
 
     @Test
@@ -63,12 +63,11 @@ public class PlayerTest {
 
     @Test
     public void update_setsGameOverWhenHealthReachesZero() {
-        GameScreen gameScreen = new GameScreen(null);
         player.setHealth(0);
 
         player.update(ONE_FRAME);
 
-        assertTrue(gameScreen.isGameOverFlag());
+        assertTrue(session.isGameOverFlag());
     }
 
     @Test

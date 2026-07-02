@@ -6,7 +6,7 @@ import java.util.Random;
 import android.graphics.Paint;
 import com.aocc.framework.Graphics;
 
-// This controller allows oen call in the GameScreen class to update or paint every 
+// This controller allows one call in the GameScreen class to update or paint every 
 // enemy through a LinkedList; it also allows the easy creation and deletion of enemies
 
 public class EnemyController {
@@ -16,8 +16,16 @@ public class EnemyController {
 	Enemy TempEnemy;
 	Random r = new Random();
 	
-	static int nextEnemySpawn;
+	private int nextEnemySpawn;
+	private final GameSession session;
 
+	public EnemyController(GameSession session) {
+		this.session = session;
+	}
+
+	public int getNextEnemySpawn() {
+		return nextEnemySpawn;
+	}
 	
 	public void generateNextEnemy(int speed){
 		nextEnemySpawn = r.nextInt(40 - 2*speed) + MIN_SPAWN_TIME;
@@ -25,9 +33,9 @@ public class EnemyController {
 	
 	// for adding and removing enemies from the LinkedList
 	public void addEnemy(int x, int y, int t){
-		TempEnemy = new Enemy(x,y,t);
+		TempEnemy = new Enemy(x, y, t, session);
 		e.add(TempEnemy);
-		this.generateNextEnemy(GameScreen.getSpeed());
+		this.generateNextEnemy(session.getSpeed());
 	}
 	
 	public void removeEnemy(int i){

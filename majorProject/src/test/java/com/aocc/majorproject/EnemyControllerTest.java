@@ -8,28 +8,28 @@ import static org.junit.Assert.assertTrue;
 
 public class EnemyControllerTest {
 
+    private GameSession session;
     private EnemyController controller;
 
     @Before
     public void setUp() {
-        GameScreen.setSpeed(0);
-        GameScreen.setPlayer(new Player());
-        controller = new EnemyController();
+        session = new GameSession();
+        controller = new EnemyController(session);
     }
 
     @Test
     public void generateNextEnemy_spawnDelayIsWithinExpectedRange() {
         controller.generateNextEnemy(0);
 
-        assertTrue(EnemyController.nextEnemySpawn >= 5);
-        assertTrue(EnemyController.nextEnemySpawn <= 44);
+        assertTrue(controller.getNextEnemySpawn() >= 5);
+        assertTrue(controller.getNextEnemySpawn() <= 44);
     }
 
     @Test
     public void generateNextEnemy_higherSpeedReducesMaximumDelay() {
         controller.generateNextEnemy(10);
 
-        assertTrue(EnemyController.nextEnemySpawn <= 20 + 5);
+        assertTrue(controller.getNextEnemySpawn() <= 20 + 5);
     }
 
     @Test

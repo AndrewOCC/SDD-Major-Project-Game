@@ -9,7 +9,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 
 public class Enemy {
-	Player player = GameScreen.getPlayer();
+	private final Player player;
+	private final GameSession session;
 	
 	private float posX, posY;
 	
@@ -24,7 +25,9 @@ public class Enemy {
 	
 	private int type;
 		
-	public Enemy(float X, float Y, int t){
+	public Enemy(float X, float Y, int t, GameSession session){
+		this.session = session;
+		this.player = session.getPlayer();
 		setType(t);
 		if (t == 1){
 			topspeed = 3;
@@ -87,7 +90,7 @@ public class Enemy {
 			health --;
 			
 			if (player.getShield() > 0){
-				GameScreen.setScore(GameScreen.getScore() + 10*player.getCombo());	// increments score
+				session.addScore(10 * player.getCombo());
 				player.setCombo(player.getCombo() + 1);
 			} else {
 				player.setHealth(player.getHealth() - 1);

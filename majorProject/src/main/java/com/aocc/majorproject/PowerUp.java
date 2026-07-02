@@ -21,9 +21,10 @@ public class PowerUp {
 	
 	RectF powerUpRectF;
 	Random r = new Random();
-	Player player = GameScreen.getPlayer();
+	private final Player player;
 	
-	public PowerUp(int t){
+	public PowerUp(int t, GameSession session){
+		this.player = session.getPlayer();
 		type = t;
 		powerUpRectF = new RectF();
 		
