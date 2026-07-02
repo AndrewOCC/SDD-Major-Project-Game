@@ -211,3 +211,21 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 ### Branch
 
 `cursor/ui-layout-a6be`
+
+## Phase 12 — Native resolution rendering (`cursor/native-resolution-a6be`)
+
+**What changed**
+- Removed the fixed 1280×720 off-screen framebuffer; frames render directly to the device surface at native pixel resolution.
+- `AndroidGraphics` applies the viewport transform (`translate` + `scale`) so all game code keeps using world coordinates (1280×720).
+- Assets draw at world sizes and scale up crisply on high-DPI displays (`FILTER_BITMAP_FLAG`).
+- `drawARGB` overlays now cover the world rectangle only (correct with scaled canvas).
+- Game logic, UI layout, and touch mapping unchanged — still resolution-independent.
+
+**What to verify**
+- Graphics look sharp on high-resolution handhelds (not soft 720p upscale).
+- Touch targets still align on ultrawide letterboxed displays.
+- Version shows **v1.7.0**.
+
+### Branch
+
+`cursor/native-resolution-a6be`

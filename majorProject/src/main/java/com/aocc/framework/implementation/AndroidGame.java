@@ -2,8 +2,6 @@ package com.aocc.framework.implementation;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.AudioManager;
@@ -22,7 +20,6 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.aocc.framework.Audio;
 import com.aocc.framework.FileIO;
 import com.aocc.framework.Game;
-import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
@@ -58,9 +55,6 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-        Bitmap frameBuffer = Bitmap.createBitmap(GameConstants.WORLD_WIDTH,
-                GameConstants.WORLD_HEIGHT, Config.RGB_565);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
             viewport.update(Math.max(1, bounds.width()), Math.max(1, bounds.height()));
@@ -71,8 +65,8 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
             viewport.update(Math.max(1, size.x), Math.max(1, size.y));
         }
 
-        renderView = new AndroidFastRenderView(this, frameBuffer);
-        graphics = new AndroidGraphics(getAssets(), frameBuffer);
+        graphics = new AndroidGraphics(getAssets());
+        renderView = new AndroidFastRenderView(this, (AndroidGraphics) graphics);
         fileIO = new AndroidFileIO(this);
         audio = new AndroidAudio(this);
         input = new AndroidInput(this, renderView, viewport);

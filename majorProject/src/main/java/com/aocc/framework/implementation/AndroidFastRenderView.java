@@ -1,9 +1,7 @@
 package com.aocc.framework.implementation;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.view.Choreographer;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -11,9 +9,14 @@ import android.view.SurfaceView;
 import com.aocc.framework.GameConstants;
 import com.aocc.framework.Viewport;
 
+/**
+ * Renders each frame directly to the device surface at native resolution.
+ * Game logic and layout use virtual world coordinates; the viewport transform
+ * scales them to the letterboxed on-screen area.
+ */
 public class AndroidFastRenderView extends SurfaceView implements SurfaceHolder.Callback {
     private final AndroidGame game;
-    private final Bitmap framebuffer;
+    private final AndroidGraphics graphics;
     private final SurfaceHolder holder;
     private final Choreographer choreographer = Choreographer.getInstance();
     private final Choreographer.FrameCallback frameCallback = this::onFrame;
@@ -21,10 +24,10 @@ public class AndroidFastRenderView extends SurfaceView implements SurfaceHolder.
     private volatile boolean running;
     private long lastFrameTimeNanos;
 
-    public AndroidFastRenderView(AndroidGame game, Bitmap framebuffer) {
+    public AndroidFastRenderView(AndroidGame game, AndroidGraphics graphics) {
         super(game);
         this.game = game;
-        this.framebuffer = framebuffer;
+        this.graphics = graphics;
         this.holder = getHolder();
         holder.addCallback(this);
     }
@@ -59,14 +62,6 @@ public class AndroidFastRenderView extends SurfaceView implements SurfaceHolder.
             deltaSeconds = 0f;
         }
 
-        try {
-            game.getCurrentScreen().update(deltaSeconds);
-            game.getCurrentScreen().paint(deltaSeconds);
-        } catch (RuntimeException e) {
-            running = false;
-            throw e;
-        }
-
         Canvas canvas = holder.lockCanvas();
         if (canvas != null) {
             try {
@@ -74,9 +69,18 @@ public class AndroidFastRenderView extends SurfaceView implements SurfaceHolder.
                 viewport.update(canvas.getWidth(), canvas.getHeight());
                 game.updateInputViewport(viewport);
 
+                game.getCurrentScreen().update(deltaSeconds);
+
                 canvas.drawColor(Color.BLACK);
-                Rect destRect = viewport.getLetterboxDestRect();
-                canvas.drawBitmap(framebuffer, null, destRect, null);
+                graphics.beginFrame(canvas, viewport);
+                try {
+                    game.getCurrentScreen().paint(deltaSeconds);
+                } finally {
+                    graphics.endFrame();
+                }
+            } catch (RuntimeException e) {
+                running = false;
+                throw e;
             } finally {
                 holder.unlockCanvasAndPost(canvas);
             }

@@ -2,7 +2,8 @@ package com.aocc.framework;
 
 /**
  * Shared virtual resolution and timing reference for framerate-independent simulation.
- * Game logic was originally tuned at 60 FPS against a 1280x720 world.
+ * Game logic was originally tuned at 60 FPS against a 1280×720 world coordinate space.
+ * Rendering scales this world to the device's native resolution via {@link Viewport}.
  */
 public final class GameConstants {
 
