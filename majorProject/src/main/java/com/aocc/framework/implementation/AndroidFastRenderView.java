@@ -2,87 +2,106 @@ package com.aocc.framework.implementation;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.view.Choreographer;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-//EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
+import com.aocc.framework.GameConstants;
+import com.aocc.framework.Viewport;
 
-public class AndroidFastRenderView extends SurfaceView implements Runnable {
-    AndroidGame game;
-    Bitmap framebuffer;
-    Thread renderThread = null;
-    SurfaceHolder holder;
-    volatile boolean running = false;
-    
+public class AndroidFastRenderView extends SurfaceView implements SurfaceHolder.Callback {
+    private final AndroidGame game;
+    private final Bitmap framebuffer;
+    private final SurfaceHolder holder;
+    private final Choreographer choreographer = Choreographer.getInstance();
+    private final Choreographer.FrameCallback frameCallback = this::onFrame;
+
+    private volatile boolean running;
+    private long lastFrameTimeNanos;
+
     public AndroidFastRenderView(AndroidGame game, Bitmap framebuffer) {
         super(game);
         this.game = game;
         this.framebuffer = framebuffer;
         this.holder = getHolder();
-
+        holder.addCallback(this);
     }
 
-    public void resume() { 
+    public void resume() {
         running = true;
-        renderThread = new Thread(this);
-        renderThread.start();   
-
-    }      
-    
-    public void run() {
-        Rect dstRect = new Rect();
-        long startTime = System.nanoTime();
-        while(running) {  
-            if(!holder.getSurface().isValid())
-                continue;           
-            
-
-            float deltaTime = (System.nanoTime() - startTime) / 10000000.000f;
-            startTime = System.nanoTime();
-            
-            if (deltaTime > 3.15){
-            	deltaTime = (float) 3.15;
-           }
-     
-
-            try {
-                game.getCurrentScreen().update(deltaTime);
-                game.getCurrentScreen().paint(deltaTime);
-            } catch (RuntimeException e) {
-                running = false;
-                throw e;
-            }
-          
-            
-            
-            Canvas canvas = holder.lockCanvas();
-            if (canvas == null) {
-                continue;
-            }
-            canvas.getClipBounds(dstRect);
-            canvas.drawBitmap(framebuffer, null, dstRect, null);                           
-            holder.unlockCanvasAndPost(canvas);
-            
-            
-        }
+        lastFrameTimeNanos = System.nanoTime();
+        choreographer.postFrameCallback(frameCallback);
     }
 
-    public void pause() {                        
+    public void pause() {
         running = false;
-        if (renderThread == null) {
+        choreographer.removeFrameCallback(frameCallback);
+    }
+
+    private void onFrame(long frameTimeNanos) {
+        if (!running) {
             return;
         }
-        while(true) {
-            try {
-                renderThread.join();
-                break;
-            } catch (InterruptedException e) {
-                // retry
-            }
-            
+
+        if (!holder.getSurface().isValid()) {
+            choreographer.postFrameCallback(frameCallback);
+            return;
         }
-    }     
-    
-  
+
+        float deltaSeconds = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000_000f;
+        lastFrameTimeNanos = frameTimeNanos;
+        if (deltaSeconds > GameConstants.MAX_DELTA_SECONDS) {
+            deltaSeconds = GameConstants.MAX_DELTA_SECONDS;
+        }
+        if (deltaSeconds < 0f) {
+            deltaSeconds = 0f;
+        }
+
+        try {
+            game.getCurrentScreen().update(deltaSeconds);
+            game.getCurrentScreen().paint(deltaSeconds);
+        } catch (RuntimeException e) {
+            running = false;
+            throw e;
+        }
+
+        Canvas canvas = holder.lockCanvas();
+        if (canvas != null) {
+            try {
+                Viewport viewport = game.getViewport();
+                viewport.update(canvas.getWidth(), canvas.getHeight());
+                game.updateInputViewport(viewport);
+
+                canvas.drawColor(Color.BLACK);
+                Rect destRect = viewport.getLetterboxDestRect();
+                canvas.drawBitmap(framebuffer, null, destRect, null);
+            } finally {
+                holder.unlockCanvasAndPost(canvas);
+            }
+        }
+
+        choreographer.postFrameCallback(frameCallback);
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        if (running) {
+            lastFrameTimeNanos = System.nanoTime();
+            choreographer.postFrameCallback(frameCallback);
+        }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
+        Viewport viewport = game.getViewport();
+        viewport.update(width, height);
+        game.updateInputViewport(viewport);
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        choreographer.removeFrameCallback(frameCallback);
+    }
 }

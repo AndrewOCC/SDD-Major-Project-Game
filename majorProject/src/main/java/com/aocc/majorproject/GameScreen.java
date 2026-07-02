@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
@@ -48,8 +49,8 @@ public class GameScreen extends Screen {
 
 	
 	private float facingAngle = 0;
-	private static int updateCount = 0;
-	private static int enemyCounter = 300;
+	private static float updateCount = 0;
+	private static float enemyCounter = 300;
 	private static int score = 0;
 	private static boolean scoreUploaded = false;
 
@@ -164,31 +165,35 @@ public class GameScreen extends Screen {
 
 	}
 	
-	private void updateRunning(List<TouchEvent> touchEvents, float deltaTime) {
+	private void updateRunning(List<TouchEvent> touchEvents, float deltaSeconds) {
+		float step = GameConstants.secondsToSteps(deltaSeconds);
+
 		// User Input
 		
 		// update count: allows events to occur every few updates an on-update basis
-		updateCount++;
-		enemyCounter++;
+		updateCount += step;
+		enemyCounter += step;
 		
 		// Calls individual update methods for each object
-		player.update();
-		c.update();
-		p.update();
+		player.update(deltaSeconds);
+		c.update(deltaSeconds);
+		p.update(deltaSeconds);
 		
 		// Check important events
 		
 		// UPDATING SPEED
-		if (speed < 25 && updateCount % 500 == 0) {
+		if (speed < 25 && updateCount >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
 			speed ++;
+			updateCount -= GameConstants.SPEED_RAMP_INTERVAL_FRAMES;
+			c.increaseEnemyTopSpeed();
 		}
 		
 		
 		// ENEMIES
 		if (enemyCounter > EnemyController.nextEnemySpawn){ // determines if enough time has passed for a new enemy
 			
-			tempEnemyPoint.x = r.nextInt(1180) + 50;
-			tempEnemyPoint.y = r.nextInt(620) + 50;
+			tempEnemyPoint.x = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50;
+			tempEnemyPoint.y = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50;
 			
 			PersonalMethods.limitOutside(tempEnemyPoint, (int)player.getCenterX(), (int)player.getCenterY(), 100);
 			
@@ -345,6 +350,7 @@ public class GameScreen extends Screen {
         if (state == GameState.GameOver)
             drawGameOverUI();
 
+        VersionOverlay.paint(g, paint);
 	}
 
 	private void drawReadyUI() {
@@ -563,7 +569,7 @@ public class GameScreen extends Screen {
 	}
 
     public static int getEnemyCounter() {
-        return enemyCounter;
+        return (int) enemyCounter;
     }
 
     public static void setEnemyCounter(int enemyCounter) {
@@ -579,7 +585,7 @@ public class GameScreen extends Screen {
     }
 
 	public static int getUpdateCount() {
-		return updateCount;
+		return (int) updateCount;
 	}
 
 

@@ -1,5 +1,6 @@
 package com.aocc.majorproject;
 
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.implementation.RotationHandler;
 
 import org.junit.Before;
@@ -14,6 +15,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class PlayerTest {
+
+    private static final float ONE_FRAME = 1f / GameConstants.REFERENCE_FPS;
 
     private Player player;
 
@@ -31,7 +34,7 @@ public class PlayerTest {
         player.setDefaultY(320);
         setRotation(-90f, 0f);
 
-        player.update();
+        player.update(ONE_FRAME);
 
         assertEquals(3f, player.getDefaultX(), 0.001f);
         assertEquals(0f, player.getVelocityX(), 0.001f);
@@ -43,7 +46,7 @@ public class PlayerTest {
         player.setDefaultY(320);
         setRotation(90f, 0f);
 
-        player.update();
+        player.update(ONE_FRAME);
 
         assertTrue(player.getDefaultX() < 1280);
         assertEquals(0f, player.getVelocityX(), 0.001f);
@@ -53,7 +56,7 @@ public class PlayerTest {
     public void update_decrementsShieldEachFrame() {
         player.setShield(100);
 
-        player.update();
+        player.update(ONE_FRAME);
 
         assertEquals(99, player.getShield());
     }
@@ -63,7 +66,7 @@ public class PlayerTest {
         GameScreen gameScreen = new GameScreen(null);
         player.setHealth(0);
 
-        player.update();
+        player.update(ONE_FRAME);
 
         assertTrue(gameScreen.isGameOverFlag());
     }
@@ -72,7 +75,7 @@ public class PlayerTest {
     public void update_clampsHealthToMaximumValue() {
         player.setHealth(10);
 
-        player.update();
+        player.update(ONE_FRAME);
 
         assertEquals(5, player.getHealth());
     }

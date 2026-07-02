@@ -1,6 +1,7 @@
 package com.aocc.majorproject;
 
 import com.aocc.framework.Graphics;
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.implementation.RotationHandler;
 
@@ -49,9 +50,11 @@ public class Player {
 	
 	private RectF mainCharacter = new RectF(0,0,0,0);
 	private int overheat = 0;
+	private float shieldDrainAccumulator = 0f;
 	
 	
-	public void update() {
+	public void update(float deltaSeconds) {
+		float step = GameConstants.secondsToSteps(deltaSeconds);
 		// Rotation limited within 90 degree range, then turn into a decimal between 0 and 1 for easier modification.
 		// Sensitivity determines the amount of tilting required for maximum speed. Bias determines default position.
 		velocityX = (PersonalMethods.limitInside(RotationHandler.getRotationX(),-90,90)/90 + xBias)*SENSITIVITY;
@@ -67,24 +70,24 @@ public class Player {
 		}
 		
 		//handling collisions with sides
-		if ((defaultX + velocityX ) < BORDER_WIDTH){
+		if ((defaultX + velocityX * step) < BORDER_WIDTH){
 			velocityX = 0;
 			defaultX = BORDER_WIDTH;
 		}
 		
-		if ((defaultY + velocityY) < BORDER_WIDTH){
+		if ((defaultY + velocityY * step) < BORDER_WIDTH){
 			velocityY = 0;
 			defaultY = BORDER_WIDTH;
 		}
 		
-		if ((defaultX + velocityX) > 1280 - characterDiameter - BORDER_WIDTH){
+		if ((defaultX + velocityX * step) > GameConstants.WORLD_WIDTH - characterDiameter - BORDER_WIDTH){
 			velocityX = 0;
-			defaultX = 1280 - characterDiameter - BORDER_WIDTH;
+			defaultX = GameConstants.WORLD_WIDTH - characterDiameter - BORDER_WIDTH;
 		}
 		
-		if ((defaultY + velocityY ) > 720 - characterDiameter - BORDER_WIDTH){
+		if ((defaultY + velocityY * step ) > GameConstants.WORLD_HEIGHT - characterDiameter - BORDER_WIDTH){
 			velocityY = 0;
-			defaultY = 720 - characterDiameter - BORDER_WIDTH;
+			defaultY = GameConstants.WORLD_HEIGHT - characterDiameter - BORDER_WIDTH;
 		}
 		
 //		//logs
@@ -100,11 +103,14 @@ public class Player {
 		
 		//increases overheat when shields aren't full (i.e. when off the powerup)
 		if (shield < MAX_SHIELD){
-			overheat = overheat - 1;
+			overheat = (int) (overheat - step);
 		}
 		
-		shield --;
-		
+		shieldDrainAccumulator += step;
+		while (shieldDrainAccumulator >= 1f) {
+			shield--;
+			shieldDrainAccumulator -= 1f;
+		}
 		
 		shieldWidth = shield/2;
 		
@@ -127,8 +133,8 @@ public class Player {
 			firstOverheat = true;
 		}
 		
-		defaultX = defaultX + velocityX;
-		defaultY = defaultY + velocityY;
+		defaultX = defaultX + velocityX * step;
+		defaultY = defaultY + velocityY * step;
 		
 		mainCharacter.set((int)defaultX, (int)defaultY, (int)defaultX + characterDiameter,
 				(int)defaultY + characterDiameter);

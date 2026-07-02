@@ -109,3 +109,22 @@ Common causes fixed in recent builds:
 - Missing background music file (`darude-sandstorm.m4a`) — game now continues silently without music
 - Google Play Games unavailable on device — game continues without Play Games features
 - Zero-size display metrics on some handhelds — scaling now guarded
+
+## Phase 8 — Framerate & viewport independence (`releases/framerate-viewport/`)
+
+**What changed**
+- Game simulation now uses elapsed **seconds** (`deltaSeconds`) instead of assuming 60 FPS frame steps.
+- Player, enemies, power-ups, spawn timers, and difficulty ramps scale with `secondsToSteps()` so gameplay feels the same at 60/90/120 Hz.
+- Render loop uses **Choreographer** (VSYNC-aligned) instead of a busy-wait thread.
+- Added `Viewport` letterboxing: 1280×720 world is scaled uniformly with black bars instead of stretched.
+- Touch input uses the same uniform viewport transform as rendering.
+
+**What to verify**
+- Game speed feels the same on a 60 Hz phone and a 120 Hz handheld (AYN Thor).
+- Circles stay circular on ultrawide screens (no horizontal squash).
+- Touch targets still line up with buttons after letterboxing.
+- Version label shows **v1.2.0** in the bottom-right corner.
+
+### Branch
+
+`cursor/framerate-viewport-a6be`

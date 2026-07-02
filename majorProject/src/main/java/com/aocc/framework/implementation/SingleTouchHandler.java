@@ -9,6 +9,7 @@ import android.view.View;
 import com.aocc.framework.Pool;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.framework.Pool.PoolObjectFactory;
+import com.aocc.framework.Viewport;
 
 public class SingleTouchHandler implements TouchHandler {
     boolean isTouched;
@@ -17,23 +18,33 @@ public class SingleTouchHandler implements TouchHandler {
     Pool<TouchEvent> touchEventPool;
     List<TouchEvent> touchEvents = new ArrayList<TouchEvent>();
     List<TouchEvent> touchEventsBuffer = new ArrayList<TouchEvent>();
-    float scaleX;
-    float scaleY;
-    
-    public SingleTouchHandler(View view, float scaleX, float scaleY) {
+    Viewport viewport;
+
+    public SingleTouchHandler(View view, Viewport viewport) {
         PoolObjectFactory<TouchEvent> factory = new PoolObjectFactory<TouchEvent>() {
             @Override
             public TouchEvent createObject() {
                 return new TouchEvent();
-            }            
+            }
         };
         touchEventPool = new Pool<TouchEvent>(factory, 100);
         view.setOnTouchListener(this);
-
-        this.scaleX = scaleX;
-        this.scaleY = scaleY;
+        this.viewport = viewport;
     }
-    
+
+    @Override
+    public void setViewport(Viewport viewport) {
+        this.viewport = viewport;
+    }
+
+    private int toWorldX(float screenX) {
+        return viewport != null ? viewport.screenToWorldX(screenX) : (int) screenX;
+    }
+
+    private int toWorldY(float screenY) {
+        return viewport != null ? viewport.screenToWorldY(screenY) : (int) screenY;
+    }
+
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         synchronized(this) {
@@ -47,17 +58,17 @@ public class SingleTouchHandler implements TouchHandler {
                 touchEvent.type = TouchEvent.TOUCH_DRAGGED;
                 isTouched = true;
                 break;
-            case MotionEvent.ACTION_CANCEL:                
+            case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 touchEvent.type = TouchEvent.TOUCH_UP;
                 isTouched = false;
                 break;
             }
-            
-            touchEvent.x = touchX = (int)(event.getX() * scaleX);
-            touchEvent.y = touchY = (int)(event.getY() * scaleY);
-            touchEventsBuffer.add(touchEvent);                        
-            
+
+            touchEvent.x = touchX = toWorldX(event.getX());
+            touchEvent.y = touchY = toWorldY(event.getY());
+            touchEventsBuffer.add(touchEvent);
+
             return true;
         }
     }
@@ -88,7 +99,7 @@ public class SingleTouchHandler implements TouchHandler {
 
     @Override
     public List<TouchEvent> getTouchEvents() {
-        synchronized(this) {     
+        synchronized(this) {
             int len = touchEvents.size();
             for( int i = 0; i < len; i++ )
                 touchEventPool.free(touchEvents.get(i));

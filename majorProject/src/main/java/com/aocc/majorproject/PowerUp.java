@@ -3,6 +3,7 @@ package com.aocc.majorproject;
 import java.util.Random;
 
 import com.aocc.framework.Graphics;
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Sound;
 
@@ -29,15 +30,19 @@ public class PowerUp {
 		usable = true;
 		radius = 50;
 		
-		posX = r.nextInt(1280);
-		posY = r.nextInt(720);
+		posX = r.nextInt(GameConstants.WORLD_WIDTH);
+		posY = r.nextInt(GameConstants.WORLD_HEIGHT);
 		powerUpRectF.set(posX - radius, posY - radius, posX + radius, posY + radius);
 		
 		timeLeft = fullTime;
 		
 	}
 	
-	public void update(){
+	private float timeDrainAccumulator = 0f;
+	private float respawnAccumulator = 0f;
+	
+	public void update(float deltaSeconds){
+		float step = GameConstants.secondsToSteps(deltaSeconds);
 		// when player contacts the powerup zone
 		if (PersonalMethods.rectFInBounds(player.getMainCharacter(), 0, powerUpRectF) && usable == true){
 			
@@ -49,8 +54,12 @@ public class PowerUp {
 			
 			// sets shields to max and reduces time left while player is on pad
 			player.setShield(100);
-			timeLeft = timeLeft - 1;
-			player.setOverheat(player.getOverheat() + 2);
+			timeDrainAccumulator += step;
+			while (timeDrainAccumulator >= 1f) {
+				timeLeft--;
+				timeDrainAccumulator -= 1f;
+			}
+			player.setOverheat(player.getOverheat() + Math.round(2f * step));
 			
 			if (timeLeft <= 0){
 				usable = false;
@@ -69,10 +78,14 @@ public class PowerUp {
 		
 		if(usable == false){
 			//counts upwards as a delay for the generation fo a new pad
-			timeLeft = timeLeft + 2;
+			respawnAccumulator += 2f * step;
+			while (respawnAccumulator >= 1f) {
+				timeLeft++;
+				respawnAccumulator -= 1f;
+			}
 			if (timeLeft > fullTime){
-				posX = r.nextInt(1180) + 50;
-				posY = r.nextInt(620) + 50;
+				posX = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50;
+				posY = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50;
 				powerUpRectF.set(posX - radius, posY - radius, posX + radius, posY + radius);
 				timeLeft = fullTime;
 				usable = true;
