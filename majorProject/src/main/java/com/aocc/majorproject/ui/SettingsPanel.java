@@ -13,6 +13,9 @@ import com.aocc.majorproject.MajorProjectGame;
 import com.aocc.majorproject.Player;
 import com.aocc.majorproject.input.GamepadInput;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Settings panel rendered on canvas in world coordinates.
  */
@@ -30,7 +33,7 @@ public class SettingsPanel {
 
     private static final int INNER_PADDING = 24;
     private static final int TILT_BUTTON_SPACING = 126;
-    private static final int ITEM_COUNT = 6;
+    public static final int ITEM_COUNT = 6;
 
     private final UiPanel outerPanel;
     private final UiPanel soundPanel;
@@ -84,6 +87,11 @@ public class SettingsPanel {
     }
 
     public void paint(Graphics g, Paint paint, Player player) {
+        paint(g, paint, player, selectedIndex);
+    }
+
+    /** @param focusedItemIndex settings item to highlight, or {@code -1} to skip highlight */
+    public void paint(Graphics g, Paint paint, Player player, int focusedItemIndex) {
         outerPanel.paintBackground(g);
         outerPanel.paintTitle(g, paint, "Settings");
 
@@ -111,7 +119,9 @@ public class SettingsPanel {
         tiltedTiltButton.paint(g, paint, player);
         customTiltButton.paint(g, paint, player);
 
-        paintSelectionHighlight(g);
+        if (focusedItemIndex >= 0) {
+            paintSelectionHighlight(g, focusedItemIndex);
+        }
     }
 
     private void paintDisplayToggle(Graphics g, Paint paint) {
@@ -122,12 +132,12 @@ public class SettingsPanel {
                 UiText.HAlign.CENTER, Color.WHITE);
     }
 
-    private void paintSelectionHighlight(Graphics g) {
-        UiBounds bounds = getItemBounds(selectedIndex);
+    private void paintSelectionHighlight(Graphics g, int index) {
+        UiBounds bounds = boundsForIndex(index);
         if (bounds == null) {
             return;
         }
-        if (selectedIndex >= 2 && selectedIndex <= 4) {
+        if (index >= 2 && index <= 4) {
             UiSelectionHighlight.paintCircle(g, bounds.centerX(), bounds.centerY(),
                     bounds.width / 2);
             return;
@@ -172,44 +182,45 @@ public class SettingsPanel {
     }
 
     public boolean handleGamepad(GamepadInput.Action action, Player player) {
-        switch (action) {
-            case UP:
-                selectedIndex = (selectedIndex + ITEM_COUNT - 1) % ITEM_COUNT;
-                return true;
-            case DOWN:
-                selectedIndex = (selectedIndex + 1) % ITEM_COUNT;
-                return true;
-            case CONFIRM:
-                activateSelected(player);
-                return true;
-            default:
-                return false;
+        SpatialFocusNavigator.Direction direction = SpatialFocusNavigator.directionFrom(action);
+        if (direction != null) {
+            selectedIndex = SpatialFocusNavigator.findNext(
+                    selectedIndex, direction, buildFocusBoundsList());
+            return true;
+        }
+        if (action == GamepadInput.Action.CONFIRM) {
+            activateSelected(player);
+            return true;
+        }
+        return false;
+    }
+
+    public UiBounds getItemBounds(int index) {
+        return boundsForIndex(index);
+    }
+
+    public void activateFocusIndex(int index, Player player) {
+        switch (index) {
+            case 0 -> GameSettings.toggleSound();
+            case 1 -> GameSettings.toggleMusic();
+            case 2 -> GameSettings.applyFlatTilt(player);
+            case 3 -> GameSettings.applyTiltedTilt(player);
+            case 4 -> GameSettings.applyCustomTilt(player);
+            case 5 -> GameSettings.toggleSecondScreen(game);
+            default -> { }
         }
     }
 
-    private void activateSelected(Player player) {
-        switch (selectedIndex) {
-            case 0:
-                GameSettings.toggleSound();
-                break;
-            case 1:
-                GameSettings.toggleMusic();
-                break;
-            case 2:
-                GameSettings.applyFlatTilt(player);
-                break;
-            case 3:
-                GameSettings.applyTiltedTilt(player);
-                break;
-            case 4:
-                GameSettings.applyCustomTilt(player);
-                break;
-            case 5:
-                GameSettings.toggleSecondScreen(game);
-                break;
-            default:
-                break;
+    private List<UiBounds> buildFocusBoundsList() {
+        List<UiBounds> items = new ArrayList<>(ITEM_COUNT);
+        for (int i = 0; i < ITEM_COUNT; i++) {
+            items.add(boundsForIndex(i));
         }
+        return items;
+    }
+
+    private void activateSelected(Player player) {
+        activateFocusIndex(selectedIndex, player);
     }
 
     int getSoundIconY() {
@@ -236,7 +247,7 @@ public class SettingsPanel {
         return new UiBounds(soundIconX, musicIconY, ICON_SIZE, ICON_SIZE);
     }
 
-    private UiBounds getItemBounds(int index) {
+    private UiBounds boundsForIndex(int index) {
         return switch (index) {
             case 0 -> getSoundIconBoundsInternal();
             case 1 -> getMusicIconBoundsInternal();

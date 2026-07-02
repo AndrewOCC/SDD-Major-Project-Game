@@ -1,5 +1,6 @@
 package com.aocc.majorproject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.aocc.framework.Graphics;
@@ -7,6 +8,7 @@ import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.MainMenuLayout;
+import com.aocc.majorproject.ui.SpatialFocusNavigator;
 import com.aocc.majorproject.ui.UiBounds;
 import com.aocc.majorproject.ui.UiSelectionHighlight;
 
@@ -59,25 +61,31 @@ public class MainMenuScreen extends Screen {
 	}
 
 	private void handleGamepad(List<GamepadInput.Action> actions) {
-		int itemCount = getMenuItemCount();
+		List<UiBounds> focusItems = buildMenuFocusBounds();
 		for (GamepadInput.Action action : actions) {
-			switch (action) {
-				case UP:
-					selectedMenuIndex = (selectedMenuIndex + itemCount - 1) % itemCount;
-					break;
-				case DOWN:
-					selectedMenuIndex = (selectedMenuIndex + 1) % itemCount;
-					break;
-				case CONFIRM:
-					activateMenuItem(selectedMenuIndex);
-					break;
-				case CANCEL:
-					backButton();
-					break;
-				default:
-					break;
+			SpatialFocusNavigator.Direction direction = SpatialFocusNavigator.directionFrom(action);
+			if (direction != null) {
+				selectedMenuIndex = SpatialFocusNavigator.findNext(
+						selectedMenuIndex, direction, focusItems);
+				continue;
+			}
+			if (action == GamepadInput.Action.CONFIRM) {
+				activateMenuItem(selectedMenuIndex);
+				continue;
+			}
+			if (action == GamepadInput.Action.CANCEL) {
+				backButton();
 			}
 		}
+	}
+
+	private List<UiBounds> buildMenuFocusBounds() {
+		List<UiBounds> items = new ArrayList<>(getMenuItemCount());
+		boolean loggedIn = majorProjectGame.isLoggedIn();
+		for (int i = 0; i < getMenuItemCount(); i++) {
+			items.add(MainMenuLayout.highlightForIndex(i, !loggedIn));
+		}
+		return items;
 	}
 
 	private int getMenuItemCount() {
@@ -106,26 +114,6 @@ public class MainMenuScreen extends Screen {
 				default -> { }
 			}
 		}
-	}
-
-	private UiBounds getMenuItemBounds(int index) {
-		if (!majorProjectGame.isLoggedIn()) {
-			return switch (index) {
-				case 0 -> MainMenuLayout.playButton();
-				case 1 -> MainMenuLayout.tutorialButton();
-				case 2 -> MainMenuLayout.signInButton();
-				case 3 -> MainMenuLayout.leaderboardsButton();
-				case 4 -> MainMenuLayout.achievementsButton();
-				default -> null;
-			};
-		}
-		return switch (index) {
-			case 0 -> MainMenuLayout.playButton();
-			case 1 -> MainMenuLayout.tutorialButton();
-			case 2 -> MainMenuLayout.leaderboardsButton();
-			case 3 -> MainMenuLayout.achievementsButton();
-			default -> null;
-		};
 	}
 
 	private void startGame() {
