@@ -31,6 +31,10 @@ public final class GameSettings {
         GamePreferences.setSecondScreenEnabled(!GamePreferences.secondScreenEnabled);
         if (game != null) {
             game.getSecondaryDisplayManager().updateForScreen(game.getCurrentScreen());
+            if (GamePreferences.secondScreenEnabled
+                    && !game.getSecondaryDisplayManager().isSecondaryDisplayAvailable()) {
+                game.showSecondDisplayUnavailable();
+            }
         }
     }
 

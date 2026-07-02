@@ -19,6 +19,7 @@ public class SecondaryDisplayPresentation extends Presentation {
 
     private ImageView imageView;
     private TextView overlayText;
+    private PendingContent pendingContent;
 
     public SecondaryDisplayPresentation(Context context, Display display) {
         super(context, display);
@@ -47,19 +48,29 @@ public class SecondaryDisplayPresentation extends Presentation {
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
+        applyPendingContent();
     }
 
     public void setMode(SecondaryDisplayMode mode, Image background, String overlayLabel) {
-        if (imageView == null) {
+        pendingContent = new PendingContent(mode, background, overlayLabel);
+        applyPendingContent();
+    }
+
+    private void applyPendingContent() {
+        if (imageView == null || pendingContent == null) {
             return;
         }
-        Bitmap bitmap = toBitmap(background);
+
+        Bitmap bitmap = toBitmap(pendingContent.background);
         if (bitmap != null) {
             imageView.setImageBitmap(bitmap);
+            imageView.setBackgroundColor(Color.BLACK);
         } else {
             imageView.setImageDrawable(null);
+            imageView.setBackgroundColor(Color.BLACK);
         }
 
+        String overlayLabel = pendingContent.overlayLabel;
         if (overlayLabel != null && !overlayLabel.isEmpty()) {
             overlayText.setText(overlayLabel);
             overlayText.setVisibility(TextView.VISIBLE);
@@ -73,5 +84,17 @@ public class SecondaryDisplayPresentation extends Presentation {
             return androidImage.getBitmap();
         }
         return null;
+    }
+
+    private static final class PendingContent {
+        final SecondaryDisplayMode mode;
+        final Image background;
+        final String overlayLabel;
+
+        PendingContent(SecondaryDisplayMode mode, Image background, String overlayLabel) {
+            this.mode = mode;
+            this.background = background;
+            this.overlayLabel = overlayLabel;
+        }
     }
 }

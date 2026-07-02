@@ -80,6 +80,9 @@ public class MajorProjectGame extends AndroidGame {
 		super.onResume();
         getCurrentScreen().resume();
 		screenRotation = getScreenRotation();
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.refresh();
+		}
 		if (playGamesHelper != null) {
 			playGamesHelper.refreshSignInState();
 		}
@@ -157,6 +160,13 @@ public class MajorProjectGame extends AndroidGame {
 		runOnUiThread(() -> Toast.makeText(
 				getApplicationContext(),
 				getString(R.string.play_games_unavailable),
+				Toast.LENGTH_LONG).show());
+	}
+
+	public void showSecondDisplayUnavailable() {
+		runOnUiThread(() -> Toast.makeText(
+				getApplicationContext(),
+				getString(R.string.second_display_unavailable),
 				Toast.LENGTH_LONG).show());
 	}
 }

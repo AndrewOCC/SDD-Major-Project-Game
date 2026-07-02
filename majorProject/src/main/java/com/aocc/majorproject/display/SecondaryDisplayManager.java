@@ -5,8 +5,10 @@ import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Display;
+import android.view.WindowManager;
 
 import com.aocc.majorproject.Assets;
+import com.aocc.majorproject.CrashReporter;
 import com.aocc.majorproject.GamePreferences;
 import com.aocc.majorproject.GameScreen;
 import com.aocc.majorproject.MainMenuScreen;
@@ -23,6 +25,7 @@ public final class SecondaryDisplayManager implements DisplayManager.DisplayList
 
     private SecondaryDisplayPresentation presentation;
     private SecondaryDisplayMode currentMode = SecondaryDisplayMode.OFF;
+    private PendingShow pendingShow;
 
     public SecondaryDisplayManager(MajorProjectGame activity) {
         this.activity = activity;
@@ -37,7 +40,17 @@ public final class SecondaryDisplayManager implements DisplayManager.DisplayList
         if (displayManager != null) {
             displayManager.unregisterDisplayListener(this);
         }
-        dismissPresentation();
+        dismissPresentationSync();
+    }
+
+    public void refresh() {
+        if (GamePreferences.secondScreenEnabled) {
+            updateForScreen(activity.getCurrentScreen());
+        }
+    }
+
+    public boolean isSecondaryDisplayAvailable() {
+        return SecondaryDisplayFinder.find(activity, displayManager) != null;
     }
 
     public void updateForScreen(Screen screen) {
@@ -53,6 +66,10 @@ public final class SecondaryDisplayManager implements DisplayManager.DisplayList
     }
 
     public void updateForGameState(GameScreen.GameState state) {
+        if (state == null) {
+            show(SecondaryDisplayMode.OFF, null, null);
+            return;
+        }
         switch (state) {
             case Ready:
             case Paused:
@@ -74,64 +91,102 @@ public final class SecondaryDisplayManager implements DisplayManager.DisplayList
             String overlayLabel) {
         currentMode = mode;
         if (!GamePreferences.secondScreenEnabled || mode == SecondaryDisplayMode.OFF) {
-            dismissPresentation();
+            pendingShow = null;
+            dismissPresentationAsync();
             return;
         }
 
-        Display secondary = findSecondaryDisplay();
+        Display secondary = SecondaryDisplayFinder.find(activity, displayManager);
         if (secondary == null) {
-            dismissPresentation();
+            pendingShow = new PendingShow(mode, background, overlayLabel);
+            dismissPresentationAsync();
             return;
         }
 
-        mainHandler.post(() -> {
+        pendingShow = new PendingShow(mode, background, overlayLabel);
+        mainHandler.post(() -> presentOnDisplay(secondary, pendingShow));
+    }
+
+    private void presentOnDisplay(Display secondary, PendingShow request) {
+        if (request == null || !GamePreferences.secondScreenEnabled) {
+            return;
+        }
+
+        try {
             if (presentation == null || presentation.getDisplay() == null
                     || presentation.getDisplay().getDisplayId() != secondary.getDisplayId()) {
-                dismissPresentation();
+                dismissPresentationSync();
                 presentation = new SecondaryDisplayPresentation(activity, secondary);
                 presentation.show();
             }
-            presentation.setMode(mode, background, overlayLabel);
-        });
+            presentation.setMode(request.mode, request.background, request.overlayLabel);
+            pendingShow = null;
+        } catch (WindowManager.InvalidDisplayException e) {
+            CrashReporter.log(activity, "Secondary display rejected Presentation.show()", e);
+            dismissPresentationSync();
+        } catch (RuntimeException e) {
+            CrashReporter.log(activity, "Failed to show secondary display", e);
+            dismissPresentationSync();
+        }
     }
 
-    private void dismissPresentation() {
-        mainHandler.post(() -> {
-            if (presentation != null) {
+    private void dismissPresentationAsync() {
+        mainHandler.post(this::dismissPresentationSync);
+    }
+
+    private void dismissPresentationSync() {
+        if (presentation != null) {
+            try {
                 presentation.dismiss();
-                presentation = null;
+            } catch (RuntimeException e) {
+                CrashReporter.log(activity, "Failed to dismiss secondary display", e);
             }
-        });
-    }
-
-    private Display findSecondaryDisplay() {
-        if (displayManager == null) {
-            return null;
+            presentation = null;
         }
-        Display defaultDisplay = activity.getWindowManager().getDefaultDisplay();
-        int defaultId = defaultDisplay != null ? defaultDisplay.getDisplayId() : Display.DEFAULT_DISPLAY;
-
-        for (Display display : displayManager.getDisplays()) {
-            if (display.getDisplayId() != defaultId && display.getState() == Display.STATE_ON) {
-                return display;
-            }
-        }
-        return null;
     }
 
     @Override
     public void onDisplayAdded(int displayId) {
-        if (currentMode != SecondaryDisplayMode.OFF) {
-            activity.runOnUiThread(() -> updateForScreen(activity.getCurrentScreen()));
+        if (GamePreferences.secondScreenEnabled) {
+            activity.runOnUiThread(() -> {
+                if (pendingShow != null) {
+                    show(pendingShow.mode, pendingShow.background, pendingShow.overlayLabel);
+                } else {
+                    updateForScreen(activity.getCurrentScreen());
+                }
+            });
         }
     }
 
     @Override
     public void onDisplayRemoved(int displayId) {
-        dismissPresentation();
+        if (presentation != null && presentation.getDisplay() != null
+                && presentation.getDisplay().getDisplayId() == displayId) {
+            dismissPresentationAsync();
+        }
     }
 
     @Override
     public void onDisplayChanged(int displayId) {
+        if (!GamePreferences.secondScreenEnabled) {
+            return;
+        }
+        if (presentation == null || presentation.getDisplay() == null
+                || presentation.getDisplay().getDisplayId() != displayId) {
+            activity.runOnUiThread(() -> updateForScreen(activity.getCurrentScreen()));
+        }
+    }
+
+    private static final class PendingShow {
+        final SecondaryDisplayMode mode;
+        final com.aocc.framework.Image background;
+        final String overlayLabel;
+
+        PendingShow(SecondaryDisplayMode mode, com.aocc.framework.Image background,
+                String overlayLabel) {
+            this.mode = mode;
+            this.background = background;
+            this.overlayLabel = overlayLabel;
+        }
     }
 }
