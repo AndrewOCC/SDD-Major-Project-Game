@@ -15,6 +15,7 @@ import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.framework.implementation.RotationHandler;
+import com.aocc.majorproject.ui.ComboMeter;
 import com.aocc.majorproject.ui.ScoreBar;
 import com.aocc.majorproject.ui.UiBanner;
 import com.aocc.majorproject.ui.UiButton;
@@ -52,6 +53,7 @@ public class GameScreen extends Screen {
     Button customTiltButton;
 
     private final ScoreBar scoreBar = new ScoreBar();
+    private final ComboMeter comboMeter = new ComboMeter();
     private final UiBanner promptBanner = new UiBanner(50f);
     private final UiBanner gameOverBanner = new UiBanner(100f);
     private final UiBanner scoreBanner = new UiBanner(60f);
@@ -412,6 +414,7 @@ public class GameScreen extends Screen {
 		player.paint(g, paint);
 		
 		paint.setTypeface(Assets.plain);
+		comboMeter.paint(g, paint, player.getCombo());
 		scoreBar.paint(g, paint, score);
 	}
 

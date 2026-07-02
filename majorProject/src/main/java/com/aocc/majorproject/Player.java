@@ -159,10 +159,6 @@ public class Player {
         } else {
         	g.drawCircle(centerX, centerY, (int)characterDiameter/2 + BORDER_WIDTH + shieldWidth + 3, Color.argb(150*overheat/MAX_OVERHEAT, 255, 127, 39));
         }
-        
-        // UI
-        g.drawString("x" + combo, (int)mainCharacter.left, (int)mainCharacter.top, Color.WHITE, paint);
-        
 	}
 	
 

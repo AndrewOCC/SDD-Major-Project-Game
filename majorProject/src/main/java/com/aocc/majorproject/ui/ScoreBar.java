@@ -9,9 +9,9 @@ import com.aocc.framework.Graphics;
 /** Top-centre score strip with semi-transparent background and centred label. */
 public class ScoreBar {
 
-    private static final int BAR_WIDTH = 320;
-    private static final int BAR_HEIGHT = 50;
-    private static final int BAR_X = (GameConstants.WORLD_WIDTH - BAR_WIDTH) / 2;
+    public static final int BAR_WIDTH = 320;
+    public static final int BAR_HEIGHT = 50;
+    public static final int BAR_X = (GameConstants.WORLD_WIDTH - BAR_WIDTH) / 2;
 
     private final UiBounds bounds = new UiBounds(BAR_X, 0, BAR_WIDTH, BAR_HEIGHT);
     private final int backgroundColor = Color.argb(100, 255, 255, 255);
