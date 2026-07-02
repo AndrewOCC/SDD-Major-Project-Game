@@ -257,7 +257,9 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - Bluetooth or built-in gamepad navigates main menu and settings (D-pad + A).
 - Sound, music, tilt, and 2nd-screen settings persist after force-close and relaunch.
 - On dual-screen devices, enabling "2nd Screen" shows content on the rear display; disabling hides it.
-- Version shows **v1.8.0**.
+- Version shows **v1.8.1**.
+
+**v1.8.1 fix:** Rear-display detection uses Android's `DISPLAY_CATEGORY_REAR` (required on AYN Thor), fixes a race that dismissed the presentation right after showing it, and refreshes on resume / display hot-plug.
 
 ### Branch
 
