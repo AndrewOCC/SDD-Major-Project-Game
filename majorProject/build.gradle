@@ -9,14 +9,14 @@ configurations.configureEach {
 
 android {
     namespace 'com.aocc.majorproject'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId 'com.aocc.majorproject'
         minSdk 21
-        targetSdk 34
-        versionCode 8
-        versionName '1.3.0'
+        targetSdk 35
+        versionCode 9
+        versionName '1.4.0'
     }
 
     signingConfigs {
