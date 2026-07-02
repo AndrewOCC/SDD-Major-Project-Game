@@ -9,11 +9,17 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.framework.implementation.RotationHandler;
+import com.aocc.majorproject.ui.ComboMeter;
+import com.aocc.majorproject.ui.ScoreBar;
+import com.aocc.majorproject.ui.UiBanner;
+import com.aocc.majorproject.ui.UiButton;
+import com.aocc.majorproject.ui.UiPanel;
 
 public class GameScreen extends Screen {
 	// Defining GameState Enum
@@ -40,16 +46,23 @@ public class GameScreen extends Screen {
 
     final int ARENA_HEIGHT = 3;
 
-    Button menuButton;
-    Button retryButton;
+    UiButton menuButton;
+    UiButton retryButton;
     Button flatTiltButton;
     Button tiltedTiltButton;
     Button customTiltButton;
 
+    private final ScoreBar scoreBar = new ScoreBar();
+    private final ComboMeter comboMeter = new ComboMeter();
+    private final UiBanner promptBanner = new UiBanner(50f);
+    private final UiBanner gameOverBanner = new UiBanner(100f);
+    private final UiBanner scoreBanner = new UiBanner(60f);
+    private UiPanel tiltPanel;
+
 	
 	private float facingAngle = 0;
-	private static int updateCount = 0;
-	private static int enemyCounter = 300;
+	private static float updateCount = 0;
+	private static float enemyCounter = 300;
 	private static int score = 0;
 	private static boolean scoreUploaded = false;
 
@@ -72,11 +85,13 @@ public class GameScreen extends Screen {
 		tempEnemyPoint = new Point();
 
         // buttons
-        menuButton = new Button(0,0,4,0,"Menu");
-        retryButton = new Button(540, 500,4,0,"Retry");
+        menuButton = UiButton.menuAt(0, 0);
+        retryButton = new UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry");
         flatTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y, 3, 0, "Flat");
         tiltedTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+150, 3, 0, "Tilted");
         customTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+300, 3, 0, "Custom");
+        tiltPanel = new UiPanel(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275,
+                360 + flatTiltButton.getWidth(), Color.DKGRAY);
 
 
 
@@ -164,31 +179,35 @@ public class GameScreen extends Screen {
 
 	}
 	
-	private void updateRunning(List<TouchEvent> touchEvents, float deltaTime) {
+	private void updateRunning(List<TouchEvent> touchEvents, float deltaSeconds) {
+		float step = GameConstants.secondsToSteps(deltaSeconds);
+
 		// User Input
 		
 		// update count: allows events to occur every few updates an on-update basis
-		updateCount++;
-		enemyCounter++;
+		updateCount += step;
+		enemyCounter += step;
 		
 		// Calls individual update methods for each object
-		player.update();
-		c.update();
-		p.update();
+		player.update(deltaSeconds);
+		c.update(deltaSeconds);
+		p.update(deltaSeconds);
 		
 		// Check important events
 		
 		// UPDATING SPEED
-		if (speed < 25 && updateCount % 500 == 0) {
+		if (speed < 25 && updateCount >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
 			speed ++;
+			updateCount -= GameConstants.SPEED_RAMP_INTERVAL_FRAMES;
+			c.increaseEnemyTopSpeed();
 		}
 		
 		
 		// ENEMIES
 		if (enemyCounter > EnemyController.nextEnemySpawn){ // determines if enough time has passed for a new enemy
 			
-			tempEnemyPoint.x = r.nextInt(1180) + 50;
-			tempEnemyPoint.y = r.nextInt(620) + 50;
+			tempEnemyPoint.x = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50;
+			tempEnemyPoint.y = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50;
 			
 			PersonalMethods.limitOutside(tempEnemyPoint, (int)player.getCenterX(), (int)player.getCenterY(), 100);
 			
@@ -227,7 +246,7 @@ public class GameScreen extends Screen {
 		    if (event.type == TouchEvent.TOUCH_UP) {
 
                 // 'Menu' Button
-		    	if (PersonalMethods.touchInBounds(event, 0, 0, 200, 100)){
+		    	if (menuButton.touchInBounds(event)) {
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 					reset();
 					goToMenu();
@@ -345,6 +364,7 @@ public class GameScreen extends Screen {
         if (state == GameState.GameOver)
             drawGameOverUI();
 
+        VersionOverlay.paint(g);
 	}
 
 	private void drawReadyUI() {
@@ -352,10 +372,8 @@ public class GameScreen extends Screen {
 		
 		g.drawARGB(155, 0, 0, 0);
         
-		// Tilt settings rectangle
-		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, 360 + flatTiltButton.getWidth(), Color.DKGRAY);
-        g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-
+		tiltPanel.paintBackground(g);
+        tiltPanel.paintTitle(g, paint, "Tilt Options");
 
         // sound control buttons
 		if(MainMenuScreen.sound == true){
@@ -377,23 +395,14 @@ public class GameScreen extends Screen {
 		
 
         
-        //Text
         paint.setTypeface(Assets.plain);
-        paint.setTextSize(50);
-        g.drawString("Press anywhere to start", 640, 300, Color.WHITE, paint);
-
-	
+        promptBanner.paint(g, paint, "Press anywhere to start",
+                GameConstants.WORLD_WIDTH / 2, 300);
 	}
 
 
 	private void drawRunningUI() {
 		Graphics g = game.getGraphics();
-		
-		paint.setTextSize(40);
-		
-		// no screen clear needed, wallpaper does this
-		
-		//draws rest of screen
 		
 		//powerups
 		p.paint(g, paint);
@@ -404,10 +413,9 @@ public class GameScreen extends Screen {
 		//main character
 		player.paint(g, paint);
 		
-		//UI
 		paint.setTypeface(Assets.plain);
-		g.drawRect(480, 0, 320, 50, Color.argb(100, 255, 255, 255));
-        g.drawString("SCORE: " + score, 640, 40, Color.WHITE, paint);
+		comboMeter.paint(g, paint, player.getCombo());
+		scoreBar.paint(g, paint, score);
 	}
 
 
@@ -426,9 +434,8 @@ public class GameScreen extends Screen {
 		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
 		
-		// Background Rectangle
-		g.drawRect(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275, 360 + tiltedTiltButton.getWidth(), Color.DKGRAY);
-        g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
+		tiltPanel.paintBackground(g);
+        tiltPanel.paintTitle(g, paint, "Tilt Options");
 		
 		// sound control buttons
 		if(MainMenuScreen.sound == true){
@@ -444,51 +451,30 @@ public class GameScreen extends Screen {
 		}
 		
 		// buttons
-        menuButton.paint(g, paint, player);
+        menuButton.paint(g);
         flatTiltButton.paint(g, paint, player);
         tiltedTiltButton.paint(g, paint, player);
         customTiltButton.paint(g, paint, player);
 
 
-        // text
         paint.setTypeface(Assets.plain);
-
-        paint.setTextSize(50);
-		g.drawString("Press anywhere to resume", 640, 300, Color.WHITE, paint);
-		
-		g.drawString("Tilt Options", TILT_MENU_X + 85, TILT_MENU_Y - 50, Color.WHITE, paint);
-		
-		
+		promptBanner.paint(g, paint, "Press anywhere to resume",
+                GameConstants.WORLD_WIDTH / 2, 300);
 	}
 
 
 	private void drawGameOverUI() {
 		Graphics g = game.getGraphics();
 		
-		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
 
-
-        // buttons
-        menuButton.paint(g, paint, player);
-        retryButton.paint(g,paint, player);
-
-		// buttons
-		g.drawRect(0, 0, 200, 100, Color.rgb(195, 195, 195));
-        g.drawRect(540, 500, 200, 100, Color.rgb(195, 195, 195));
+        menuButton.paint(g);
+        retryButton.paint(g);
 		g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
 		
-		//text
 		paint.setTypeface(Assets.plain);
-		paint.setTextSize(50);
-		g.drawString("Menu", 100, 70, Color.WHITE, paint);
-        g.drawString("Retry", 640, 570, Color.WHITE, paint);
-		paint.setTextSize(100);
-		g.drawString("Game Over!", 640, 200, Color.WHITE, paint);
-		paint.setTextSize(60);
-		g.drawString("Score: " + score, 640, 400, Color.WHITE, paint);
-
-		
+		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
+		scoreBanner.paint(g, paint, "Score: " + score, GameConstants.WORLD_WIDTH / 2, 400);
 	}
 
 	//OTHER METHODS
@@ -563,7 +549,7 @@ public class GameScreen extends Screen {
 	}
 
     public static int getEnemyCounter() {
-        return enemyCounter;
+        return (int) enemyCounter;
     }
 
     public static void setEnemyCounter(int enemyCounter) {
@@ -579,7 +565,7 @@ public class GameScreen extends Screen {
     }
 
 	public static int getUpdateCount() {
-		return updateCount;
+		return (int) updateCount;
 	}
 
 

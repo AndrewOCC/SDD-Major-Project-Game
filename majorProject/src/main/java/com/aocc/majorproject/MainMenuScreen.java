@@ -2,6 +2,8 @@ package com.aocc.majorproject;
 
 import java.util.List;
 
+import android.graphics.Paint;
+
 import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
@@ -10,6 +12,7 @@ import com.aocc.framework.Input.TouchEvent;
 public class MainMenuScreen extends Screen {
 
 	MajorProjectGame majorProjectGame;
+	private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	int signInPressed = -1;
 	public static int tapVol = 10;
@@ -87,6 +90,8 @@ public class MainMenuScreen extends Screen {
         		g.drawImage(Assets.sign_in_base, 7, 7);
         	}
         }
+
+        VersionOverlay.paint(g);
 	}
 
 	@Override

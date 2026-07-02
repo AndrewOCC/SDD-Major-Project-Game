@@ -9,6 +9,7 @@ import android.view.View;
 import com.aocc.framework.Pool;
 import com.aocc.framework.Input.TouchEvent;
 import com.aocc.framework.Pool.PoolObjectFactory;
+import com.aocc.framework.Viewport;
 
 //EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
 
@@ -22,10 +23,10 @@ public class MultiTouchHandler implements TouchHandler {
 	Pool<TouchEvent> touchEventPool;
 	List<TouchEvent> touchEvents = new ArrayList<TouchEvent>();
 	List<TouchEvent> touchEventsBuffer = new ArrayList<TouchEvent>();
-	float scaleX;
-	float scaleY;
+	Viewport viewport;
 
-	public MultiTouchHandler(View view, float scaleX, float scaleY) {
+	public MultiTouchHandler(View view, Viewport viewport) {
+		this.viewport = viewport;
 		PoolObjectFactory<TouchEvent> factory = new PoolObjectFactory<TouchEvent>() {
 			@Override
 			public TouchEvent createObject() {
@@ -34,9 +35,19 @@ public class MultiTouchHandler implements TouchHandler {
 		};
 		touchEventPool = new Pool<TouchEvent>(factory, 100);
 		view.setOnTouchListener(this);
+	}
 
-		this.scaleX = scaleX;
-		this.scaleY = scaleY;
+	@Override
+	public void setViewport(Viewport viewport) {
+		this.viewport = viewport;
+	}
+
+	private int toWorldX(float screenX) {
+		return viewport != null ? viewport.screenToWorldX(screenX) : (int) screenX;
+	}
+
+	private int toWorldY(float screenY) {
+		return viewport != null ? viewport.screenToWorldY(screenY) : (int) screenY;
 	}
 
 	@Override
@@ -64,8 +75,8 @@ public class MultiTouchHandler implements TouchHandler {
 					touchEvent = touchEventPool.newObject();
 					touchEvent.type = TouchEvent.TOUCH_DOWN;
 					touchEvent.pointer = pointerId;
-					touchEvent.x = touchX[i] = (int) (event.getX(i) * scaleX);
-					touchEvent.y = touchY[i] = (int) (event.getY(i) * scaleY);
+					touchEvent.x = touchX[i] = toWorldX(event.getX(i));
+					touchEvent.y = touchY[i] = toWorldY(event.getY(i));
 					isTouched[i] = true;
 					id[i] = pointerId;
 					touchEventsBuffer.add(touchEvent);
@@ -77,8 +88,8 @@ public class MultiTouchHandler implements TouchHandler {
 					touchEvent = touchEventPool.newObject();
 					touchEvent.type = TouchEvent.TOUCH_UP;
 					touchEvent.pointer = pointerId;
-					touchEvent.x = touchX[i] = (int) (event.getX(i) * scaleX);
-					touchEvent.y = touchY[i] = (int) (event.getY(i) * scaleY);
+					touchEvent.x = touchX[i] = toWorldX(event.getX(i));
+					touchEvent.y = touchY[i] = toWorldY(event.getY(i));
 					isTouched[i] = false;
 					id[i] = -1;
 					touchEventsBuffer.add(touchEvent);
@@ -88,8 +99,8 @@ public class MultiTouchHandler implements TouchHandler {
 					touchEvent = touchEventPool.newObject();
 					touchEvent.type = TouchEvent.TOUCH_DRAGGED;
 					touchEvent.pointer = pointerId;
-					touchEvent.x = touchX[i] = (int) (event.getX(i) * scaleX);
-					touchEvent.y = touchY[i] = (int) (event.getY(i) * scaleY);
+					touchEvent.x = touchX[i] = toWorldX(event.getX(i));
+					touchEvent.y = touchY[i] = toWorldY(event.getY(i));
 					isTouched[i] = true;
 					id[i] = pointerId;
 					touchEventsBuffer.add(touchEvent);

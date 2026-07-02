@@ -20,9 +20,11 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.aocc.framework.Audio;
 import com.aocc.framework.FileIO;
 import com.aocc.framework.Game;
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
+import com.aocc.framework.Viewport;
 import androidx.fragment.app.FragmentActivity;
 
 // Note: this code was heavily modified for the purposes of the major project, including
@@ -40,6 +42,7 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     FileIO fileIO;
     Screen screen;
     public AudioManager audioManager;
+    private final Viewport viewport = new Viewport();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,33 +53,24 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-        int frameBufferWidth = 1280;
-        int frameBufferHeight = 720;
+        Bitmap frameBuffer = Bitmap.createBitmap(GameConstants.WORLD_WIDTH,
+                GameConstants.WORLD_HEIGHT, Config.RGB_565);
 
-        Bitmap frameBuffer = Bitmap.createBitmap(frameBufferWidth,
-                frameBufferHeight, Config.RGB_565);
-
-        float scaleX;
-        float scaleY;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
-            int width = Math.max(1, bounds.width());
-            int height = Math.max(1, bounds.height());
-            scaleX = (float) frameBufferWidth / width;
-            scaleY = (float) frameBufferHeight / height;
+            viewport.update(Math.max(1, bounds.width()), Math.max(1, bounds.height()));
         } else {
             Point size = new Point();
             Display display = getWindowManager().getDefaultDisplay();
             display.getSize(size);
-            scaleX = (float) frameBufferWidth / Math.max(1, size.x);
-            scaleY = (float) frameBufferHeight / Math.max(1, size.y);
+            viewport.update(Math.max(1, size.x), Math.max(1, size.y));
         }
 
         renderView = new AndroidFastRenderView(this, frameBuffer);
         graphics = new AndroidGraphics(getAssets(), frameBuffer);
         fileIO = new AndroidFileIO(this);
         audio = new AndroidAudio(this);
-        input = new AndroidInput(this, renderView, scaleX, scaleY);
+        input = new AndroidInput(this, renderView, viewport);
 
         screen = getInitScreen();
         setContentView(renderView);
@@ -160,5 +154,15 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     public Screen getCurrentScreen() {
 
     	return screen;
+    }
+
+    public Viewport getViewport() {
+        return viewport;
+    }
+
+    public void updateInputViewport(Viewport viewport) {
+        if (input instanceof AndroidInput) {
+            ((AndroidInput) input).updateViewport(viewport);
+        }
     }
 }

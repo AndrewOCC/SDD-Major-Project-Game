@@ -15,11 +15,23 @@ android {
         applicationId 'com.aocc.majorproject'
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName '1.1.0'
+        versionCode 7
+        versionName '1.2.2'
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -33,6 +45,10 @@ android {
 
     lint {
         abortOnError false
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     testOptions {

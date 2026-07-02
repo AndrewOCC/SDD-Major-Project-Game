@@ -39,13 +39,19 @@ public class EnemyController {
 		e.clear();
 	}
 	
-	public void update(){
+	public void update(float deltaSeconds){
 		for (int i = 0; i < e.size(); i++){
 			TempEnemy = e.get(i);
-			TempEnemy.update();
+			TempEnemy.update(deltaSeconds);
 			if (TempEnemy.getHealth() <= 0) {
 				this.removeEnemy(i);
 			}
+		}
+	}
+
+	public void increaseEnemyTopSpeed() {
+		for (int i = 0; i < e.size(); i++) {
+			e.get(i).increaseTopSpeed();
 		}
 	}
 	

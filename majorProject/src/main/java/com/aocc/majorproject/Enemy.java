@@ -1,6 +1,7 @@
 package com.aocc.majorproject;
 
 import com.aocc.framework.Graphics;
+import com.aocc.framework.GameConstants;
 import com.aocc.framework.PersonalMethods;
 
 import android.graphics.Color;
@@ -36,7 +37,8 @@ public class Enemy {
 		posY = Y;
 	}
 
-	public void update(){
+	public void update(float deltaSeconds){
+		float step = GameConstants.secondsToSteps(deltaSeconds);
 		
 		// calculating velocities
 		if (posX < player.getCenterX()){
@@ -56,28 +58,28 @@ public class Enemy {
 		}
 		
 		// applies acceleration and velocity
-		velocityX = velocityX + accelX;
-		velocityY = velocityY + accelY;
+		velocityX = velocityX + accelX * step;
+		velocityY = velocityY + accelY * step;
 		
 		//handling collisions with sides
-		if ((posX - radius + velocityX) < 0){
+		if ((posX - radius + velocityX * step) < 0){
 			velocityX = 0;
 			posX = radius;
 		}
 		
-		if ((posY - radius + velocityY) < 0){
+		if ((posY - radius + velocityY * step) < 0){
 			velocityY = 0;
 			posY = radius;
 		}
 		
-		if ((posX + radius + velocityX) > 1280){
+		if ((posX + radius + velocityX * step) > GameConstants.WORLD_WIDTH){
 			velocityX = 0;
-			posX = 1280 - radius;
+			posX = GameConstants.WORLD_WIDTH - radius;
 		}
 		
-		if ((posY + radius + velocityY ) > 720){
+		if ((posY + radius + velocityY * step ) > GameConstants.WORLD_HEIGHT){
 			velocityY = 0;
-			posY = 720 - radius;
+			posY = GameConstants.WORLD_HEIGHT - radius;
 		}
 		
 		// collision with the player
@@ -94,22 +96,23 @@ public class Enemy {
 			
 		}
 	
-		// enemies get faster over time
-		if (topspeed < 20 && GameScreen.getUpdateCount()%500 == 0){
-			topspeed ++;
-		}
-		
 		// limits velocity		
 		velocityX = PersonalMethods.limitInside(velocityX, -topspeed, topspeed);
 		velocityY = PersonalMethods.limitInside(velocityY, -topspeed, topspeed);
 		
 		// applies velocity
-		posX = posX + velocityX;
-		posY = posY + velocityY;
+		posX = posX + velocityX * step;
+		posY = posY + velocityY * step;
 		
 		enemyRectF.set(posX - radius, posY - radius, posX + radius,
 				posY + radius);
 		
+	}
+	
+	public void increaseTopSpeed() {
+		if (topspeed < 20) {
+			topspeed++;
+		}
 	}
 	
 	public void paint(Graphics g, Paint paint){

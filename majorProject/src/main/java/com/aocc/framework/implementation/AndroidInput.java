@@ -6,25 +6,25 @@ import android.content.Context;
 import android.os.Build.VERSION;
 import android.view.View;
 
-import com.aocc.framework.implementation.RotationHandler;
 import com.aocc.framework.Input;
+import com.aocc.framework.Viewport;
 
-//EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
+public class AndroidInput implements Input {
+    private final TouchHandler touchHandler;
 
-public class AndroidInput implements Input {    
-    TouchHandler touchHandler;
-    RotationHandler accelHandler;
+    public AndroidInput(Context context, View view, Viewport viewport) {
+        RotationHandler accelHandler = new RotationHandler(context);
 
-    public AndroidInput(Context context, View view, float scaleX, float scaleY) {
-        accelHandler = new RotationHandler(context);
-
-    	
-        if(VERSION.SDK_INT < 5) 	// modified to SDK_INT from SDK; old code was deprecated
-            touchHandler = new SingleTouchHandler(view, scaleX, scaleY);
-        else
-            touchHandler = new MultiTouchHandler(view, scaleX, scaleY);        
+        if (VERSION.SDK_INT < 5) {
+            touchHandler = new SingleTouchHandler(view, viewport);
+        } else {
+            touchHandler = new MultiTouchHandler(view, viewport);
+        }
     }
 
+    public void updateViewport(Viewport viewport) {
+        touchHandler.setViewport(viewport);
+    }
 
     @Override
     public boolean isTouchDown(int pointer) {
@@ -45,7 +45,7 @@ public class AndroidInput implements Input {
     public List<TouchEvent> getTouchEvents() {
         return touchHandler.getTouchEvents();
     }
-    
+
     @Override
     public float getRotationX() {
         return RotationHandler.getRotationX();
@@ -60,5 +60,4 @@ public class AndroidInput implements Input {
     public float getRotationZ() {
         return RotationHandler.getRotationZ();
     }
-    
 }

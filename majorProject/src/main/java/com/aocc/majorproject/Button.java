@@ -6,7 +6,8 @@ import android.graphics.RectF;
 
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
-import com.aocc.framework.PersonalMethods;
+import com.aocc.majorproject.ui.UiBounds;
+import com.aocc.majorproject.ui.UiText;
 
 public class Button {
 
@@ -95,7 +96,8 @@ public class Button {
                     g.drawImage(Assets.tilt_control_flat, this.posX, this.posY);
                 }
 
-                g.drawString(text, this.posX + width + 65, this.posY + width/2 + 14, Color.BLACK, paint);
+                UiText.drawLeftOfCenter(g, paint, text, this.posX + width + 12,
+                        this.posY + width / 2, Color.BLACK);
 
             } else if ("Tilted".equals(text)){
                 if( player.getTiltMode() == 2){
@@ -104,7 +106,8 @@ public class Button {
                     g.drawImage(Assets.tilt_control_tilted, this.posX, this.posY);
                 }
 
-                g.drawString(text, this.posX + width + 70, this.posY + width/2 + 14, Color.BLACK, paint);
+                UiText.drawLeftOfCenter(g, paint, text, this.posX + width + 12,
+                        this.posY + width / 2, Color.BLACK);
 
             } else if ("Custom".equals(text)){
                 // custom shouldn't depress, as it is not a simple toggle. Gains border when used instead
@@ -114,12 +117,14 @@ public class Button {
 
                 g.drawImage(Assets.tilt_control_custom, this.posX, this.posY);
 
-                g.drawString(text, this.posX + width + 78, this.posY + width / 2 + 14, Color.BLACK, paint);
+                UiText.drawLeftOfCenter(g, paint, text, this.posX + width + 12,
+                        this.posY + width / 2, Color.BLACK);
             }
 
         } else if (type == 4){
-            g.drawRect(posX, posY, 200, 100, Color.DKGRAY);
-            g.drawString(this.text, 100, 65, Color.WHITE, paint);
+            UiBounds bounds = new UiBounds(posX, posY, width, height);
+            g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, Color.DKGRAY);
+            UiText.drawInBounds(g, paint, text, bounds, UiText.HAlign.CENTER, Color.WHITE);
         }
 	}
 
