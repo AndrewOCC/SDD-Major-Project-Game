@@ -9,6 +9,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
@@ -23,10 +24,10 @@ import com.aocc.majorproject.AssetScale;
 //EXCEPT WHERE NOTED, THE FOLLOWING CODE IS SOURCED FROM THE KILOBOLT ANDROID FRAMEWORK
 
 /**
- * Draws in virtual world coordinates ({@link GameConstants#WORLD_WIDTH}×
- * {@link GameConstants#WORLD_HEIGHT}). Call {@link #beginFrame(Canvas, Viewport)}
- * before painting each frame; the viewport transform maps world space to native
- * screen pixels.
+ * Renders the game into an off-screen buffer sized to the letterboxed viewport,
+ * then blits once to the surface. World coordinates stay 1280×720; the buffer
+ * scale matches {@link Viewport#getScale()} for sharp output without per-primitive
+ * surface scaling cost.
  */
 public class AndroidGraphics implements Graphics {
     private final AssetManager assets;
@@ -34,18 +35,51 @@ public class AndroidGraphics implements Graphics {
     private final Paint paint;
     private final Rect srcRect = new Rect();
     private final Rect dstRect = new Rect();
-    private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private final Paint filteredBitmapPaint =
+            new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+
+    private Bitmap frameBuffer;
+    private Canvas frameCanvas;
+    private float frameScale = 1f;
 
     public AndroidGraphics(AssetManager assets) {
         this.assets = assets;
         this.paint = new Paint();
     }
 
-    public void beginFrame(Canvas target, Viewport viewport) {
-        this.canvas = target;
+    public void ensureFramebuffer(Viewport viewport) {
+        Rect dest = viewport.getLetterboxDestRect();
+        int width = dest.width();
+        int height = dest.height();
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        if (frameBuffer == null
+                || frameBuffer.getWidth() != width
+                || frameBuffer.getHeight() != height) {
+            if (frameBuffer != null) {
+                frameBuffer.recycle();
+            }
+            frameBuffer = Bitmap.createBitmap(width, height, Config.RGB_565);
+            frameCanvas = new Canvas(frameBuffer);
+        }
+        frameScale = viewport.getScale();
+    }
+
+    public Bitmap getFrameBuffer() {
+        return frameBuffer;
+    }
+
+    /** Begin painting into the off-screen buffer for this frame. */
+    public void beginFrame(Viewport viewport) {
+        ensureFramebuffer(viewport);
+        if (frameCanvas == null) {
+            throw new IllegalStateException("Framebuffer not ready");
+        }
+        canvas = frameCanvas;
+        canvas.drawColor(Color.BLACK);
         canvas.save();
-        canvas.translate(viewport.getOffsetX(), viewport.getOffsetY());
-        canvas.scale(viewport.getScale(), viewport.getScale());
+        canvas.scale(frameScale, frameScale);
     }
 
     public void endFrame() {
@@ -183,30 +217,41 @@ public class AndroidGraphics implements Graphics {
     public void drawImage(Image image, int x, int y, int srcX, int srcY,
             int srcWidth, int srcHeight) {
         AndroidImage androidImage = (AndroidImage) image;
-        int scale = androidImage.getPixelScale();
+        int pixelScale = androidImage.getPixelScale();
 
         srcRect.left = srcX;
         srcRect.top = srcY;
         srcRect.right = srcX + srcWidth;
         srcRect.bottom = srcY + srcHeight;
 
+        if (pixelScale == 1 && srcX == 0 && srcY == 0
+                && srcWidth == androidImage.getBitmap().getWidth()
+                && srcHeight == androidImage.getBitmap().getHeight()) {
+            requireCanvas().drawBitmap(androidImage.getBitmap(), x, y, null);
+            return;
+        }
+
         dstRect.left = x;
         dstRect.top = y;
-        dstRect.right = x + srcWidth / scale;
-        dstRect.bottom = y + srcHeight / scale;
+        dstRect.right = x + srcWidth / pixelScale;
+        dstRect.bottom = y + srcHeight / pixelScale;
 
         requireCanvas().drawBitmap(androidImage.getBitmap(), srcRect, dstRect,
-                bitmapPaint);
+                filteredBitmapPaint);
     }
 
     @Override
     public void drawImage(Image image, int x, int y) {
         AndroidImage androidImage = (AndroidImage) image;
+        if (androidImage.getPixelScale() == 1) {
+            requireCanvas().drawBitmap(androidImage.getBitmap(), x, y, null);
+            return;
+        }
         dstRect.left = x;
         dstRect.top = y;
         dstRect.right = x + androidImage.getWidth();
         dstRect.bottom = y + androidImage.getHeight();
-        requireCanvas().drawBitmap(androidImage.getBitmap(), null, dstRect, bitmapPaint);
+        requireCanvas().drawBitmap(androidImage.getBitmap(), null, dstRect, filteredBitmapPaint);
     }
 
     public void drawScaledImage(Image image, int x, int y, int width, int height, int srcX, int srcY, int srcWidth, int srcHeight) {
@@ -222,7 +267,7 @@ public class AndroidGraphics implements Graphics {
         dstRect.right = x + width;
         dstRect.bottom = y + height;
 
-        requireCanvas().drawBitmap(androidImage.getBitmap(), srcRect, dstRect, bitmapPaint);
+        requireCanvas().drawBitmap(androidImage.getBitmap(), srcRect, dstRect, filteredBitmapPaint);
     }
 
     @Override

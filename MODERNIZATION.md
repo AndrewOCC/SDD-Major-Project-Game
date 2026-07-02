@@ -242,7 +242,4 @@ Always use **`releases/latest/MajorProject-debug.apk`** — this file is overwri
 - Replace files under `majorProject/src/main/assets/2x/` — no code changes needed.
 - Devices with viewport scale ≥ 1.5 load 2× automatically; others stay on 1×.
 
-**What to verify**
-- Version shows **v1.7.1**
-- UI sprites look sharper on high-DPI handhelds (AYN Thor)
-- Layout unchanged (same world-coordinate sizes)
+**v1.7.2 performance fix:** Paint into a letterbox-sized RGB_565 off-screen buffer (one scale pass), then a single blit to the surface — restores frame rate vs direct-to-surface rendering. Full-screen backgrounds stay 1×; 2× only for UI sprites.
