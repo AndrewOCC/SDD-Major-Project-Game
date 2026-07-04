@@ -26,7 +26,7 @@ class MajorProjectGame : AndroidGame() {
 
         try {
             playGamesHelper = PlayGamesHelper(this)
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
             CrashReporter.log(this, "Play Games helper failed to initialize", e)
             playGamesHelper = null
         }
@@ -46,7 +46,9 @@ class MajorProjectGame : AndroidGame() {
 
     override fun setScreen(screen: Screen) {
         super.setScreen(screen)
-        secondaryDisplayManager.updateForScreen(screen)
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateForScreen(screen)
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -57,7 +59,9 @@ class MajorProjectGame : AndroidGame() {
     }
 
     override fun onDestroy() {
-        secondaryDisplayManager.shutdown()
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.shutdown()
+        }
         super.onDestroy()
     }
 
@@ -65,7 +69,9 @@ class MajorProjectGame : AndroidGame() {
         super.onResume()
         currentScreen.resume()
         screenRotation = screenRotationValue
-        secondaryDisplayManager.refresh()
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.refresh()
+        }
         playGamesHelper?.refreshSignInState()
     }
 

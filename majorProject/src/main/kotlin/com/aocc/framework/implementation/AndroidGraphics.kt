@@ -58,16 +58,15 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         frameScale = viewport.getScale()
     }
 
-    /** Begin painting into the off-screen buffer for this frame. */
-    fun beginFrame(viewport: Viewport) {
+    /** Begin painting into the off-screen buffer for this frame. Returns false if not ready yet. */
+    fun beginFrame(viewport: Viewport): Boolean {
         ensureFramebuffer(viewport)
-        if (frameCanvas == null) {
-            throw IllegalStateException("Framebuffer not ready")
-        }
+        val frameCanvas = frameCanvas ?: return false
         canvas = frameCanvas
-        canvas!!.drawColor(Color.BLACK)
-        canvas!!.save()
-        canvas!!.scale(frameScale, frameScale)
+        frameCanvas.drawColor(Color.BLACK)
+        frameCanvas.save()
+        frameCanvas.scale(frameScale, frameScale)
+        return true
     }
 
     fun endFrame() {
