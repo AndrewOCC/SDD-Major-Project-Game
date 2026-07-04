@@ -82,24 +82,29 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
             return
         }
 
-        pendingShow = PendingShow(mode, background, overlayLabel)
-        mainHandler.post { presentOnDisplay(secondary, pendingShow!!) }
+        val request = PendingShow(mode, background, overlayLabel)
+        pendingShow = request
+        mainHandler.post { presentOnDisplay(secondary, request) }
     }
 
     private fun presentOnDisplay(secondary: Display, request: PendingShow) {
         if (!GamePreferences.secondScreenEnabled) {
             return
         }
+        // A newer request may have superseded this one before the post ran.
+        if (pendingShow !== request) {
+            return
+        }
 
         try {
-            if (presentation == null || presentation!!.display == null
-                || presentation!!.display!!.displayId != secondary.displayId
-            ) {
+            var current = presentation
+            if (current == null || current.display?.displayId != secondary.displayId) {
                 dismissPresentationSync()
-                presentation = SecondaryDisplayPresentation(activity, secondary)
-                presentation!!.show()
+                current = SecondaryDisplayPresentation(activity, secondary)
+                presentation = current
+                current.show()
             }
-            presentation!!.setMode(request.mode, request.background, request.overlayLabel)
+            current.setMode(request.mode, request.background, request.overlayLabel)
             pendingShow = null
         } catch (e: WindowManager.InvalidDisplayException) {
             CrashReporter.log(activity, "Secondary display rejected Presentation.show()", e)
@@ -115,21 +120,21 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     }
 
     private fun dismissPresentationSync() {
-        if (presentation != null) {
-            try {
-                presentation!!.dismiss()
-            } catch (e: RuntimeException) {
-                CrashReporter.log(activity, "Failed to dismiss secondary display", e)
-            }
-            presentation = null
+        val current = presentation ?: return
+        try {
+            current.dismiss()
+        } catch (e: RuntimeException) {
+            CrashReporter.log(activity, "Failed to dismiss secondary display", e)
         }
+        presentation = null
     }
 
     override fun onDisplayAdded(displayId: Int) {
         if (GamePreferences.secondScreenEnabled) {
             activity.runOnUiThread {
-                if (pendingShow != null) {
-                    show(pendingShow!!.mode, pendingShow!!.background, pendingShow!!.overlayLabel)
+                val pending = pendingShow
+                if (pending != null) {
+                    show(pending.mode, pending.background, pending.overlayLabel)
                 } else {
                     updateForScreen(activity.currentScreen)
                 }
@@ -147,9 +152,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         if (!GamePreferences.secondScreenEnabled) {
             return
         }
-        if (presentation == null || presentation!!.display == null
-            || presentation!!.display!!.displayId != displayId
-        ) {
+        if (presentation?.display?.displayId != displayId) {
             activity.runOnUiThread { updateForScreen(activity.currentScreen) }
         }
     }

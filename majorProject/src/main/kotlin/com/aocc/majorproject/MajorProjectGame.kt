@@ -66,8 +66,8 @@ class MajorProjectGame : AndroidGame() {
     }
 
     override fun onResume() {
+        // super.onResume() already resumes the current screen and render view.
         super.onResume()
-        currentScreen.resume()
         screenRotation = screenRotationValue
         if (::secondaryDisplayManager.isInitialized) {
             secondaryDisplayManager.refresh()
@@ -86,36 +86,41 @@ class MajorProjectGame : AndroidGame() {
         }
 
     override fun onPause() {
-        currentScreen.pause()
+        // super.onPause() already pauses the current screen and render view.
         super.onPause()
         Assets.pauseMusic()
     }
 
     fun onShowLeaderboardsRequested(id: String) {
-        if (playGamesHelper != null) {
-            playGamesHelper!!.showLeaderboards(id)
+        val helper = playGamesHelper
+        if (helper != null) {
+            helper.showLeaderboards(id)
         } else {
             showPlayGamesUnavailable()
         }
     }
 
     fun onShowAchievementsRequested(id: String) {
-        if (playGamesHelper != null) {
-            playGamesHelper!!.showAchievements()
+        val helper = playGamesHelper
+        if (helper != null) {
+            helper.showAchievements()
         } else {
             showPlayGamesUnavailable()
         }
     }
 
     fun isLoggedIn(): Boolean {
-        return playGamesHelper != null && playGamesHelper!!.isSignedIn()
+        return playGamesHelper?.isSignedIn() == true
     }
 
     fun onSignInButtonClicked() {
-        if (playGamesHelper != null && !playGamesHelper!!.isSignedIn()) {
-            playGamesHelper!!.signIn()
-        } else if (playGamesHelper == null) {
+        val helper = playGamesHelper
+        if (helper == null) {
             showPlayGamesUnavailable()
+            return
+        }
+        if (!helper.isSignedIn()) {
+            helper.signIn()
         }
     }
 
@@ -124,8 +129,9 @@ class MajorProjectGame : AndroidGame() {
     }
 
     fun onAchievementUnlocked(id: String) {
-        if (playGamesHelper != null && playGamesHelper!!.isSignedIn()) {
-            playGamesHelper!!.unlockAchievement(id)
+        val helper = playGamesHelper
+        if (helper != null && helper.isSignedIn()) {
+            helper.unlockAchievement(id)
         } else {
             runOnUiThread {
                 Toast.makeText(

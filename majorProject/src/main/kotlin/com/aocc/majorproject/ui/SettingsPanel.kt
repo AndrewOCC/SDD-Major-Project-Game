@@ -79,17 +79,11 @@ class SettingsPanel {
         tiltPanel.paintBackground(g)
         tiltPanel.paintTitle(g, paint, "Tilt Options")
 
-        if (GamePreferences.sound) {
-            g.drawImage(Assets.sound!!, soundIconX, soundIconY)
-        } else {
-            g.drawImage(Assets.sound_muted!!, soundIconX, soundIconY)
-        }
+        val soundIcon = if (GamePreferences.sound) Assets.sound else Assets.sound_muted
+        soundIcon?.let { g.drawImage(it, soundIconX, soundIconY) }
 
-        if (GamePreferences.music) {
-            g.drawImage(Assets.music!!, soundIconX, musicIconY)
-        } else {
-            g.drawImage(Assets.music_muted!!, soundIconX, musicIconY)
-        }
+        val musicIcon = if (GamePreferences.music) Assets.music else Assets.music_muted
+        musicIcon?.let { g.drawImage(it, soundIconX, musicIconY) }
 
         paintDisplayToggle(g, paint)
 
@@ -186,7 +180,7 @@ class SettingsPanel {
     }
 
     private fun buildFocusBoundsList(): List<UiBounds> {
-        return List(ITEM_COUNT) { i -> boundsForIndex(i)!! }
+        return (0 until ITEM_COUNT).mapNotNull { boundsForIndex(it) }
     }
 
     private fun activateSelected(player: Player) {

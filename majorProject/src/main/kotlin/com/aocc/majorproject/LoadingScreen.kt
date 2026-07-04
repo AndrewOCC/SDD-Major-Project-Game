@@ -12,8 +12,13 @@ class LoadingScreen(private val majorProjectGame: MajorProjectGame) : Screen(maj
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val assetLoader: AssetLoader
 
+    @Volatile
     private var progress = 0f
+
+    @Volatile
     private var transitionPending = false
+
+    @Volatile
     private var loadFailed = false
 
     init {

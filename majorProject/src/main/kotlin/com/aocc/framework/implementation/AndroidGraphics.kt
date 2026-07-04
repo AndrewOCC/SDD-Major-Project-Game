@@ -47,13 +47,12 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         if (width <= 0 || height <= 0) {
             return
         }
-        if (frameBuffer == null
-            || frameBuffer!!.width != width
-            || frameBuffer!!.height != height
-        ) {
-            frameBuffer?.recycle()
-            frameBuffer = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-            frameCanvas = Canvas(frameBuffer!!)
+        val current = frameBuffer
+        if (current == null || current.width != width || current.height != height) {
+            current?.recycle()
+            val fresh = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            frameBuffer = fresh
+            frameCanvas = Canvas(fresh)
         }
         frameScale = viewport.getScale()
     }

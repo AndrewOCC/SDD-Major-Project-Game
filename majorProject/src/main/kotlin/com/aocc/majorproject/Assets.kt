@@ -99,13 +99,14 @@ object Assets {
     fun loadMusic(majorProjectGame: MajorProjectGame) {
         for (musicFile in MUSIC_FILES) {
             try {
-                darude = majorProjectGame.audio.createMusic(musicFile)
+                val music = majorProjectGame.audio.createMusic(musicFile)
+                darude = music
                 if (GamePreferences.music && !majorProjectGame.isMusicActive) {
-                    darude!!.setVolume(0.85f)
-                    darude!!.setLooping(true)
-                    darude!!.play()
+                    music.setVolume(0.85f)
+                    music.setLooping(true)
+                    music.play()
                 } else if (!GamePreferences.music) {
-                    darude!!.setVolume(0f)
+                    music.setVolume(0f)
                 }
                 return
             } catch (e: RuntimeException) {

@@ -54,24 +54,31 @@ object MainMenuLayout {
         return UiBounds(SIGN_IN_MARGIN, SIGN_IN_MARGIN, SIGN_IN_WIDTH, SIGN_IN_HEIGHT)
     }
 
-    /** Focus ring bounds aligned to visible menu art (not the full touch target). */
+    /** Number of focusable menu items for the given sign-in state. */
+    @JvmStatic
+    fun menuItemCount(loggedIn: Boolean): Int = if (loggedIn) 4 else 5
+
+    /**
+     * Focus ring bounds aligned to visible menu art (not the full touch target).
+     * Signed-out menus include the sign-in button at index 2.
+     */
     @JvmStatic
     fun highlightForIndex(index: Int, loggedIn: Boolean): UiBounds? {
-        if (!loggedIn) {
+        if (loggedIn) {
             return when (index) {
                 0 -> playButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y)
                 1 -> tutorialButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y)
-                2 -> signInButton()
-                3 -> leaderboardsButton()
-                4 -> achievementsButton()
+                2 -> leaderboardsButton()
+                3 -> achievementsButton()
                 else -> null
             }
         }
         return when (index) {
             0 -> playButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y)
             1 -> tutorialButton().inset(PLAY_HIGHLIGHT_INSET_X, PLAY_HIGHLIGHT_INSET_Y)
-            2 -> leaderboardsButton()
-            3 -> achievementsButton()
+            2 -> signInButton()
+            3 -> leaderboardsButton()
+            4 -> achievementsButton()
             else -> null
         }
     }

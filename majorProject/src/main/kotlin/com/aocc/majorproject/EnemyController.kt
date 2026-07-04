@@ -12,7 +12,6 @@ import java.util.Random
 class EnemyController(private val session: GameSession) {
 
     var e: LinkedList<Enemy> = LinkedList()
-    private var tempEnemy: Enemy? = null
     private val r = Random()
 
     private var nextEnemySpawn = 0
@@ -24,8 +23,7 @@ class EnemyController(private val session: GameSession) {
     }
 
     fun addEnemy(x: Int, y: Int, t: Int) {
-        tempEnemy = Enemy(x.toFloat(), y.toFloat(), t, session)
-        e.add(tempEnemy!!)
+        e.add(Enemy(x.toFloat(), y.toFloat(), t, session))
         generateNextEnemy(session.getSpeed())
     }
 
@@ -41,9 +39,9 @@ class EnemyController(private val session: GameSession) {
     fun update(deltaSeconds: Float) {
         var i = 0
         while (i < e.size) {
-            tempEnemy = e[i]
-            tempEnemy!!.update(deltaSeconds)
-            if (tempEnemy!!.getHealth() <= 0) {
+            val enemy = e[i]
+            enemy.update(deltaSeconds)
+            if (enemy.getHealth() <= 0) {
                 removeEnemy(i)
             } else {
                 i++

@@ -33,22 +33,23 @@ object GamePreferences {
 
     @JvmStatic
     fun load(context: Context) {
-        prefs = context.applicationContext
+        val loaded = context.applicationContext
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        sound = prefs!!.getBoolean(KEY_SOUND, true)
-        tiltMode = prefs!!.getInt(KEY_TILT_MODE, 2)
-        secondScreenEnabled = prefs!!.getBoolean(KEY_SECOND_SCREEN, false)
+        prefs = loaded
+        sound = loaded.getBoolean(KEY_SOUND, true)
+        tiltMode = loaded.getInt(KEY_TILT_MODE, 2)
+        secondScreenEnabled = loaded.getBoolean(KEY_SECOND_SCREEN, false)
 
-        if (!prefs!!.getBoolean(KEY_MUSIC_INITIALIZED, false)) {
+        if (!loaded.getBoolean(KEY_MUSIC_INITIALIZED, false)) {
             val audioManager =
                 context.getSystemService(Context.AUDIO_SERVICE) as AudioManager?
             music = audioManager == null || !audioManager.isMusicActive
-            prefs!!.edit()
+            loaded.edit()
                 .putBoolean(KEY_MUSIC, music)
                 .putBoolean(KEY_MUSIC_INITIALIZED, true)
                 .apply()
         } else {
-            music = prefs!!.getBoolean(KEY_MUSIC, true)
+            music = loaded.getBoolean(KEY_MUSIC, true)
         }
     }
 
@@ -105,14 +106,11 @@ object GamePreferences {
     }
 
     private fun save() {
-        if (prefs == null) {
-            return
-        }
-        prefs!!.edit()
-            .putBoolean(KEY_SOUND, sound)
-            .putBoolean(KEY_MUSIC, music)
-            .putInt(KEY_TILT_MODE, tiltMode)
-            .putBoolean(KEY_SECOND_SCREEN, secondScreenEnabled)
-            .apply()
+        prefs?.edit()
+            ?.putBoolean(KEY_SOUND, sound)
+            ?.putBoolean(KEY_MUSIC, music)
+            ?.putInt(KEY_TILT_MODE, tiltMode)
+            ?.putBoolean(KEY_SECOND_SCREEN, secondScreenEnabled)
+            ?.apply()
     }
 }
