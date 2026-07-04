@@ -160,6 +160,12 @@ class MajorProjectGame : AndroidGame() {
         }
     }
 
+    fun updateSecondaryDisplayForGameState(state: GameScreen.GameState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateForGameState(state)
+        }
+    }
+
     companion object {
         @JvmField
         var screenRotation: Int = 0

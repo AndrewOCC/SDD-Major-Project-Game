@@ -26,15 +26,23 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         Ready, Running, Paused, GameOver
     }
 
-    var state: GameState? = GameState.Ready
+    var state: GameState = GameState.Ready
+        private set
 
-    private var paint: Paint? = null
+    @Volatile
+    private var disposed = false
+
     private val session = GameSession()
-    private var player: Player? = null
-    private var c: EnemyController? = null
-    private var r: Random? = null
-    private var p: PowerUp? = null
-    private var tempEnemyPoint: Point? = null
+    private val player = session.getPlayer()
+    private val enemyController = EnemyController(session)
+    private val random = Random()
+    private val powerUp = PowerUp(1, session)
+    private val tempEnemyPoint = Point()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 30f
+        textAlign = Paint.Align.CENTER
+        color = Color.WHITE
+    }
 
     private lateinit var menuButton: UiButton
     private lateinit var resumeButton: UiButton
@@ -53,13 +61,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     init {
         settingsPanel.setGame(majorProjectGame)
-
-        player = session.getPlayer()
-        GamePreferences.applyTiltTo(player!!)
-        c = EnemyController(session)
-        r = Random()
-        p = PowerUp(1, session)
-        tempEnemyPoint = Point()
+        GamePreferences.applyTiltTo(player)
 
         menuButton = UiButton.menuAt(0, 0)
         resumeButton = UiButton(
@@ -67,16 +69,13 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Resume"
         )
         retryButton = UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry")
-
-        paint = Paint().apply {
-            textSize = 30f
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            color = Color.WHITE
-        }
     }
 
     override fun update(deltaTime: Float) {
+        if (disposed) {
+            return
+        }
+
         val touchEvents = game.input.touchEvents
         val gamepadActions = majorProjectGame.getGamepadInput().consumeActions()
 
@@ -94,14 +93,13 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 updateGameOver(touchEvents)
                 handleGamepadGameOver(gamepadActions)
             }
-            null -> {}
         }
     }
 
     private fun updateReady(touchEvents: List<TouchEvent>) {
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
-                if (settingsPanel.handleTouch(event, player!!)) {
+                if (settingsPanel.handleTouch(event, player)) {
                     continue
                 }
                 playTap()
@@ -113,10 +111,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private fun handleGamepadReady(actions: List<GamepadInput.Action>) {
         for (action in actions) {
             if (action == GamepadInput.Action.CANCEL) {
-                goToMenu()
+                leaveForMenu()
                 return
             }
-            if (settingsPanel.handleGamepad(action, player!!)) {
+            if (settingsPanel.handleGamepad(action, player)) {
                 continue
             }
             if (action == GamepadInput.Action.CONFIRM) {
@@ -139,34 +137,34 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         session.addUpdateCount(step)
         session.addEnemyCounter(step)
 
-        player!!.update(deltaSeconds)
-        c!!.update(deltaSeconds)
-        p!!.update(deltaSeconds)
+        player.update(deltaSeconds)
+        enemyController.update(deltaSeconds)
+        powerUp.update(deltaSeconds)
 
         if (session.getSpeed() < 25 && session.getUpdateCount() >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
             session.incrementSpeed()
             session.subtractUpdateCount(GameConstants.SPEED_RAMP_INTERVAL_FRAMES)
-            c!!.increaseEnemyTopSpeed()
+            enemyController.increaseEnemyTopSpeed()
         }
 
-        if (session.getEnemyCounter() > c!!.getNextEnemySpawn()) {
-            tempEnemyPoint!!.x = r!!.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
-            tempEnemyPoint!!.y = r!!.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50
+        if (session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
+            tempEnemyPoint.x = random.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
+            tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50
             PersonalMethods.limitOutside(
-                tempEnemyPoint!!,
-                player!!.getCenterX().toInt(),
-                player!!.getCenterY().toInt(),
+                tempEnemyPoint,
+                player.getCenterX().toInt(),
+                player.getCenterY().toInt(),
                 100
             )
-            if (r!!.nextInt(10) == 9) {
-                c!!.addEnemy(tempEnemyPoint!!.x, tempEnemyPoint!!.y, 2)
+            if (random.nextInt(10) == 9) {
+                enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 2)
             } else {
-                c!!.addEnemy(tempEnemyPoint!!.x, tempEnemyPoint!!.y, 1)
+                enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 1)
             }
             session.resetEnemyCounter()
         }
 
-        if (player!!.getCombo() == 200) {
+        if (player.getCombo() == 200) {
             majorProjectGame.onAchievementUnlocked(
                 majorProjectGame.getString(R.string.achievement_ccccombo)
             )
@@ -200,11 +198,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 }
                 if (menuButton.touchInBounds(event)) {
                     playTap()
-                    reset()
-                    goToMenu()
+                    leaveForMenu()
                     return
                 }
-                if (settingsPanel.handleTouch(event, player!!)) {
+                if (settingsPanel.handleTouch(event, player)) {
                     continue
                 }
                 resumeFromPause()
@@ -237,11 +234,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             PAUSE_FOCUS_RESUME -> resumeFromPause()
             PAUSE_FOCUS_MENU -> {
                 playTap()
-                reset()
-                goToMenu()
+                leaveForMenu()
             }
             else -> settingsPanel.activateFocusIndex(
-                pauseFocusIndex - PAUSE_FOCUS_SETTINGS_OFFSET, player!!
+                pauseFocusIndex - PAUSE_FOCUS_SETTINGS_OFFSET, player
             )
         }
     }
@@ -251,7 +247,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         items.add(resumeButton.getBounds())
         items.add(menuButton.getBounds())
         for (i in 0 until SettingsPanel.ITEM_COUNT) {
-            items.add(settingsPanel.getItemBounds(i)!!)
+            settingsPanel.getItemBounds(i)?.let { items.add(it) }
         }
         return items
     }
@@ -274,14 +270,13 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             if (event.type == TouchEvent.TOUCH_UP) {
                 if (menuButton.touchInBounds(event)) {
                     playTap()
-                    reset()
-                    goToMenu()
+                    leaveForMenu()
                     return
                 }
                 if (retryButton.touchInBounds(event)) {
                     playTap()
-                    reset()
-                    restart()
+                    restartRun()
+                    return
                 }
                 if (PersonalMethods.touchInBounds(event, 1175, 5, 100, 80)) {
                     playTap()
@@ -309,8 +304,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             }
             if (action == GamepadInput.Action.CANCEL) {
                 playTap()
-                reset()
-                goToMenu()
+                leaveForMenu()
             }
         }
     }
@@ -327,13 +321,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         when (index) {
             0 -> {
                 playTap()
-                reset()
-                goToMenu()
+                leaveForMenu()
             }
             1 -> {
                 playTap()
-                reset()
-                restart()
+                restartRun()
             }
             2 -> {
                 playTap()
@@ -345,59 +337,64 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     override fun paint(deltaTime: Float) {
+        if (disposed) {
+            return
+        }
+
         val g = game.graphics
-        g.drawImage(Assets.game_bg!!, 0, 0)
+        val background = Assets.game_bg
+        if (background != null) {
+            g.drawImage(background, 0, 0)
+        } else {
+            g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK)
+        }
 
         when (state) {
-            GameState.Ready -> drawReadyUI()
-            GameState.Running -> drawRunningUI()
-            GameState.Paused -> drawPausedUI()
-            GameState.GameOver -> drawGameOverUI()
-            null -> {}
+            GameState.Ready -> drawReadyUI(g)
+            GameState.Running -> drawRunningUI(g)
+            GameState.Paused -> drawPausedUI(g)
+            GameState.GameOver -> drawGameOverUI(g)
         }
 
         VersionOverlay.paint(g)
     }
 
-    private fun drawReadyUI() {
-        val g = game.graphics
+    private fun drawReadyUI(g: Graphics) {
         g.drawARGB(155, 0, 0, 0)
-        settingsPanel.paint(g, paint!!, player!!)
-        paint!!.typeface = Assets.plain
-        promptBanner.paint(g, paint!!, "Press anywhere to start",
+        settingsPanel.paint(g, paint, player)
+        paint.typeface = Assets.plain
+        promptBanner.paint(g, paint, "Press anywhere to start",
             GameConstants.WORLD_WIDTH / 2, PROMPT_Y)
     }
 
-    private fun drawRunningUI() {
-        val g = game.graphics
-        p!!.paint(g, paint!!)
-        c!!.paint(g, paint!!)
-        player!!.paint(g, paint!!)
-        paint!!.typeface = Assets.plain
-        comboMeter.paint(g, paint!!, player!!.getCombo())
-        scoreBar.paint(g, paint!!, session.getScore())
+    private fun drawRunningUI(g: Graphics) {
+        powerUp.paint(g, paint)
+        enemyController.paint(g, paint)
+        player.paint(g, paint)
+        paint.typeface = Assets.plain
+        comboMeter.paint(g, paint, player.getCombo())
+        scoreBar.paint(g, paint, session.getScore())
         menuButton.paint(g)
     }
 
-    private fun drawPausedUI() {
-        val g = game.graphics
+    private fun drawPausedUI(g: Graphics) {
         g.drawRect(0, 0, 1281, 721, Color.BLACK)
-        paint!!.textSize = 40f
-        p!!.paint(g, paint!!)
-        c!!.paint(g, paint!!)
-        player!!.paint(g, paint!!)
+        paint.textSize = 40f
+        powerUp.paint(g, paint)
+        enemyController.paint(g, paint)
+        player.paint(g, paint)
         g.drawARGB(155, 0, 0, 0)
         val settingsHighlight = if (pauseFocusIndex >= PAUSE_FOCUS_SETTINGS_OFFSET) {
             pauseFocusIndex - PAUSE_FOCUS_SETTINGS_OFFSET
         } else {
             -1
         }
-        settingsPanel.paint(g, paint!!, player!!, settingsHighlight)
+        settingsPanel.paint(g, paint, player, settingsHighlight)
         resumeButton.paint(g)
         menuButton.paint(g)
         paintPauseFocusHighlight(g)
-        paint!!.typeface = Assets.plain
-        promptBanner.paint(g, paint!!, "Press Resume or anywhere to continue",
+        paint.typeface = Assets.plain
+        promptBanner.paint(g, paint, "Press Resume or anywhere to continue",
             GameConstants.WORLD_WIDTH / 2, PROMPT_Y)
     }
 
@@ -408,15 +405,14 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
-    private fun drawGameOverUI() {
-        val g = game.graphics
+    private fun drawGameOverUI(g: Graphics) {
         g.drawARGB(155, 0, 0, 0)
         menuButton.paint(g)
         retryButton.paint(g)
-        g.drawImage(Assets.gpg_icon_leaderboards!!, 1175, 5)
-        paint!!.typeface = Assets.plain
-        gameOverBanner.paint(g, paint!!, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200)
-        scoreBanner.paint(g, paint!!, "Score: ${session.getScore()}",
+        Assets.gpg_icon_leaderboards?.let { g.drawImage(it, 1175, 5) }
+        paint.typeface = Assets.plain
+        gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200)
+        scoreBanner.paint(g, paint, "Score: ${session.getScore()}",
             GameConstants.WORLD_WIDTH / 2, 400)
         paintGameOverHighlight(g)
     }
@@ -429,12 +425,18 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     override fun pause() {
+        if (disposed) {
+            return
+        }
         if (state == GameState.Running) {
             openPauseMenu(false)
         }
     }
 
     override fun resume() {
+        if (disposed) {
+            return
+        }
         if (GamePreferences.music) {
             Assets.playMusic()
             Assets.setMusicVolume(0.25f)
@@ -442,50 +444,47 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     override fun dispose() {
+        disposed = true
     }
 
-    fun reset() {
-        paint = null
-        player = null
-        c = null
-        r = null
-        p = null
-        tempEnemyPoint = null
-        state = null
-        facingAngle = 0f
-        session.resetForNewRun()
-        System.gc()
-    }
-
-    fun restart() {
+    private fun restartRun() {
+        markLeaving()
         game.setScreen(GameScreen(majorProjectGame))
     }
 
-    private fun goToMenu() {
+    private fun leaveForMenu() {
+        markLeaving()
         game.setScreen(MainMenuScreen(majorProjectGame))
         if (GamePreferences.music) {
             Assets.setMusicVolume(0.85f)
         }
     }
 
+    private fun markLeaving() {
+        disposed = true
+    }
+
     override fun backButton() {
+        if (disposed) {
+            return
+        }
         when (state) {
             GameState.Running -> openPauseMenu()
             GameState.Paused -> resumeFromPause()
-            GameState.GameOver -> {
-                reset()
-                goToMenu()
-            }
-            else -> goToMenu()
+            GameState.GameOver -> leaveForMenu()
+            else -> leaveForMenu()
         }
     }
 
     private fun changeState(newState: GameState) {
+        if (disposed) {
+            return
+        }
         if (newState == GameState.Paused) {
             pauseFocusIndex = PAUSE_FOCUS_RESUME
         }
         state = newState
-        majorProjectGame.secondaryDisplayManager.updateForGameState(newState)
+        majorProjectGame.updateSecondaryDisplayForGameState(newState)
     }
 
     private fun playTap() {

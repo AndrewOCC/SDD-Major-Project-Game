@@ -56,11 +56,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         }
     }
 
-    fun updateForGameState(state: GameScreen.GameState?) {
-        if (state == null) {
-            show(SecondaryDisplayMode.OFF, null, null)
-            return
-        }
+    fun updateForGameState(state: GameScreen.GameState) {
         when (state) {
             GameScreen.GameState.Ready, GameScreen.GameState.Paused ->
                 show(SecondaryDisplayMode.PAUSE_MENU, Assets.game_bg, "Paused")
