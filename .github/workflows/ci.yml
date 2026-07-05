@@ -33,3 +33,10 @@ jobs:
 
       - name: Build debug APK
         run: ./gradlew :majorProject:assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MajorProject-debug
+          path: majorProject/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

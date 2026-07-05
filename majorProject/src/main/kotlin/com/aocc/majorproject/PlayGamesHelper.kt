@@ -24,9 +24,7 @@ class PlayGamesHelper(private val activity: Activity) {
 
     fun refreshSignInState() {
         signInClient.isAuthenticated.addOnCompleteListener { task ->
-            signedIn = task.isSuccessful
-                && task.result != null
-                && task.result!!.isAuthenticated
+            signedIn = task.isSuccessful && task.result?.isAuthenticated == true
         }
     }
 

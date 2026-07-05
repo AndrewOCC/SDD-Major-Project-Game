@@ -111,11 +111,9 @@ abstract class AndroidGame : FragmentActivity(), Game {
     private fun configureImmersiveWindow() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (insetsController != null) {
-            insetsController.hide(WindowInsetsCompat.Type.systemBars())
-            insetsController.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+        insetsController.hide(WindowInsetsCompat.Type.systemBars())
+        insetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     override fun onResume() {

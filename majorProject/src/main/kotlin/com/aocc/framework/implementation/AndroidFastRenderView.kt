@@ -73,11 +73,12 @@ class AndroidFastRenderView(
                 viewport.update(canvas.width, canvas.height)
                 game.updateInputViewport(viewport)
 
-                graphics.beginFrame(viewport)
-                try {
-                    game.currentScreen.paint(deltaSeconds)
-                } finally {
-                    graphics.endFrame()
+                if (graphics.beginFrame(viewport)) {
+                    try {
+                        game.currentScreen.paint(deltaSeconds)
+                    } finally {
+                        graphics.endFrame()
+                    }
                 }
 
                 canvas.drawColor(Color.BLACK)

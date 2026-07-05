@@ -49,8 +49,19 @@ class Player(private val session: GameSession) {
     private var overheat = 0
     private var shieldDrainAccumulator = 0f
 
+    /** Remaining invincibility (damage i-frames + flash) while > 0. Movement is unaffected. */
+    private var iframeSeconds = 0f
+
+    /** Debug-popup "god mode" toggle: damage is ignored entirely while true. */
+    var debugInvincible = false
+
     fun update(deltaSeconds: Float) {
         val step = GameConstants.secondsToSteps(deltaSeconds)
+
+        if (iframeSeconds > 0f) {
+            iframeSeconds = maxOf(0f, iframeSeconds - deltaSeconds)
+        }
+
         velocityX = (PersonalMethods.limitInside(RotationHandler.getRotationX(), -90, 90) / 90f + xBias) * sensitivity
         velocityX = PersonalMethods.limitInside(velocityX, -maxSpeed, maxSpeed)
         velocityY = (PersonalMethods.limitInside(RotationHandler.getRotationY(), -90, 90) / 90f + yBias) * sensitivity
@@ -67,9 +78,9 @@ class Player(private val session: GameSession) {
             defaultX = borderWidth
         }
 
-        if (defaultY + velocityY * step < borderWidth) {
+        if (defaultY + velocityY * step < GameConstants.PLAY_AREA_TOP) {
             velocityY = 0f
-            defaultY = borderWidth
+            defaultY = GameConstants.PLAY_AREA_TOP.toFloat()
         }
 
         if (defaultX + velocityX * step > GameConstants.WORLD_WIDTH - characterDiameter - borderWidth) {
@@ -149,7 +160,32 @@ class Player(private val session: GameSession) {
                 Color.argb(150 * overheat / maxOverheat, 255, 127, 39)
             )
         }
+
+        if (iframeSeconds > 0f) {
+            // Pulsing red flash while invincible.
+            val pulse = (iframeSeconds / IFRAME_SECONDS).coerceIn(0f, 1f)
+            g.drawCircle(
+                centerX, centerY,
+                characterDiameter / 2 + borderWidth + shieldWidth + 8,
+                Color.argb((200 * pulse).toInt().coerceIn(0, 255), 255, 60, 60)
+            )
+        }
     }
+
+    /**
+     * Applies a damaging hit: loses one health, resets combo and grants invincibility frames.
+     * No-op while already invincible so a single collision can't chain-drain health.
+     */
+    fun onDamaged() {
+        if (debugInvincible || iframeSeconds > 0f) {
+            return
+        }
+        health -= 1
+        combo = 0
+        iframeSeconds = IFRAME_SECONDS
+    }
+
+    fun isInvincible(): Boolean = iframeSeconds > 0f
 
     fun getCombo(): Int = combo
 
@@ -259,5 +295,10 @@ class Player(private val session: GameSession) {
 
     fun setCharacterRadius(characterRadius: Float) {
         characterDiameter = characterRadius
+    }
+
+    companion object {
+        /** Invincibility / flash window applied on taking damage. */
+        const val IFRAME_SECONDS = 0.5f
     }
 }

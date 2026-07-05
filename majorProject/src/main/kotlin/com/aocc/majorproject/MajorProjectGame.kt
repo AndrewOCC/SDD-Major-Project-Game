@@ -8,7 +8,11 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import com.aocc.framework.Screen
 import com.aocc.framework.implementation.AndroidGame
+import com.aocc.majorproject.display.SecondaryDebugAction
+import com.aocc.majorproject.display.SecondaryDebugState
 import com.aocc.majorproject.display.SecondaryDisplayManager
+import com.aocc.majorproject.display.SecondaryPauseState
+import com.aocc.majorproject.ui.PauseMenuPanel
 
 class MajorProjectGame : AndroidGame() {
 
@@ -26,7 +30,7 @@ class MajorProjectGame : AndroidGame() {
 
         try {
             playGamesHelper = PlayGamesHelper(this)
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
             CrashReporter.log(this, "Play Games helper failed to initialize", e)
             playGamesHelper = null
         }
@@ -46,7 +50,9 @@ class MajorProjectGame : AndroidGame() {
 
     override fun setScreen(screen: Screen) {
         super.setScreen(screen)
-        secondaryDisplayManager.updateForScreen(screen)
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateForScreen(screen)
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -57,15 +63,19 @@ class MajorProjectGame : AndroidGame() {
     }
 
     override fun onDestroy() {
-        secondaryDisplayManager.shutdown()
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.shutdown()
+        }
         super.onDestroy()
     }
 
     override fun onResume() {
+        // super.onResume() already resumes the current screen and render view.
         super.onResume()
-        currentScreen.resume()
         screenRotation = screenRotationValue
-        secondaryDisplayManager.refresh()
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.refresh()
+        }
         playGamesHelper?.refreshSignInState()
     }
 
@@ -80,36 +90,41 @@ class MajorProjectGame : AndroidGame() {
         }
 
     override fun onPause() {
-        currentScreen.pause()
+        // super.onPause() already pauses the current screen and render view.
         super.onPause()
         Assets.pauseMusic()
     }
 
     fun onShowLeaderboardsRequested(id: String) {
-        if (playGamesHelper != null) {
-            playGamesHelper!!.showLeaderboards(id)
+        val helper = playGamesHelper
+        if (helper != null) {
+            helper.showLeaderboards(id)
         } else {
             showPlayGamesUnavailable()
         }
     }
 
     fun onShowAchievementsRequested(id: String) {
-        if (playGamesHelper != null) {
-            playGamesHelper!!.showAchievements()
+        val helper = playGamesHelper
+        if (helper != null) {
+            helper.showAchievements()
         } else {
             showPlayGamesUnavailable()
         }
     }
 
     fun isLoggedIn(): Boolean {
-        return playGamesHelper != null && playGamesHelper!!.isSignedIn()
+        return playGamesHelper?.isSignedIn() == true
     }
 
     fun onSignInButtonClicked() {
-        if (playGamesHelper != null && !playGamesHelper!!.isSignedIn()) {
-            playGamesHelper!!.signIn()
-        } else if (playGamesHelper == null) {
+        val helper = playGamesHelper
+        if (helper == null) {
             showPlayGamesUnavailable()
+            return
+        }
+        if (!helper.isSignedIn()) {
+            helper.signIn()
         }
     }
 
@@ -118,8 +133,9 @@ class MajorProjectGame : AndroidGame() {
     }
 
     fun onAchievementUnlocked(id: String) {
-        if (playGamesHelper != null && playGamesHelper!!.isSignedIn()) {
-            playGamesHelper!!.unlockAchievement(id)
+        val helper = playGamesHelper
+        if (helper != null && helper.isSignedIn()) {
+            helper.unlockAchievement(id)
         } else {
             runOnUiThread {
                 Toast.makeText(
@@ -152,6 +168,50 @@ class MajorProjectGame : AndroidGame() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    fun updateSecondaryDisplayForGameState(state: GameScreen.GameState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateForGameState(state)
+        }
+    }
+
+    fun updateSecondaryDisplayStats(score: Int, combo: Int) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateGameStats(score, combo)
+        }
+    }
+
+    /** True while the rear display is actively mirroring live gameplay (score/combo). */
+    fun isSecondaryDisplayPresentingStats(): Boolean {
+        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingGameplayStats()
+    }
+
+    fun updateSecondaryPauseState(pauseState: SecondaryPauseState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updatePauseState(pauseState)
+        }
+    }
+
+    fun updateSecondaryDebugState(debugState: SecondaryDebugState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateDebugState(debugState)
+        }
+    }
+
+    /** Invoked by native controls on the rear-display pause menu. */
+    fun activateSecondaryPauseItem(item: PauseMenuPanel.Item) {
+        (currentScreen as? GameScreen)?.activateSecondaryPauseItem(item)
+    }
+
+    /** Invoked by the rear-display "are you sure?" quit confirmation. */
+    fun confirmSecondaryQuit(confirmed: Boolean) {
+        (currentScreen as? GameScreen)?.confirmSecondaryQuit(confirmed)
+    }
+
+    /** Invoked by the rear-display debug parameters popup. */
+    fun applySecondaryDebugAction(action: SecondaryDebugAction) {
+        (currentScreen as? GameScreen)?.applySecondaryDebugAction(action)
     }
 
     companion object {

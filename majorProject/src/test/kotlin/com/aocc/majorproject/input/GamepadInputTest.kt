@@ -32,4 +32,16 @@ class GamepadInputTest {
         )
         assertNull(GamepadInput.actionForKeyCode(KeyEvent.KEYCODE_Z))
     }
+
+    @Test
+    fun actionForKeyCode_mapsMenuAndStartToPause() {
+        assertEquals(
+            GamepadInput.Action.PAUSE,
+            GamepadInput.actionForKeyCode(KeyEvent.KEYCODE_BUTTON_START)
+        )
+        assertEquals(
+            GamepadInput.Action.PAUSE,
+            GamepadInput.actionForKeyCode(KeyEvent.KEYCODE_MENU)
+        )
+    }
 }

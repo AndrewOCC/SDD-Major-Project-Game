@@ -34,7 +34,7 @@ class PowerUp(t: Int, session: GameSession) {
         usable = true
         radius = 50
         posX = r.nextInt(GameConstants.WORLD_WIDTH)
-        posY = r.nextInt(GameConstants.WORLD_HEIGHT)
+        posY = randomPlayAreaY()
         powerUpRectF.set(
             (posX - radius).toFloat(),
             (posY - radius).toFloat(),
@@ -78,7 +78,7 @@ class PowerUp(t: Int, session: GameSession) {
             }
             if (timeLeft > fullTime) {
                 posX = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
-                posY = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50
+                posY = randomPlayAreaY()
                 powerUpRectF.set(
                     (posX - radius).toFloat(),
                     (posY - radius).toFloat(),
@@ -89,6 +89,13 @@ class PowerUp(t: Int, session: GameSession) {
                 usable = true
             }
         }
+    }
+
+    /** Random Y that keeps the whole power-up circle below the HUD band. */
+    private fun randomPlayAreaY(): Int {
+        val top = GameConstants.PLAY_AREA_TOP + radius
+        val span = GameConstants.WORLD_HEIGHT - radius - top
+        return if (span > 0) r.nextInt(span) + top else top
     }
 
     fun paint(g: Graphics, paint: Paint) {

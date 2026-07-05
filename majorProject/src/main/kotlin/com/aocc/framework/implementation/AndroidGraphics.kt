@@ -47,27 +47,25 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         if (width <= 0 || height <= 0) {
             return
         }
-        if (frameBuffer == null
-            || frameBuffer!!.width != width
-            || frameBuffer!!.height != height
-        ) {
-            frameBuffer?.recycle()
-            frameBuffer = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-            frameCanvas = Canvas(frameBuffer!!)
+        val current = frameBuffer
+        if (current == null || current.width != width || current.height != height) {
+            current?.recycle()
+            val fresh = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            frameBuffer = fresh
+            frameCanvas = Canvas(fresh)
         }
         frameScale = viewport.getScale()
     }
 
-    /** Begin painting into the off-screen buffer for this frame. */
-    fun beginFrame(viewport: Viewport) {
+    /** Begin painting into the off-screen buffer for this frame. Returns false if not ready yet. */
+    fun beginFrame(viewport: Viewport): Boolean {
         ensureFramebuffer(viewport)
-        if (frameCanvas == null) {
-            throw IllegalStateException("Framebuffer not ready")
-        }
+        val frameCanvas = frameCanvas ?: return false
         canvas = frameCanvas
-        canvas!!.drawColor(Color.BLACK)
-        canvas!!.save()
-        canvas!!.scale(frameScale, frameScale)
+        frameCanvas.drawColor(Color.BLACK)
+        frameCanvas.save()
+        frameCanvas.scale(frameScale, frameScale)
+        return true
     }
 
     fun endFrame() {
