@@ -73,9 +73,9 @@ class Enemy(
             posX = radius
         }
 
-        if (posY - radius + velocityY * step < 0) {
+        if (posY - radius + velocityY * step < GameConstants.PLAY_AREA_TOP) {
             velocityY = 0f
-            posY = radius
+            posY = GameConstants.PLAY_AREA_TOP + radius
         }
 
         if (posX + radius + velocityX * step > GameConstants.WORLD_WIDTH) {

@@ -49,6 +49,18 @@ class PlayerTest {
     }
 
     @Test
+    fun update_clampsPlayerBelowHudBand() {
+        player.setDefaultX(600)
+        player.setDefaultY(0)
+        setRotation(0f, -90f)
+
+        player.update(ONE_FRAME)
+
+        assertTrue(player.getDefaultY() >= GameConstants.PLAY_AREA_TOP.toFloat())
+        assertEquals(0f, player.getVelocityY(), 0.001f)
+    }
+
+    @Test
     fun update_decrementsShieldEachFrame() {
         player.setShield(100)
 

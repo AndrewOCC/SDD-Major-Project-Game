@@ -67,9 +67,9 @@ class Player(private val session: GameSession) {
             defaultX = borderWidth
         }
 
-        if (defaultY + velocityY * step < borderWidth) {
+        if (defaultY + velocityY * step < GameConstants.PLAY_AREA_TOP) {
             velocityY = 0f
-            defaultY = borderWidth
+            defaultY = GameConstants.PLAY_AREA_TOP.toFloat()
         }
 
         if (defaultX + velocityX * step > GameConstants.WORLD_WIDTH - characterDiameter - borderWidth) {

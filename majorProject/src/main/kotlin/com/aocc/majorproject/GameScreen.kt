@@ -193,8 +193,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
 
         if (session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
+            val spawnTop = GameConstants.PLAY_AREA_TOP + 20
             tempEnemyPoint.x = random.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
-            tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50
+            tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 50 - spawnTop) + spawnTop
             PersonalMethods.limitOutside(
                 tempEnemyPoint,
                 player.getCenterX().toInt(),
