@@ -36,6 +36,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val player = session.getPlayer()
     private val enemyController = EnemyController(session)
     private val random = Random()
+    private val formations = EnemyFormations(random)
     private val powerUp = PowerUp(1, session)
     private val tempEnemyPoint = Point()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -193,19 +194,24 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
 
         if (session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
-            val spawnTop = GameConstants.PLAY_AREA_TOP + 20
-            tempEnemyPoint.x = random.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
-            tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 50 - spawnTop) + spawnTop
-            PersonalMethods.limitOutside(
-                tempEnemyPoint,
-                player.getCenterX().toInt(),
-                player.getCenterY().toInt(),
-                100
-            )
-            if (random.nextInt(10) == 9) {
-                enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 2)
+            if (random.nextInt(100) < FORMATION_SPAWN_PERCENT) {
+                formations.spawnRandom(enemyController)
+                enemyController.generateNextEnemy(session.getSpeed())
             } else {
-                enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 1)
+                val spawnTop = GameConstants.PLAY_AREA_TOP + 20
+                tempEnemyPoint.x = random.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
+                tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 50 - spawnTop) + spawnTop
+                PersonalMethods.limitOutside(
+                    tempEnemyPoint,
+                    player.getCenterX().toInt(),
+                    player.getCenterY().toInt(),
+                    100
+                )
+                if (random.nextInt(10) == 9) {
+                    enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 2)
+                } else {
+                    enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 1)
+                }
             }
             session.resetEnemyCounter()
         }
@@ -557,6 +563,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     companion object {
+        /** Chance (%) that a spawn tick produces a group formation instead of a single tracker. */
+        private const val FORMATION_SPAWN_PERCENT = 25
         private const val READY_FOCUS_START = 0
         private const val READY_FOCUS_SETTINGS_OFFSET = 1
         private const val PAUSE_FOCUS_RESUME = 0

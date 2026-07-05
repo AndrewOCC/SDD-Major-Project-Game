@@ -49,8 +49,16 @@ class Player(private val session: GameSession) {
     private var overheat = 0
     private var shieldDrainAccumulator = 0f
 
+    /** Remaining hit-stun (also acts as damage i-frames while > 0). */
+    private var stunSeconds = 0f
+
     fun update(deltaSeconds: Float) {
         val step = GameConstants.secondsToSteps(deltaSeconds)
+
+        if (stunSeconds > 0f) {
+            stunSeconds = maxOf(0f, stunSeconds - deltaSeconds)
+        }
+
         velocityX = (PersonalMethods.limitInside(RotationHandler.getRotationX(), -90, 90) / 90f + xBias) * sensitivity
         velocityX = PersonalMethods.limitInside(velocityX, -maxSpeed, maxSpeed)
         velocityY = (PersonalMethods.limitInside(RotationHandler.getRotationY(), -90, 90) / 90f + yBias) * sensitivity
@@ -60,6 +68,12 @@ class Player(private val session: GameSession) {
             (atan((velocityY / velocityX).toDouble()) * 180 / PI).toFloat()
         } else {
             180f + (atan((velocityY / velocityX).toDouble()) * 180 / PI).toFloat()
+        }
+
+        // Hit-stun freezes movement for a brief window after taking damage.
+        if (stunSeconds > 0f) {
+            velocityX = 0f
+            velocityY = 0f
         }
 
         if (defaultX + velocityX * step < borderWidth) {
@@ -149,7 +163,32 @@ class Player(private val session: GameSession) {
                 Color.argb(150 * overheat / maxOverheat, 255, 127, 39)
             )
         }
+
+        if (stunSeconds > 0f) {
+            // Pulsing red flash while stunned.
+            val pulse = (stunSeconds / STUN_SECONDS).coerceIn(0f, 1f)
+            g.drawCircle(
+                centerX, centerY,
+                characterDiameter / 2 + borderWidth + shieldWidth + 8,
+                Color.argb((200 * pulse).toInt().coerceIn(0, 255), 255, 60, 60)
+            )
+        }
     }
+
+    /**
+     * Applies a damaging hit: loses one health, resets combo and triggers hit-stun.
+     * No-op while already stunned so a single collision can't chain-drain health.
+     */
+    fun onDamaged() {
+        if (stunSeconds > 0f) {
+            return
+        }
+        health -= 1
+        combo = 0
+        stunSeconds = STUN_SECONDS
+    }
+
+    fun isStunned(): Boolean = stunSeconds > 0f
 
     fun getCombo(): Int = combo
 
@@ -259,5 +298,10 @@ class Player(private val session: GameSession) {
 
     fun setCharacterRadius(characterRadius: Float) {
         characterDiameter = characterRadius
+    }
+
+    companion object {
+        /** Hit-stun / i-frame window applied on taking damage. */
+        const val STUN_SECONDS = 0.45f
     }
 }

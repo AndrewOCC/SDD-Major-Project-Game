@@ -87,6 +87,39 @@ class PlayerTest {
         assertEquals(5, player.getHealth())
     }
 
+    @Test
+    fun onDamaged_reducesHealthAndAppliesStun() {
+        val before = player.getHealth()
+
+        player.onDamaged()
+
+        assertEquals(before - 1, player.getHealth())
+        assertTrue(player.isStunned())
+    }
+
+    @Test
+    fun onDamaged_iFramesPreventChainDamage() {
+        player.onDamaged()
+        val afterFirst = player.getHealth()
+
+        player.onDamaged()
+
+        assertEquals(afterFirst, player.getHealth())
+    }
+
+    @Test
+    fun stun_freezesMovement() {
+        player.onDamaged()
+        player.setDefaultX(600f)
+        player.setDefaultY(320f)
+        setRotation(90f, 0f)
+
+        player.update(ONE_FRAME)
+
+        assertEquals(0f, player.getVelocityX(), 0.001f)
+        assertEquals(0f, player.getVelocityY(), 0.001f)
+    }
+
     private fun setRotation(x: Float, y: Float) {
         RotationHandler.screenX = x
         RotationHandler.screenY = y
