@@ -172,6 +172,12 @@ class MajorProjectGame : AndroidGame() {
         }
     }
 
+    fun updateSecondaryDisplayStats(score: Int, combo: Int) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateGameStats(score, combo)
+        }
+    }
+
     companion object {
         @JvmField
         var screenRotation: Int = 0

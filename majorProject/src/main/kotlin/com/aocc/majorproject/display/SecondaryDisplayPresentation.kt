@@ -63,6 +63,19 @@ class SecondaryDisplayPresentation(
         applyPendingContent()
     }
 
+    /** Updates only the overlay text (e.g. live score / combo) without rebinding the background. */
+    fun setOverlayLabel(overlayLabel: String?) {
+        val current = pendingContent ?: return
+        pendingContent = PendingContent(current.mode, current.background, overlayLabel)
+        val textView = overlayText ?: return
+        if (!overlayLabel.isNullOrEmpty()) {
+            textView.text = overlayLabel
+            textView.visibility = TextView.VISIBLE
+        } else {
+            textView.visibility = TextView.GONE
+        }
+    }
+
     private fun applyPendingContent() {
         val imageView = imageView ?: return
         val pending = pendingContent ?: return

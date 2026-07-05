@@ -6,10 +6,12 @@ import com.aocc.framework.PersonalMethods
 /** Main menu hit regions anchored to the world rectangle (works with viewport letterboxing). */
 object MainMenuLayout {
 
-    const val BUTTON_WIDTH = 440
-    const val BUTTON_HEIGHT = 200
-    const val BUTTON_Y = 435
-    const val BUTTON_GAP = 80
+    // Play / Tutorial button art measured from menu-bg.png (1280x720):
+    // Play  x[138,575] y[433,632], How-to-Play mirrored about the horizontal centre.
+    const val BUTTON_WIDTH = 437
+    const val BUTTON_HEIGHT = 199
+    const val BUTTON_Y = 433
+    const val BUTTON_GAP = 130
 
     const val GPG_BUTTON_WIDTH = 100
     const val GPG_BUTTON_HEIGHT = 80
@@ -19,9 +21,9 @@ object MainMenuLayout {
     const val SIGN_IN_HEIGHT = 60
     const val SIGN_IN_MARGIN = 7
 
-    /** Inset from touch targets to match visible art on menu_bg for Play/Tutorial. */
-    private const val PLAY_HIGHLIGHT_INSET_X = 26
-    private const val PLAY_HIGHLIGHT_INSET_Y = 38
+    /** Small inset so the focus ring sits just inside the rounded button art. */
+    private const val PLAY_HIGHLIGHT_INSET_X = 10
+    private const val PLAY_HIGHLIGHT_INSET_Y = 10
 
     @JvmStatic
     fun playButton(): UiBounds {

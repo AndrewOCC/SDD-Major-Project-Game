@@ -35,4 +35,23 @@ class MainMenuLayoutTest {
         assertTrue(highlight.width < touch.width)
         assertTrue(highlight.height < touch.height)
     }
+
+    @Test
+    fun playButton_matchesMeasuredMenuArt() {
+        val play = MainMenuLayout.playButton()
+        // Measured from menu-bg.png: Play art x[138,575] y[433,632].
+        assertEquals(138, play.x)
+        assertEquals(MainMenuLayout.BUTTON_Y, play.y)
+        assertEquals(437, play.width)
+        assertEquals(199, play.height)
+    }
+
+    @Test
+    fun tutorialButton_mirrorsPlayAcrossCentre() {
+        val play = MainMenuLayout.playButton()
+        val tutorial = MainMenuLayout.tutorialButton()
+        val leftGap = play.x
+        val rightGap = GameConstants.WORLD_WIDTH - (tutorial.x + tutorial.width)
+        assertEquals(leftGap, rightGap)
+    }
 }

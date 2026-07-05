@@ -45,6 +45,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private lateinit var menuButton: UiButton
+    private lateinit var startButton: UiButton
     private lateinit var resumeButton: UiButton
     private lateinit var retryButton: UiButton
     private val settingsPanel = SettingsPanel()
@@ -56,6 +57,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val scoreBanner = UiBanner(60f)
 
     private var facingAngle = 0f
+    private var readyFocusIndex = READY_FOCUS_START
     private var pauseFocusIndex = 0
     private var gameOverSelection = 0
 
@@ -64,6 +66,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         GamePreferences.applyTiltTo(player)
 
         menuButton = UiButton.menuAt(0, 0)
+        startButton = UiButton(
+            UiLayout.centerX(UiButton.MENU_WIDTH), 605,
+            UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Start"
+        )
         resumeButton = UiButton(
             UiLayout.centerX(UiButton.MENU_WIDTH), 605,
             UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Resume"
@@ -84,7 +90,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 updateReady(touchEvents)
                 handleGamepadReady(gamepadActions)
             }
-            GameState.Running -> updateRunning(touchEvents, deltaTime)
+            GameState.Running -> {
+                updateRunning(touchEvents, deltaTime)
+                handleGamepadRunning(gamepadActions)
+            }
             GameState.Paused -> {
                 updatePaused(touchEvents)
                 handleGamepadPaused(gamepadActions)
@@ -99,6 +108,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private fun updateReady(touchEvents: List<TouchEvent>) {
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
+                if (startButton.touchInBounds(event)) {
+                    playTap()
+                    changeState(GameState.Running)
+                    return
+                }
                 if (settingsPanel.handleTouch(event, player)) {
                     continue
                 }
@@ -109,17 +123,48 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun handleGamepadReady(actions: List<GamepadInput.Action>) {
+        val focusItems = buildReadyFocusBounds()
         for (action in actions) {
             if (action == GamepadInput.Action.CANCEL) {
                 leaveForMenu()
                 return
             }
-            if (settingsPanel.handleGamepad(action, player)) {
+            val direction = SpatialFocusNavigator.directionFrom(action)
+            if (direction != null) {
+                readyFocusIndex = SpatialFocusNavigator.findNext(
+                    readyFocusIndex, direction, focusItems
+                )
                 continue
             }
-            if (action == GamepadInput.Action.CONFIRM) {
-                playTap()
-                changeState(GameState.Running)
+            if (action == GamepadInput.Action.CONFIRM || action == GamepadInput.Action.PAUSE) {
+                activateReadyFocus()
+            }
+        }
+    }
+
+    private fun buildReadyFocusBounds(): List<UiBounds> {
+        val items = ArrayList<UiBounds>(READY_FOCUS_SETTINGS_OFFSET + SettingsPanel.ITEM_COUNT)
+        items.add(startButton.getBounds())
+        for (i in 0 until SettingsPanel.ITEM_COUNT) {
+            settingsPanel.getItemBounds(i)?.let { items.add(it) }
+        }
+        return items
+    }
+
+    private fun activateReadyFocus() {
+        if (readyFocusIndex == READY_FOCUS_START) {
+            playTap()
+            changeState(GameState.Running)
+            return
+        }
+        settingsPanel.activateFocusIndex(readyFocusIndex - READY_FOCUS_SETTINGS_OFFSET, player)
+    }
+
+    private fun handleGamepadRunning(actions: List<GamepadInput.Action>) {
+        for (action in actions) {
+            if (action == GamepadInput.Action.PAUSE) {
+                openPauseMenu()
+                return
             }
         }
     }
@@ -169,6 +214,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 majorProjectGame.getString(R.string.achievement_ccccombo)
             )
         }
+
+        majorProjectGame.updateSecondaryDisplayStats(session.getScore(), player.getCombo())
 
         if (session.isGameOverFlag()) {
             changeState(GameState.GameOver)
@@ -223,7 +270,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 activatePauseFocus()
                 continue
             }
-            if (action == GamepadInput.Action.CANCEL) {
+            if (action == GamepadInput.Action.CANCEL || action == GamepadInput.Action.PAUSE) {
                 resumeFromPause()
             }
         }
@@ -361,9 +408,18 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private fun drawReadyUI(g: Graphics) {
         g.drawARGB(155, 0, 0, 0)
-        settingsPanel.paint(g, paint, player)
+        val settingsHighlight = if (readyFocusIndex >= READY_FOCUS_SETTINGS_OFFSET) {
+            readyFocusIndex - READY_FOCUS_SETTINGS_OFFSET
+        } else {
+            -1
+        }
+        settingsPanel.paint(g, paint, player, settingsHighlight)
+        startButton.paint(g)
+        if (readyFocusIndex == READY_FOCUS_START) {
+            UiSelectionHighlight.paintRect(g, startButton.getBounds())
+        }
         paint.typeface = Assets.plain
-        promptBanner.paint(g, paint, "Press anywhere to start",
+        promptBanner.paint(g, paint, "Press Start or tap anywhere to begin",
             GameConstants.WORLD_WIDTH / 2, PROMPT_Y)
     }
 
@@ -500,6 +556,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     companion object {
+        private const val READY_FOCUS_START = 0
+        private const val READY_FOCUS_SETTINGS_OFFSET = 1
         private const val PAUSE_FOCUS_RESUME = 0
         private const val PAUSE_FOCUS_MENU = 1
         private const val PAUSE_FOCUS_SETTINGS_OFFSET = 2

@@ -27,6 +27,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private var presentation: SecondaryDisplayPresentation? = null
     private var currentMode = SecondaryDisplayMode.OFF
     private var pendingShow: PendingShow? = null
+    private var lastStatsLabel: String? = null
 
     init {
         displayManager?.registerDisplayListener(this, mainHandler)
@@ -63,11 +64,35 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
             GameScreen.GameState.GameOver ->
                 show(SecondaryDisplayMode.PAUSE_MENU, Assets.game_bg, "Game Over")
             GameScreen.GameState.Running ->
-                show(SecondaryDisplayMode.BACKGROUND, Assets.menu_bg, null)
+                show(SecondaryDisplayMode.BACKGROUND, Assets.game_bg, formatStats(0, 0))
         }
     }
 
+    /** Live score / combo mirrored to the rear screen during gameplay. */
+    fun updateGameStats(score: Int, combo: Int) {
+        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.BACKGROUND) {
+            return
+        }
+        val label = formatStats(score, combo)
+        if (label == lastStatsLabel) {
+            return
+        }
+        lastStatsLabel = label
+        mainHandler.post {
+            if (currentMode == SecondaryDisplayMode.BACKGROUND) {
+                presentation?.setOverlayLabel(label)
+            }
+        }
+    }
+
+    private fun formatStats(score: Int, combo: Int): String {
+        return "SCORE $score\nCombo x$combo"
+    }
+
     private fun show(mode: SecondaryDisplayMode, background: Image?, overlayLabel: String?) {
+        if (mode != currentMode) {
+            lastStatsLabel = null
+        }
         currentMode = mode
         if (!GamePreferences.secondScreenEnabled || mode == SecondaryDisplayMode.OFF) {
             pendingShow = null
