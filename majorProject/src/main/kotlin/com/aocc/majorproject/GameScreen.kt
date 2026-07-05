@@ -195,7 +195,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
         if (session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
             if (random.nextInt(100) < FORMATION_SPAWN_PERCENT) {
-                formations.spawnRandom(enemyController)
+                formations.spawnRandom(enemyController, player)
                 enemyController.generateNextEnemy(session.getSpeed())
             } else {
                 val spawnTop = GameConstants.PLAY_AREA_TOP + 20

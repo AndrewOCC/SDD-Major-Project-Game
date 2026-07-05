@@ -66,6 +66,60 @@ class EnemyBehaviorTest {
         assertTrue(controller.e.size >= 4)
     }
 
+    @Test
+    fun fullLine_spansFromNearTopToBottomOfPlayArea() {
+        val controller = EnemyController(session)
+        EnemyFormations(Random(2)).fullLine(controller)
+
+        val minY = controller.e.minOf { it.getPosY() }
+        val maxY = controller.e.maxOf { it.getPosY() }
+        assertTrue(minY <= GameConstants.PLAY_AREA_TOP + 80f)
+        assertTrue(maxY >= GameConstants.WORLD_HEIGHT - 120f)
+    }
+
+    @Test
+    fun box_spawnsColsTimesRows() {
+        val controller = EnemyController(session)
+        EnemyFormations(Random(3)).box(controller, cols = 4, rows = 3)
+
+        assertEquals(12, controller.e.size)
+    }
+
+    @Test
+    fun circleAroundPlayer_surroundsPlayerWithTrackers() {
+        session.getPlayer().setDefaultX(600f)
+        session.getPlayer().setDefaultY(320f)
+        session.getPlayer().update(1f / GameConstants.REFERENCE_FPS)
+        val controller = EnemyController(session)
+
+        EnemyFormations(Random(4)).circleAroundPlayer(controller, session.getPlayer(), count = 8)
+
+        assertEquals(8, controller.e.size)
+    }
+
+    @Test
+    fun aimingArrow_aimsAtPlayerWhileFormingThenLaunches() {
+        val player = session.getPlayer()
+        player.setDefaultX(600f)
+        player.setDefaultY(600f)
+        player.update(ONE_FRAME)
+        val controller = EnemyController(session)
+
+        EnemyFormations(Random(5)).aimingArrow(controller, player)
+        assertEquals(6, controller.e.size)
+
+        // One forming frame positions the arrow aiming down toward the player.
+        controller.update(ONE_FRAME)
+        val formedMaxY = controller.e.maxOf { it.getPosY() }
+        assertTrue(formedMaxY > GameConstants.PLAY_AREA_TOP.toFloat())
+
+        // After the forming window it launches toward the player (downward here).
+        repeat(60) { controller.update(ONE_FRAME) }
+        val launched = controller.e.isEmpty() ||
+            controller.e.maxOf { it.getPosY() } > formedMaxY + 20f
+        assertTrue(launched)
+    }
+
     companion object {
         private val ONE_FRAME = 1f / GameConstants.REFERENCE_FPS
     }

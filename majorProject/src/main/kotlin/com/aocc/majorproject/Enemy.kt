@@ -31,7 +31,7 @@ class Enemy(
     private val pathSpeed: Float = 4f,
 ) {
 
-    enum class Movement { TRACK, DRIFT, PATH }
+    enum class Movement { TRACK, DRIFT, PATH, HELD }
 
     private val player: Player = session.getPlayer()
 
@@ -83,6 +83,7 @@ class Enemy(
             Movement.TRACK -> stepTrack(step)
             Movement.DRIFT -> stepDrift(step)
             Movement.PATH -> stepPath(step)
+            Movement.HELD -> Unit // position controlled externally by its formation
         }
 
         val effectiveRadius = effectiveRadius()
@@ -230,6 +231,19 @@ class Enemy(
     }
 
     fun isDespawned(): Boolean = despawned
+
+    /** Directly places the dot (used by formations that position their members). */
+    fun setPosition(x: Float, y: Float) {
+        posX = x
+        posY = y
+    }
+
+    /** Releases a held dot into a straight-line drift with the given velocity. */
+    fun launch(vx: Float, vy: Float) {
+        driftVelX = vx
+        driftVelY = vy
+        currentMovement = Movement.DRIFT
+    }
 
     fun getHealth(): Int = health
 

@@ -13,6 +13,7 @@ import java.util.Random
 class EnemyController(private val session: GameSession) {
 
     var e: LinkedList<Enemy> = LinkedList()
+    private val activeFormations = LinkedList<ActiveFormation>()
     private val r = Random()
 
     private var nextEnemySpawn = 0
@@ -29,6 +30,11 @@ class EnemyController(private val session: GameSession) {
         generateNextEnemy(session.getSpeed())
     }
 
+    /** Homing dot added without advancing the single-spawn cadence (for formations). */
+    fun addTracking(x: Float, y: Float, t: Int) {
+        e.add(Enemy(x, y, t, session, Enemy.Movement.TRACK))
+    }
+
     /** Straight-line dot with no tracking; drifts across the screen and despawns off-edge. */
     fun addDrift(x: Float, y: Float, t: Int, vx: Float, vy: Float) {
         e.add(Enemy(x, y, t, session, Enemy.Movement.DRIFT, driftVx = vx, driftVy = vy))
@@ -39,6 +45,17 @@ class EnemyController(private val session: GameSession) {
         e.add(Enemy(x, y, t, session, Enemy.Movement.PATH, path = waypoints, pathSpeed = speed))
     }
 
+    /** Held dot whose position is driven by its formation until launched. Returns it. */
+    fun addHeld(x: Float, y: Float, t: Int): Enemy {
+        val enemy = Enemy(x, y, t, session, Enemy.Movement.HELD)
+        e.add(enemy)
+        return enemy
+    }
+
+    fun addFormation(formation: ActiveFormation) {
+        activeFormations.add(formation)
+    }
+
     fun removeEnemy(i: Int) {
         e.removeAt(i)
         Assets.zap?.play(GamePreferences.getTapVolume().toFloat())
@@ -46,9 +63,19 @@ class EnemyController(private val session: GameSession) {
 
     fun removeAllEnemies() {
         e.clear()
+        activeFormations.clear()
     }
 
     fun update(deltaSeconds: Float) {
+        val formationIterator = activeFormations.iterator()
+        while (formationIterator.hasNext()) {
+            val formation = formationIterator.next()
+            formation.update(deltaSeconds)
+            if (formation.isComplete()) {
+                formationIterator.remove()
+            }
+        }
+
         var i = 0
         while (i < e.size) {
             val enemy = e[i]
