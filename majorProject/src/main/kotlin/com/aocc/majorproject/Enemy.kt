@@ -10,14 +10,18 @@ import com.aocc.framework.PersonalMethods
 import kotlin.math.hypot
 
 /**
- * A single "dot". Dots spring in from a point to full size over [SPAWN_SECONDS], then
- * move according to their [Movement]:
+ * A single "dot". Dots take [spawnSeconds] to spawn in — a bouncy grow to full size over the
+ * first half, then a stationary (but still collidable) hold for the second half — before they
+ * start moving according to their [Movement]:
  *
  *  - [Movement.TRACK]: homes toward the player and is confined to the play area (default).
  *  - [Movement.DRIFT]: travels in a straight line at constant velocity, ignores the player,
  *    and despawns once fully off-screen.
  *  - [Movement.PATH]: follows a prescribed list of waypoints (a shape / trajectory); once the
  *    path is exhausted it continues drifting in its last heading and despawns off-screen.
+ *
+ * [spawnSeconds] is shorter for dots spawned later in a run, so enemies spawn in faster as the
+ * game speeds up (see [spawnSecondsFor]).
  */
 class Enemy(
     spawnX: Float,
@@ -57,6 +61,7 @@ class Enemy(
     private var driftVelY = driftVy
     private var pathIndex = 0
 
+    private val spawnSeconds = spawnSecondsFor(session.getSpeed())
     private var spawnElapsed = 0f
     private var despawned = false
 
@@ -75,15 +80,19 @@ class Enemy(
     fun update(deltaSeconds: Float) {
         val step = GameConstants.secondsToSteps(deltaSeconds)
 
-        if (spawnElapsed < SPAWN_SECONDS) {
-            spawnElapsed = minOf(SPAWN_SECONDS, spawnElapsed + deltaSeconds)
+        if (spawnElapsed < spawnSeconds) {
+            spawnElapsed = minOf(spawnSeconds, spawnElapsed + deltaSeconds)
         }
 
-        when (currentMovement) {
-            Movement.TRACK -> stepTrack(step)
-            Movement.DRIFT -> stepDrift(step)
-            Movement.PATH -> stepPath(step)
-            Movement.HELD -> Unit // position controlled externally by its formation
+        // Frozen for the whole spawn-in window (bouncy grow, then a stationary hold);
+        // only starts moving once fully spawned.
+        if (spawnElapsed >= spawnSeconds) {
+            when (currentMovement) {
+                Movement.TRACK -> stepTrack(step)
+                Movement.DRIFT -> stepDrift(step)
+                Movement.PATH -> stepPath(step)
+                Movement.HELD -> Unit // position controlled externally by its formation
+            }
         }
 
         val effectiveRadius = effectiveRadius()
@@ -204,12 +213,16 @@ class Enemy(
             posY > GameConstants.WORLD_HEIGHT + margin
     }
 
-    /** Eased spring scale (0 → slight overshoot → 1) applied while spawning in. */
+    /**
+     * Eased spring scale (0 → slight overshoot → 1) for the first half of [spawnSeconds];
+     * holds at 1 (full size, stationary, still collidable) for the second half.
+     */
     private fun spawnScale(): Float {
-        if (spawnElapsed >= SPAWN_SECONDS) {
+        val growSeconds = spawnSeconds / 2f
+        if (spawnElapsed >= growSeconds) {
             return 1f
         }
-        val t = spawnElapsed / SPAWN_SECONDS
+        val t = spawnElapsed / growSeconds
         val c1 = 1.70158f
         val c3 = c1 + 1f
         val p = t - 1f
@@ -217,6 +230,8 @@ class Enemy(
     }
 
     private fun effectiveRadius(): Float = radius * maxOf(0f, spawnScale())
+
+    fun getSpawnSeconds(): Float = spawnSeconds
 
     fun increaseTopSpeed() {
         if (topspeed < 20) {
@@ -292,10 +307,21 @@ class Enemy(
     }
 
     companion object {
-        /** Spawn-in "spring to full size" duration. */
-        const val SPAWN_SECONDS = 0.5f
+        /** Spawn-in duration at the start of a run (slow bouncy grow). */
+        const val SPAWN_SECONDS_MAX = 1.8f
+        /** Spawn-in duration once the game has fully ramped up (quick grow). */
+        const val SPAWN_SECONDS_MIN = 1.0f
         /** Dots don't deal contact damage/score until mostly grown. */
         private const val CONTACT_MIN_SCALE = 0.6f
         private const val OFF_SCREEN_MARGIN = 60f
+
+        /** Spawn-in duration for a dot created at the given session [speed] (0..[GameConstants.SPEED_RAMP_MAX]). */
+        @JvmStatic
+        fun spawnSecondsFor(speed: Int): Float {
+            val progress = PersonalMethods.limitInside(
+                speed.toFloat(), 0, GameConstants.SPEED_RAMP_MAX
+            ) / GameConstants.SPEED_RAMP_MAX
+            return SPAWN_SECONDS_MAX - (SPAWN_SECONDS_MAX - SPAWN_SECONDS_MIN) * progress
+        }
     }
 }

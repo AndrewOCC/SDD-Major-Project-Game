@@ -8,7 +8,11 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import com.aocc.framework.Screen
 import com.aocc.framework.implementation.AndroidGame
+import com.aocc.majorproject.display.SecondaryDebugAction
+import com.aocc.majorproject.display.SecondaryDebugState
 import com.aocc.majorproject.display.SecondaryDisplayManager
+import com.aocc.majorproject.display.SecondaryPauseState
+import com.aocc.majorproject.ui.PauseMenuPanel
 
 class MajorProjectGame : AndroidGame() {
 
@@ -176,6 +180,38 @@ class MajorProjectGame : AndroidGame() {
         if (::secondaryDisplayManager.isInitialized) {
             secondaryDisplayManager.updateGameStats(score, combo)
         }
+    }
+
+    /** True while the rear display is actively mirroring live gameplay (score/combo). */
+    fun isSecondaryDisplayPresentingStats(): Boolean {
+        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingGameplayStats()
+    }
+
+    fun updateSecondaryPauseState(pauseState: SecondaryPauseState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updatePauseState(pauseState)
+        }
+    }
+
+    fun updateSecondaryDebugState(debugState: SecondaryDebugState) {
+        if (::secondaryDisplayManager.isInitialized) {
+            secondaryDisplayManager.updateDebugState(debugState)
+        }
+    }
+
+    /** Invoked by native controls on the rear-display pause menu. */
+    fun activateSecondaryPauseItem(item: PauseMenuPanel.Item) {
+        (currentScreen as? GameScreen)?.activateSecondaryPauseItem(item)
+    }
+
+    /** Invoked by the rear-display "are you sure?" quit confirmation. */
+    fun confirmSecondaryQuit(confirmed: Boolean) {
+        (currentScreen as? GameScreen)?.confirmSecondaryQuit(confirmed)
+    }
+
+    /** Invoked by the rear-display debug parameters popup. */
+    fun applySecondaryDebugAction(action: SecondaryDebugAction) {
+        (currentScreen as? GameScreen)?.applySecondaryDebugAction(action)
     }
 
     companion object {

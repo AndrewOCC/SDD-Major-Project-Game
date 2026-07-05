@@ -13,6 +13,9 @@ object GameConstants {
     const val MAX_DELTA_SECONDS = 0.05f
     const val SPEED_RAMP_INTERVAL_FRAMES = 500f
 
+    /** Speed-ramp steps at which the game reaches its fastest pace. */
+    const val SPEED_RAMP_MAX = 25
+
     /**
      * Height of the reserved HUD band at the top of the screen (score / combo strip).
      * Gameplay — the player, enemies and power-ups — is confined below this line so

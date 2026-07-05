@@ -22,15 +22,32 @@ class EnemyBehaviorTest {
     }
 
     @Test
+    fun enemy_staysAtSpawnPointWhileSpawningIn() {
+        val controller = EnemyController(session)
+        controller.addDrift(100f, 300f, 1, 5f, 0f)
+        val enemy = controller.e.first()
+
+        // Well within the spawn-in window (1.0s-1.8s depending on session speed).
+        repeat(30) { enemy.update(ONE_FRAME) } // 0.5s
+
+        assertEquals(100f, enemy.getPosX(), 0.001f)
+        assertEquals(300f, enemy.getPosY(), 0.001f)
+    }
+
+    @Test
     fun driftEnemy_movesAlongTrajectoryWithoutTracking() {
         val controller = EnemyController(session)
         controller.addDrift(100f, 300f, 1, 5f, 0f)
         val enemy = controller.e.first()
 
+        // Run past the (session-speed-dependent) spawn-in window so movement has started.
+        repeat(SPAWN_WAIT_FRAMES) { enemy.update(ONE_FRAME) }
+        val xBeforeStep = enemy.getPosX()
+
         enemy.update(ONE_FRAME)
 
-        // Pure drift: exactly start + velocity, no homing acceleration toward the player.
-        assertEquals(105f, enemy.getPosX(), 0.001f)
+        // Pure drift: exactly + velocity, no homing acceleration toward the player.
+        assertEquals(xBeforeStep + 5f, enemy.getPosX(), 0.001f)
         assertEquals(300f, enemy.getPosY(), 0.001f)
     }
 
@@ -39,9 +56,16 @@ class EnemyBehaviorTest {
         val controller = EnemyController(session)
         controller.addDrift((GameConstants.WORLD_WIDTH - 5).toFloat(), 300f, 1, 20f, 0f)
 
-        repeat(60) { controller.update(ONE_FRAME) }
+        repeat(SPAWN_WAIT_FRAMES + 10) { controller.update(ONE_FRAME) }
 
         assertTrue(controller.e.isEmpty())
+    }
+
+    @Test
+    fun spawnSecondsFor_shortensAsSessionSpeedIncreases() {
+        assertEquals(1.8f, Enemy.spawnSecondsFor(0), 0.001f)
+        assertEquals(1.0f, Enemy.spawnSecondsFor(GameConstants.SPEED_RAMP_MAX), 0.001f)
+        assertTrue(Enemy.spawnSecondsFor(12) < Enemy.spawnSecondsFor(0))
     }
 
     @Test
@@ -113,8 +137,9 @@ class EnemyBehaviorTest {
         val formedMaxY = controller.e.maxOf { it.getPosY() }
         assertTrue(formedMaxY > GameConstants.PLAY_AREA_TOP.toFloat())
 
-        // After the forming window it launches toward the player (downward here).
-        repeat(60) { controller.update(ONE_FRAME) }
+        // After the forming window (matches the dots' own spawn-in duration) it launches
+        // toward the player (downward here).
+        repeat(SPAWN_WAIT_FRAMES + 10) { controller.update(ONE_FRAME) }
         val launched = controller.e.isEmpty() ||
             controller.e.maxOf { it.getPosY() } > formedMaxY + 20f
         assertTrue(launched)
@@ -122,5 +147,7 @@ class EnemyBehaviorTest {
 
     companion object {
         private val ONE_FRAME = 1f / GameConstants.REFERENCE_FPS
+        /** Frames to fast-forward past the longest possible spawn-in window (1.8s at 60fps). */
+        private const val SPAWN_WAIT_FRAMES = 110
     }
 }

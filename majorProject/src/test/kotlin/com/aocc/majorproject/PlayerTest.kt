@@ -88,13 +88,13 @@ class PlayerTest {
     }
 
     @Test
-    fun onDamaged_reducesHealthAndAppliesStun() {
+    fun onDamaged_reducesHealthAndGrantsInvincibility() {
         val before = player.getHealth()
 
         player.onDamaged()
 
         assertEquals(before - 1, player.getHealth())
-        assertTrue(player.isStunned())
+        assertTrue(player.isInvincible())
     }
 
     @Test
@@ -108,7 +108,7 @@ class PlayerTest {
     }
 
     @Test
-    fun stun_freezesMovement() {
+    fun invincibility_doesNotFreezeMovement() {
         player.onDamaged()
         player.setDefaultX(600f)
         player.setDefaultY(320f)
@@ -116,8 +116,17 @@ class PlayerTest {
 
         player.update(ONE_FRAME)
 
-        assertEquals(0f, player.getVelocityX(), 0.001f)
-        assertEquals(0f, player.getVelocityY(), 0.001f)
+        assertTrue(player.getVelocityX() > 0f)
+    }
+
+    @Test
+    fun invincibility_expiresAfterIframeWindow() {
+        player.onDamaged()
+        assertTrue(player.isInvincible())
+
+        repeat(GameConstants.REFERENCE_FPS.toInt()) { player.update(ONE_FRAME) }
+
+        assertTrue(!player.isInvincible())
     }
 
     private fun setRotation(x: Float, y: Float) {

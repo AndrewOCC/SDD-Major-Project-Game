@@ -124,8 +124,9 @@ class EnemyFormations(private val random: Random = Random()) {
         val centerX = (100 + random.nextInt(GameConstants.WORLD_WIDTH - 200)).toFloat()
         val centerY = GameConstants.PLAY_AREA_TOP + 50f
         val members = ARROW_OFFSETS.map { controller.addHeld(centerX, centerY, 1) }
+        val formSeconds = members.firstOrNull()?.getSpawnSeconds() ?: Enemy.SPAWN_SECONDS_MAX
         controller.addFormation(
-            ArrowFormation(members, ARROW_OFFSETS, centerX, centerY, player, ARROW_LAUNCH_SPEED)
+            ArrowFormation(members, ARROW_OFFSETS, centerX, centerY, player, ARROW_LAUNCH_SPEED, formSeconds)
         )
     }
 
@@ -213,6 +214,7 @@ private class ArrowFormation(
     private val centerY: Float,
     private val player: Player,
     private val launchSpeed: Float,
+    private val formSeconds: Float,
 ) : ActiveFormation {
 
     private var elapsed = 0f
@@ -242,7 +244,7 @@ private class ArrowFormation(
             )
         }
 
-        if (elapsed >= FORM_SECONDS) {
+        if (elapsed >= formSeconds) {
             for (member in members) {
                 member.launch(forwardX * launchSpeed, forwardY * launchSpeed)
             }
@@ -251,8 +253,4 @@ private class ArrowFormation(
     }
 
     override fun isComplete(): Boolean = released
-
-    companion object {
-        private val FORM_SECONDS = Enemy.SPAWN_SECONDS
-    }
 }

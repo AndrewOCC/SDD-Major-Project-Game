@@ -28,6 +28,8 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private var currentMode = SecondaryDisplayMode.OFF
     private var pendingShow: PendingShow? = null
     private var lastStatsLabel: String? = null
+    private var lastPauseState: SecondaryPauseState? = null
+    private var lastDebugState: SecondaryDebugState? = null
 
     init {
         displayManager?.registerDisplayListener(this, mainHandler)
@@ -46,6 +48,13 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
 
     fun isSecondaryDisplayAvailable(): Boolean {
         return SecondaryDisplayFinder.find(activity, displayManager) != null
+    }
+
+    /** True while the rear display is actively mirroring live gameplay (score/combo). */
+    fun isPresentingGameplayStats(): Boolean {
+        return GamePreferences.secondScreenEnabled &&
+            currentMode == SecondaryDisplayMode.BACKGROUND &&
+            presentation != null
     }
 
     fun updateForScreen(screen: Screen) {
@@ -80,7 +89,39 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         lastStatsLabel = label
         mainHandler.post {
             if (currentMode == SecondaryDisplayMode.BACKGROUND) {
-                presentation?.setOverlayLabel(label)
+                presentation?.setStatsLabel(label)
+            }
+        }
+    }
+
+    /** Mirrors the primary pause menu's live state (toggles, countdown, quit-confirm) to the rear screen. */
+    fun updatePauseState(pauseState: SecondaryPauseState) {
+        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.PAUSE_MENU) {
+            return
+        }
+        if (pauseState == lastPauseState) {
+            return
+        }
+        lastPauseState = pauseState
+        mainHandler.post {
+            if (currentMode == SecondaryDisplayMode.PAUSE_MENU) {
+                presentation?.setPauseState(pauseState)
+            }
+        }
+    }
+
+    /** Mirrors debug-parameter values into the rear screen's parameters popup. */
+    fun updateDebugState(debugState: SecondaryDebugState) {
+        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.BACKGROUND) {
+            return
+        }
+        if (debugState == lastDebugState) {
+            return
+        }
+        lastDebugState = debugState
+        mainHandler.post {
+            if (currentMode == SecondaryDisplayMode.BACKGROUND) {
+                presentation?.setDebugState(debugState)
             }
         }
     }
@@ -92,6 +133,8 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private fun show(mode: SecondaryDisplayMode, background: Image?, overlayLabel: String?) {
         if (mode != currentMode) {
             lastStatsLabel = null
+            lastPauseState = null
+            lastDebugState = null
         }
         currentMode = mode
         if (!GamePreferences.secondScreenEnabled || mode == SecondaryDisplayMode.OFF) {
@@ -125,7 +168,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
             var current = presentation
             if (current == null || current.display?.displayId != secondary.displayId) {
                 dismissPresentationSync()
-                current = SecondaryDisplayPresentation(activity, secondary)
+                current = SecondaryDisplayPresentation(activity, secondary, activity)
                 presentation = current
                 current.show()
             }
