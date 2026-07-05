@@ -52,7 +52,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private val scoreBar = ScoreBar()
     private val comboMeter = ComboMeter()
-    private val promptBanner = UiBanner(50f)
+    private val promptBanner = UiBanner(34f)
     private val gameOverBanner = UiBanner(100f)
     private val scoreBanner = UiBanner(60f)
 
@@ -67,11 +67,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
         menuButton = UiButton.menuAt(0, 0)
         startButton = UiButton(
-            UiLayout.centerX(UiButton.MENU_WIDTH), 605,
+            UiLayout.centerX(UiButton.MENU_WIDTH), PRIMARY_BUTTON_Y,
             UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Start"
         )
         resumeButton = UiButton(
-            UiLayout.centerX(UiButton.MENU_WIDTH), 605,
+            UiLayout.centerX(UiButton.MENU_WIDTH), PRIMARY_BUTTON_Y,
             UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Resume"
         )
         retryButton = UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry")
@@ -561,6 +561,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         private const val PAUSE_FOCUS_RESUME = 0
         private const val PAUSE_FOCUS_MENU = 1
         private const val PAUSE_FOCUS_SETTINGS_OFFSET = 2
-        val PROMPT_Y: Int = SettingsPanel.PANEL_Y + SettingsPanel.PANEL_HEIGHT + 65
+
+        /** Primary action button sits just below the settings panel. */
+        val PRIMARY_BUTTON_Y: Int = SettingsPanel.PANEL_Y + SettingsPanel.PANEL_HEIGHT + 12
+        /** Prompt sits below the button (button spans PRIMARY_BUTTON_Y..+MENU_HEIGHT). */
+        val PROMPT_Y: Int = PRIMARY_BUTTON_Y + UiButton.MENU_HEIGHT + 24
     }
 }

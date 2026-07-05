@@ -2,6 +2,7 @@ package com.aocc.majorproject.ui
 
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import com.aocc.framework.Graphics
 import com.aocc.framework.Input
 import com.aocc.majorproject.Assets
@@ -29,6 +30,11 @@ class SettingsPanel {
     private val musicIconY: Int
     private val displayToggleBounds: UiBounds
 
+    private val tiltPanelX: Int
+    private val tiltPanelWidth: Int
+    private val tiltButtonY: Int
+    private val measureRect = Rect()
+
     private var selectedIndex = 0
     private var game: MajorProjectGame? = null
 
@@ -36,26 +42,55 @@ class SettingsPanel {
         outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT,
             Color.argb(180, 0, 0, 0))
 
-        val soundPanelX = PANEL_X + INNER_PADDING
+        // Sound column flush to the left edge, tilt column flush to the right edge.
+        val soundPanelX = PANEL_X
         val columnY = PANEL_Y + INNER_PADDING + 20
         val columnHeight = PANEL_HEIGHT - INNER_PADDING * 2 - 20
         soundPanel = UiPanel(soundPanelX, columnY, SOUND_COLUMN_WIDTH, columnHeight, Color.DKGRAY)
 
-        val tiltPanelX = soundPanelX + SOUND_COLUMN_WIDTH + COLUMN_GAP
-        val tiltPanelWidth = PANEL_WIDTH - INNER_PADDING * 2 - SOUND_COLUMN_WIDTH - COLUMN_GAP
+        tiltPanelX = soundPanelX + SOUND_COLUMN_WIDTH + COLUMN_GAP
+        tiltPanelWidth = PANEL_WIDTH - SOUND_COLUMN_WIDTH - COLUMN_GAP
         tiltPanel = UiPanel(tiltPanelX, columnY, tiltPanelWidth, columnHeight, Color.DKGRAY)
 
-        val tiltButtonX = tiltPanelX + 36
-        val tiltButtonY = columnY + 56
-        flatTiltButton = Button(tiltButtonX, tiltButtonY, 3, 0, "Flat")
-        tiltedTiltButton = Button(tiltButtonX, tiltButtonY + TILT_BUTTON_SPACING, 3, 0, "Tilted")
-        customTiltButton = Button(tiltButtonX, tiltButtonY + TILT_BUTTON_SPACING * 2, 3, 0, "Custom")
+        tiltButtonY = columnY + 56
+        // Initial X is recentred each frame in layoutTiltButtons() once text can be measured.
+        val initialTiltX = tiltPanelX + (tiltPanelWidth - TILT_ICON_WIDTH) / 2
+        flatTiltButton = Button(initialTiltX, tiltButtonY, 3, 0, "Flat")
+        tiltedTiltButton = Button(initialTiltX, tiltButtonY + TILT_BUTTON_SPACING, 3, 0, "Tilted")
+        customTiltButton = Button(initialTiltX, tiltButtonY + TILT_BUTTON_SPACING * 2, 3, 0, "Custom")
 
         soundIconX = soundPanelX + (SOUND_COLUMN_WIDTH - ICON_SIZE) / 2
         soundIconY = columnY + 72
         musicIconY = soundIconY + ICON_SIZE + ICON_GAP
         val displayY = musicIconY + ICON_SIZE + 20
         displayToggleBounds = UiBounds(soundPanelX + 8, displayY, SOUND_COLUMN_WIDTH - 16, 56)
+    }
+
+    /**
+     * Centres the icon + label group inside the tilt column so left and right
+     * padding match. All three rows share the widest label's group width so the
+     * icons stay vertically aligned.
+     */
+    private fun layoutTiltButtons(paint: Paint) {
+        val maxLabelWidth = maxOf(
+            measureLabel(paint, "Flat"),
+            measureLabel(paint, "Tilted"),
+            measureLabel(paint, "Custom")
+        )
+        val groupWidth = TILT_ICON_WIDTH + TILT_LABEL_GAP + maxLabelWidth
+        var left = tiltPanelX + (tiltPanelWidth - groupWidth) / 2
+        val minLeft = tiltPanelX + TILT_MIN_PADDING
+        if (left < minLeft) {
+            left = minLeft
+        }
+        flatTiltButton.setPosX(left)
+        tiltedTiltButton.setPosX(left)
+        customTiltButton.setPosX(left)
+    }
+
+    private fun measureLabel(paint: Paint, label: String): Int {
+        paint.getTextBounds(label, 0, label.length, measureRect)
+        return measureRect.width()
     }
 
     fun setGame(game: MajorProjectGame) {
@@ -70,6 +105,8 @@ class SettingsPanel {
 
     /** @param focusedItemIndex settings item to highlight, or `-1` to skip highlight */
     fun paint(g: Graphics, paint: Paint, player: Player, focusedItemIndex: Int) {
+        layoutTiltButtons(paint)
+
         outerPanel.paintBackground(g)
         outerPanel.paintTitle(g, paint, "Settings")
 
@@ -229,5 +266,10 @@ class SettingsPanel {
         private const val INNER_PADDING = 24
         private const val TILT_BUTTON_SPACING = 126
         const val ITEM_COUNT = 6
+
+        // Tilt row: icon (Button type-3 width) + gap + label; must match Button.paint.
+        private const val TILT_ICON_WIDTH = 64
+        private const val TILT_LABEL_GAP = 12
+        private const val TILT_MIN_PADDING = 24
     }
 }
