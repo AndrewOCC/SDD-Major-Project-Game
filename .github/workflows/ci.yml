@@ -40,3 +40,24 @@ jobs:
           name: MajorProject-debug
           path: majorProject/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Pings the AYN Thor auto-installer (tools/ayn-thor-autoinstall) so a fresh debug
+      # build lands on-device within seconds of landing here. Only fires on an actual
+      # push (not the paired pull_request run for the same commit) and needs the
+      # NTFY_TOPIC repository secret — see tools/ayn-thor-autoinstall/README.md.
+      - name: Notify device of new build
+        if: github.event_name == 'push' && success()
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_TOPIC secret not set, skipping device notification."
+            exit 0
+          fi
+          curl -sf \
+            -H "Title: MajorProject build ready" \
+            -H "Priority: high" \
+            -H "Tags: rocket" \
+            -d "branch=${{ github.ref_name }} sha=${{ github.sha }}" \
+            "https://ntfy.sh/$NTFY_TOPIC"
