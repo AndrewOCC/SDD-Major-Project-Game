@@ -58,22 +58,24 @@ class Button(
             3 -> {
                 when (text) {
                     "Flat" -> {
-                        if (player.tiltMode == 1) {
-                            g.drawImage(Assets.tilt_control_flat_2!!, posX, posY)
+                        val icon = if (player.tiltMode == 1) {
+                            Assets.tilt_control_flat_2
                         } else {
-                            g.drawImage(Assets.tilt_control_flat!!, posX, posY)
+                            Assets.tilt_control_flat
                         }
+                        icon?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
                             posY + width / 2, Color.BLACK
                         )
                     }
                     "Tilted" -> {
-                        if (player.tiltMode == 2) {
-                            g.drawImage(Assets.tilt_control_tilted_2!!, posX, posY)
+                        val icon = if (player.tiltMode == 2) {
+                            Assets.tilt_control_tilted_2
                         } else {
-                            g.drawImage(Assets.tilt_control_tilted!!, posX, posY)
+                            Assets.tilt_control_tilted
                         }
+                        icon?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
                             posY + width / 2, Color.BLACK
@@ -88,7 +90,7 @@ class Button(
                                 Color.RED
                             )
                         }
-                        g.drawImage(Assets.tilt_control_custom!!, posX, posY)
+                        Assets.tilt_control_custom?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
                             posY + width / 2, Color.BLACK

@@ -12,7 +12,7 @@ class UiButton(
     y: Int,
     width: Int,
     height: Int,
-    private val label: String,
+    private var label: String,
     private val textSize: Float = MENU_TEXT_SIZE,
 ) {
 
@@ -54,6 +54,10 @@ class UiButton(
     fun getBounds(): UiBounds = bounds
 
     fun getLabel(): String = label
+
+    fun setLabel(label: String) {
+        this.label = label
+    }
 
     companion object {
         const val MENU_WIDTH = 200

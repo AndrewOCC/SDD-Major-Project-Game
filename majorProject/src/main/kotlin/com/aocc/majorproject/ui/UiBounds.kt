@@ -3,7 +3,7 @@ package com.aocc.majorproject.ui
 import com.aocc.framework.Input
 
 /** Axis-aligned rectangle in world coordinates (1280×720). */
-class UiBounds(
+data class UiBounds(
     @JvmField val x: Int,
     @JvmField val y: Int,
     @JvmField val width: Int,

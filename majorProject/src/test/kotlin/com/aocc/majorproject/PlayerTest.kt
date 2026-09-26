@@ -49,6 +49,18 @@ class PlayerTest {
     }
 
     @Test
+    fun update_clampsPlayerBelowHudBand() {
+        player.setDefaultX(600)
+        player.setDefaultY(0)
+        setRotation(0f, -90f)
+
+        player.update(ONE_FRAME)
+
+        assertTrue(player.getDefaultY() >= GameConstants.PLAY_AREA_TOP.toFloat())
+        assertEquals(0f, player.getVelocityY(), 0.001f)
+    }
+
+    @Test
     fun update_decrementsShieldEachFrame() {
         player.setShield(100)
 
@@ -73,6 +85,48 @@ class PlayerTest {
         player.update(ONE_FRAME)
 
         assertEquals(5, player.getHealth())
+    }
+
+    @Test
+    fun onDamaged_reducesHealthAndGrantsInvincibility() {
+        val before = player.getHealth()
+
+        player.onDamaged()
+
+        assertEquals(before - 1, player.getHealth())
+        assertTrue(player.isInvincible())
+    }
+
+    @Test
+    fun onDamaged_iFramesPreventChainDamage() {
+        player.onDamaged()
+        val afterFirst = player.getHealth()
+
+        player.onDamaged()
+
+        assertEquals(afterFirst, player.getHealth())
+    }
+
+    @Test
+    fun invincibility_doesNotFreezeMovement() {
+        player.onDamaged()
+        player.setDefaultX(600f)
+        player.setDefaultY(320f)
+        setRotation(90f, 0f)
+
+        player.update(ONE_FRAME)
+
+        assertTrue(player.getVelocityX() > 0f)
+    }
+
+    @Test
+    fun invincibility_expiresAfterIframeWindow() {
+        player.onDamaged()
+        assertTrue(player.isInvincible())
+
+        repeat(GameConstants.REFERENCE_FPS.toInt()) { player.update(ONE_FRAME) }
+
+        assertTrue(!player.isInvincible())
     }
 
     private fun setRotation(x: Float, y: Float) {

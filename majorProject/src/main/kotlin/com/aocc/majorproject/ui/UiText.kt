@@ -1,10 +1,13 @@
 package com.aocc.majorproject.ui
 
 import android.graphics.Paint
+import android.graphics.Rect
 import com.aocc.framework.Graphics
 
 /** Text rendering with correct horizontal and vertical alignment within bounds. */
 object UiText {
+
+    private val measureRect = Rect()
 
     enum class HAlign(private val paintAlign: Paint.Align) {
         LEFT(Paint.Align.LEFT),
@@ -68,8 +71,14 @@ object UiText {
         centerY: Int,
         color: Int,
     ) {
-        val fm = paint.fontMetrics
-        val baseline = centerY - (fm.ascent + fm.descent) / 2f
-        g.drawString(text, anchorX, baseline.toInt(), color, paint)
+        // Centre on the actual glyph ink box rather than font metrics; the custom
+        // game font ("power_clear") has asymmetric ascent/descent padding that
+        // otherwise leaves labels visibly high inside their bounds.
+        if (text.isEmpty()) {
+            return
+        }
+        paint.getTextBounds(text, 0, text.length, measureRect)
+        val baseline = centerY - (measureRect.top + measureRect.bottom) / 2f
+        g.drawString(text, anchorX, Math.round(baseline), color, paint)
     }
 }

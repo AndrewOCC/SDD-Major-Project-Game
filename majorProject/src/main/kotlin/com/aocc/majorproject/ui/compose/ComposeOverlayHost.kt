@@ -1,8 +1,7 @@
 package com.aocc.majorproject.ui.compose
 
 import android.view.View
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
+import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
 import com.aocc.majorproject.ui.ComposeOverlayBridge
 
@@ -21,12 +20,14 @@ import com.aocc.majorproject.ui.ComposeOverlayBridge
  *
  * The overlay view is GONE (zero-size, non-interactive) whenever nothing is shown so the
  * SurfaceView's touch events are never intercepted.
+ *
+ * A plain [FrameLayout] is used until a modal is needed. Eager [ComposeView] creation at
+ * startup can crash on device when composition runs before the view tree lifecycle owner
+ * is available.
  */
 class ComposeOverlayHost(activity: FragmentActivity) : ComposeOverlayBridge {
 
-    val view: ComposeView = ComposeView(activity).apply {
-        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-        setContent { /* reserved for future full-screen modals */ }
+    val view: View = FrameLayout(activity).apply {
         visibility = View.GONE
         isClickable = false
     }

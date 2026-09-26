@@ -12,6 +12,7 @@ class GamepadInput {
         RIGHT,
         CONFIRM,
         CANCEL,
+        PAUSE,
     }
 
     private val pending = mutableListOf<Action>()
@@ -46,6 +47,8 @@ class GamepadInput {
                 KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_SPACE -> Action.CONFIRM
                 KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_ESCAPE,
                 KeyEvent.KEYCODE_BACK -> Action.CANCEL
+                KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU,
+                KeyEvent.KEYCODE_BUTTON_MODE -> Action.PAUSE
                 else -> null
             }
         }

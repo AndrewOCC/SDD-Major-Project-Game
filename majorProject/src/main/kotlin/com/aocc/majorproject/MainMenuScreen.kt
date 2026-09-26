@@ -68,13 +68,11 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
 
     private fun buildMenuFocusBounds(): List<UiBounds> {
         val loggedIn = majorProjectGame.isLoggedIn()
-        return List(getMenuItemCount()) { i ->
-            MainMenuLayout.highlightForIndex(i, !loggedIn)!!
+        val items = ArrayList<UiBounds>(MainMenuLayout.menuItemCount(loggedIn))
+        for (i in 0 until MainMenuLayout.menuItemCount(loggedIn)) {
+            MainMenuLayout.highlightForIndex(i, loggedIn)?.let { items.add(it) }
         }
-    }
-
-    private fun getMenuItemCount(): Int {
-        return if (majorProjectGame.isLoggedIn()) 4 else 5
+        return items
     }
 
     private fun activateMenuItem(index: Int) {
@@ -125,28 +123,19 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
 
     override fun paint(deltaTime: Float) {
         val g = game.graphics
-        g.drawImage(Assets.menu_bg!!, 0, 0)
+        Assets.menu_bg?.let { g.drawImage(it, 0, 0) }
 
-        g.drawImage(
-            Assets.gpg_icon_leaderboards!!,
-            MainMenuLayout.leaderboardsDrawX(), MainMenuLayout.leaderboardsDrawY()
-        )
-        g.drawImage(
-            Assets.gpg_icon_achievements!!,
-            MainMenuLayout.achievementsDrawX(), MainMenuLayout.achievementsDrawY()
-        )
+        Assets.gpg_icon_leaderboards?.let {
+            g.drawImage(it, MainMenuLayout.leaderboardsDrawX(), MainMenuLayout.leaderboardsDrawY())
+        }
+        Assets.gpg_icon_achievements?.let {
+            g.drawImage(it, MainMenuLayout.achievementsDrawX(), MainMenuLayout.achievementsDrawY())
+        }
 
         if (!majorProjectGame.isLoggedIn()) {
-            if (signInPressed >= 0) {
-                g.drawImage(
-                    Assets.sign_in_press!!,
-                    MainMenuLayout.signInDrawX(), MainMenuLayout.signInDrawY()
-                )
-            } else {
-                g.drawImage(
-                    Assets.sign_in_base!!,
-                    MainMenuLayout.signInDrawX(), MainMenuLayout.signInDrawY()
-                )
+            val signInImage = if (signInPressed >= 0) Assets.sign_in_press else Assets.sign_in_base
+            signInImage?.let {
+                g.drawImage(it, MainMenuLayout.signInDrawX(), MainMenuLayout.signInDrawY())
             }
         }
 
@@ -156,7 +145,7 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
 
     private fun paintSelectionHighlight(g: Graphics) {
         val bounds = MainMenuLayout.highlightForIndex(
-            selectedMenuIndex, !majorProjectGame.isLoggedIn()
+            selectedMenuIndex, majorProjectGame.isLoggedIn()
         ) ?: return
         UiSelectionHighlight.paintRect(g, bounds)
     }
@@ -171,6 +160,6 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
     }
 
     override fun backButton() {
-        android.os.Process.killProcess(android.os.Process.myPid())
+        majorProjectGame.finish()
     }
 }

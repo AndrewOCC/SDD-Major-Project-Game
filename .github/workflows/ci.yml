@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Check out repository
@@ -23,6 +25,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default list includes the legacy 'tools' package, which no longer exists.
+          packages: 'platform-tools'
 
       - name: Install Android SDK packages
         run: |
@@ -32,4 +37,31 @@ jobs:
         run: ./gradlew :majorProject:testDebugUnitTest
 
       - name: Build debug APK
-        run: ./gradlew :majorProject:assembleDebug
+        run: ./gradlew :majorProject:assembleDebug -PbuildNumber=${{ github.run_number }}
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MajorProject-debug
+          path: majorProject/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # Publishes each green push as its own prerelease so Obtainium (with
+      # "Include prereleases" on) picks it up. Keeps only the newest 10.
+      - name: Publish debug prerelease
+        if: github.event_name == 'push' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" majorProject/build.gradle)
+          tag="v${version}-${{ github.run_number }}"
+          cp majorProject/build/outputs/apk/debug/*.apk "MajorProject-${tag}.apk"
+          gh release create "$tag" "MajorProject-${tag}.apk" \
+            --prerelease \
+            --target "${{ github.sha }}" \
+            --title "Debug build ${tag}" \
+            --notes "Branch ${{ github.ref_name }} @ ${{ github.sha }}"
+          gh release list --limit 100 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease) | .tagName' \
+            | tail -n +11 \
+            | xargs -r -I{} gh release delete {} --yes --cleanup-tag

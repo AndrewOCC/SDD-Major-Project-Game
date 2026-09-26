@@ -53,6 +53,11 @@ class GameSession {
         speed++
     }
 
+    /** Debug-popup override for the speed ramp (0..[com.aocc.framework.GameConstants.SPEED_RAMP_MAX]). */
+    fun setSpeed(speed: Int) {
+        this.speed = speed
+    }
+
     fun isGameOverFlag(): Boolean = gameOverFlag
 
     fun setGameOverFlag(gameOverFlag: Boolean) {

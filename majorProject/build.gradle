@@ -12,8 +12,9 @@ android {
         applicationId 'com.aocc.majorproject'
         minSdk 21
         targetSdk 35
-        versionCode 18
-        versionName '1.9.0'
+        versionCode 27
+        // CI passes -PbuildNumber so each published build has a unique version Obtainium can track.
+        versionName '1.12.0' + (project.hasProperty('buildNumber') ? "-${project.property('buildNumber')}" : '')
     }
 
     signingConfigs {

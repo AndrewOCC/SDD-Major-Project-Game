@@ -34,7 +34,7 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
 
     override fun paint(deltaTime: Float) {
         val g = game.graphics
-        g.drawImage(Assets.tutorial!!, 0, 0)
+        Assets.tutorial?.let { g.drawImage(it, 0, 0) }
         g.drawRect(0, 0, UiButton.MENU_WIDTH, LEGACY_MENU_ART_HEIGHT, Color.BLACK)
         menuButton.paint(g)
         VersionOverlay.paint(g)
