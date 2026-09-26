@@ -27,4 +27,13 @@ public class ViewportTest {
         assertEquals(GameConstants.WORLD_WIDTH / 2, worldX, 2);
         assertEquals(GameConstants.WORLD_HEIGHT / 2, worldY, 2);
     }
+
+    @Test
+    public void offsets_centerLetterboxOnUltrawide() {
+        Viewport viewport = new Viewport();
+        viewport.update(2400, 1080);
+
+        assertTrue(viewport.getOffsetX() > 0);
+        assertEquals(0f, viewport.getOffsetY(), 0.001f);
+    }
 }

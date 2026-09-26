@@ -42,6 +42,9 @@ public class Assets {
 	
 	public static Typeface plain;
 	public static Typeface bold;
+
+	/** Pixel scale tier used when loading bitmaps (1 or 2). */
+	public static int loadedPixelScale = 1;
 	
 	public static void loadMusic(MajorProjectGame majorProjectGame) {
 		for (String musicFile : MUSIC_FILES) {

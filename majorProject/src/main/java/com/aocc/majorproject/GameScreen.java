@@ -1,7 +1,6 @@
 package com.aocc.majorproject;
 
 import java.util.Random;
-
 import java.util.List;
 
 import android.graphics.Color;
@@ -13,94 +12,65 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
-import com.aocc.framework.implementation.RotationHandler;
 import com.aocc.majorproject.ui.ComboMeter;
 import com.aocc.majorproject.ui.ScoreBar;
+import com.aocc.majorproject.ui.SettingsPanel;
 import com.aocc.majorproject.ui.UiBanner;
 import com.aocc.majorproject.ui.UiButton;
-import com.aocc.majorproject.ui.UiPanel;
 
 public class GameScreen extends Screen {
-	// Defining GameState Enum
 	enum GameState {Ready, Running, Paused, GameOver}
-	GameState state = GameState.Ready;	// represents gamestate as enum
-	
-	// for non-static references within code, this holds the MajorProjectGame object
+	GameState state = GameState.Ready;
+
 	MajorProjectGame majorProjectGame;
-	
-	// Variable Setup
+
 	Paint paint;
 	private final GameSession session = new GameSession();
 	private Player player;
 	EnemyController c;
-	Random r;				// object for random number generation
-	PowerUp p;				// DEBUG powerup object (will most likely be replaced by controller)
-	Point tempEnemyPoint;	// holds x/y values for new enemies before creation
-
-	final int SOUND_X = 50;
-	final int SOUND_Y = 200;
-	final int SOUND_WIDTH = 100;
-
-	final int TILT_MENU_X = 1000;
-	final int TILT_MENU_Y = 200;
+	Random r;
+	PowerUp p;
+	Point tempEnemyPoint;
 
     final int ARENA_HEIGHT = 3;
 
     UiButton menuButton;
     UiButton retryButton;
-    Button flatTiltButton;
-    Button tiltedTiltButton;
-    Button customTiltButton;
+    private final SettingsPanel settingsPanel = new SettingsPanel();
 
     private final ScoreBar scoreBar = new ScoreBar();
     private final ComboMeter comboMeter = new ComboMeter();
+    // Prompt placed below the settings panel (panel bottom = PANEL_Y + PANEL_HEIGHT = 590).
+    static final int PROMPT_Y = SettingsPanel.PANEL_Y + SettingsPanel.PANEL_HEIGHT + 65;
     private final UiBanner promptBanner = new UiBanner(50f);
     private final UiBanner gameOverBanner = new UiBanner(100f);
     private final UiBanner scoreBanner = new UiBanner(60f);
-    private UiPanel tiltPanel;
 
-	
 	private float facingAngle = 0;
 
 	public GameScreen(MajorProjectGame game) {
 		super(game);
-		
+
 		majorProjectGame = game;
-		
-		// Initialise game objects
+
 		player = session.getPlayer();
 		c = new EnemyController(session);
 		r = new Random();
 		p = new PowerUp(1, session);
 		tempEnemyPoint = new Point();
 
-        // buttons
         menuButton = UiButton.menuAt(0, 0);
         retryButton = new UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry");
-        flatTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y, 3, 0, "Flat");
-        tiltedTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+150, 3, 0, "Tilted");
-        customTiltButton = new Button(TILT_MENU_X, TILT_MENU_Y+300, 3, 0, "Custom");
-        tiltPanel = new UiPanel(TILT_MENU_X - 40, TILT_MENU_Y - 20, 275,
-                360 + flatTiltButton.getWidth(), Color.DKGRAY);
 
-
-
-		
-		// Define a paint object
 		paint = new Paint();
         paint.setTextSize(30);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setAntiAlias(true);
         paint.setColor(Color.WHITE);
-        
 	}
 
-	// this update method splits into four classes, each for a different gamestate.
 	@Override
 	public void update(float deltaTime) {
-		//Log.d("MajorProject", "tapVol: " + MainMenuScreen.tapVol);
-		
-		//gathers touch events to pass into the subclasses themselves
 		List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
 
         if (state == GameState.Ready)
@@ -111,222 +81,101 @@ public class GameScreen extends Screen {
             updatePaused(touchEvents);
         if (state == GameState.GameOver)
             updateGameOver(touchEvents);
-
 	}
 
 	private void updateReady(List<TouchEvent> touchEvents) {
-		// Any touch event starts the game
-		int len = touchEvents.size();
-		
-		for (int i = 0; i < len; i++) {
+		for (int i = 0; i < touchEvents.size(); i++) {
 			TouchEvent event = touchEvents.get(i);
-		    if (event.type == TouchEvent.TOUCH_UP){
-		    	
-		    	if (flatTiltButton.touchInBounds(event)){
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(0);
-		    		player.setyBias(0);
-		    		player.setTiltMode(1);
-
-		    	} else if (tiltedTiltButton.touchInBounds(event)){
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(0);
-	    			player.setyBias(-0.30f);
-		    		player.setTiltMode(2);
-
-			    } else if (customTiltButton.touchInBounds(event)){
-			    	Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(-PersonalMethods.limitInside(RotationHandler.getRotationX(),-90,90)/90);
-		    		player.setyBias(-PersonalMethods.limitInside(RotationHandler.getRotationY(),-90,90)/90);
-		    		player.setTiltMode(3);
-
-			    } else if (PersonalMethods.touchInBounds(event, TILT_MENU_X - 40, TILT_MENU_Y - 20,
-			    		250, 360 + flatTiltButton.getWidth())){
-			    	
-			    } else if (PersonalMethods.touchInBounds(event, SOUND_X, SOUND_Y, SOUND_WIDTH, SOUND_WIDTH)){
-			    	if (MainMenuScreen.sound == false){
-			    		MainMenuScreen.sound = true;
-			    		MainMenuScreen.tapVol = 10;
-			    	} else if (MainMenuScreen.sound == true) {
-			    		MainMenuScreen.sound = false;
-			    		MainMenuScreen.tapVol = 0;
-			    	}
-			    } else if (PersonalMethods.touchInBounds(event, SOUND_X, SOUND_Y + 200, SOUND_WIDTH, SOUND_WIDTH)){
-			    	if (MainMenuScreen.music == false){
-			    		MainMenuScreen.music = true;
-			    		Assets.setMusicVolume(0.25f);
-			    	} else if (MainMenuScreen.music == true) {
-			    		MainMenuScreen.music = false;
-			    		Assets.setMusicVolume(0);
-			    	}
-			    } else {
-			    	Assets.tap.play(MainMenuScreen.tapVol);
-			    	state = GameState.Running;
-		        }
-			    	
+		    if (event.type == TouchEvent.TOUCH_UP) {
+		    	if (settingsPanel.handleTouch(event, player)) {
+		    		continue;
+		    	}
+		    	Assets.tap.play(MainMenuScreen.tapVol);
+		    	state = GameState.Running;
 	    	}
 		}
-
 	}
-	
+
 	private void updateRunning(List<TouchEvent> touchEvents, float deltaSeconds) {
 		float step = GameConstants.secondsToSteps(deltaSeconds);
 
-		// User Input
-		
-		// update count: allows events to occur every few updates an on-update basis
 		session.addUpdateCount(step);
 		session.addEnemyCounter(step);
-		
-		// Calls individual update methods for each object
+
 		player.update(deltaSeconds);
 		c.update(deltaSeconds);
 		p.update(deltaSeconds);
-		
-		// Check important events
-		
-		// UPDATING SPEED
+
 		if (session.getSpeed() < 25 && session.getUpdateCount() >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES) {
 			session.incrementSpeed();
 			session.subtractUpdateCount(GameConstants.SPEED_RAMP_INTERVAL_FRAMES);
 			c.increaseEnemyTopSpeed();
 		}
-		
-		
-		// ENEMIES
-		if (session.getEnemyCounter() > c.getNextEnemySpawn()){
-			
+
+		if (session.getEnemyCounter() > c.getNextEnemySpawn()) {
 			tempEnemyPoint.x = r.nextInt(GameConstants.WORLD_WIDTH - 100) + 50;
 			tempEnemyPoint.y = r.nextInt(GameConstants.WORLD_HEIGHT - 100) + 50;
-			
 			PersonalMethods.limitOutside(tempEnemyPoint, (int)player.getCenterX(), (int)player.getCenterY(), 100);
-			
-			
-			if (r.nextInt(10) == 9){
+			if (r.nextInt(10) == 9) {
 				c.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 2);
 			} else {
 				c.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 1);
 			}
 			session.resetEnemyCounter();
 		}
-		// CHECKING FOR ACHIEVEMENTS
 
-		if (player.getCombo() == 200){
+		if (player.getCombo() == 200) {
 			majorProjectGame.onAchievementUnlocked(
 					majorProjectGame.getString(R.string.achievement_ccccombo));
 		}
 
-
-		// Game Logic
 		if (session.isGameOverFlag()) {
 			state = GameState.GameOver;
-		}	
-		
+		}
 	}
-
 
 	private void updatePaused(List<TouchEvent> touchEvents) {
-		// Paused events
-		// Restarts after any user input
-		//creates list of all touch events
-		int len = touchEvents.size();
-		
-		for (int i = 0; i < len; i++) {
+		for (int i = 0; i < touchEvents.size(); i++) {
 			TouchEvent event = touchEvents.get(i);
 		    if (event.type == TouchEvent.TOUCH_UP) {
-
-                // 'Menu' Button
 		    	if (menuButton.touchInBounds(event)) {
 		    		Assets.tap.play(MainMenuScreen.tapVol);
-					reset();
-					goToMenu();
-					return;
-
-                // Tilt Settings
-		    	} else if (flatTiltButton.touchInBounds(event)){
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(0);
-		    		player.setyBias(0);
-		    		player.setTiltMode(1);
-		    	} else if (tiltedTiltButton.touchInBounds(event)){
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(0);
-	    			player.setyBias(-0.20f);
-		    		player.setTiltMode(2);
-			    } else if (customTiltButton.touchInBounds(event)){
-			    	Assets.tap.play(MainMenuScreen.tapVol);
-		    		player.setxBias(-PersonalMethods.limitInside(RotationHandler.getRotationX(),-90,90)/90);
-		    		player.setyBias(-PersonalMethods.limitInside(RotationHandler.getRotationY(),-90,90)/90);
-		    		player.setTiltMode(3);
-			    } else if (PersonalMethods.touchInBounds(event, TILT_MENU_X - 40, TILT_MENU_Y - 20,
-			    		250, 360 + tiltedTiltButton.getWidth())){
-
-                // Sound Settings
-			    } else if (PersonalMethods.touchInBounds(event, SOUND_X, SOUND_Y, SOUND_WIDTH, SOUND_WIDTH)){
-			    	// Sound Effects button
-                    if (MainMenuScreen.sound == false){
-			    		MainMenuScreen.sound = true;
-			    		MainMenuScreen.tapVol = 10;
-			    	} else if (MainMenuScreen.sound == true) {
-			    		MainMenuScreen.sound = false;
-			    		MainMenuScreen.tapVol = 0;
-			    	}
-			    } else if (PersonalMethods.touchInBounds(event, SOUND_X, SOUND_Y + 200, SOUND_WIDTH, SOUND_WIDTH)){
-			    	// Music button
-                    if (MainMenuScreen.music == false){
-			    		MainMenuScreen.music = true;
-			    		Assets.setMusicVolume(0.25f);
-			    	} else if (MainMenuScreen.music == true) {
-			    		MainMenuScreen.music = false;
-			    		Assets.setMusicVolume(0);
-			    	}
-			    }  else {
-                    // Tap anywhere to resume game
-                    Assets.tap.play(MainMenuScreen.tapVol);
-                    state = GameState.Running;
-                    if (MainMenuScreen.music == true){
-                        Assets.setMusicVolume(0.85f);
-                    }
-		        }
-			    	
-	    	}
-		}
-		
-	}
-
-
-	private void updateGameOver(List<TouchEvent> touchEvents) {
-
-
-		if (!session.isScoreUploaded()){
-			majorProjectGame.onEnteredScore(session.getScore());
-			session.setScoreUploaded(true);
-		}
-
-
-		int len = touchEvents.size();
-		
-		for (int i = 0; i < len; i++) {
-			TouchEvent event = touchEvents.get(i);
-		    if (event.type == TouchEvent.TOUCH_UP) {
-		    	
-		    	//Menu button
-		    	if (menuButton.touchInBounds(event)) {
-		    		Assets.tap.play(MainMenuScreen.tapVol);
-					// Game over events
 					reset();
 					goToMenu();
 					return;
 		    	}
+		    	if (settingsPanel.handleTouch(event, player)) {
+		    		continue;
+		    	}
+                Assets.tap.play(MainMenuScreen.tapVol);
+                state = GameState.Running;
+                if (MainMenuScreen.music) {
+                    Assets.setMusicVolume(0.85f);
+                }
+	    	}
+		}
+	}
 
-                //Retry button
+	private void updateGameOver(List<TouchEvent> touchEvents) {
+		if (!session.isScoreUploaded()) {
+			majorProjectGame.onEnteredScore(session.getScore());
+			session.setScoreUploaded(true);
+		}
+
+		for (int i = 0; i < touchEvents.size(); i++) {
+			TouchEvent event = touchEvents.get(i);
+		    if (event.type == TouchEvent.TOUCH_UP) {
+		    	if (menuButton.touchInBounds(event)) {
+		    		Assets.tap.play(MainMenuScreen.tapVol);
+					reset();
+					goToMenu();
+					return;
+		    	}
                 if (retryButton.touchInBounds(event)) {
                     Assets.tap.play(MainMenuScreen.tapVol);
                     reset();
                     restart();
                 }
-
-		    	//High Scores Button
 		    	if (PersonalMethods.touchInBounds(event, 1175, 5, 100, 80)) {
 		    		Assets.tap.play(MainMenuScreen.tapVol);
 		    		majorProjectGame.onShowLeaderboardsRequested(
@@ -336,151 +185,77 @@ public class GameScreen extends Screen {
 		}
 	}
 
-	
-	//DRAWING UI
-
 	@Override
 	public void paint(float deltaTime) {
 		Graphics g = game.getGraphics();
-		
 		g.drawImage(Assets.game_bg, 0, 0);
-		
-		if (state == GameState.Ready)
-            drawReadyUI();
-        if (state == GameState.Running)
-            drawRunningUI();
-        if (state == GameState.Paused)
-            drawPausedUI();
-        if (state == GameState.GameOver)
-            drawGameOverUI();
+
+		if (state == GameState.Ready)   drawReadyUI();
+		if (state == GameState.Running) drawRunningUI();
+		if (state == GameState.Paused)  drawPausedUI();
+		if (state == GameState.GameOver) drawGameOverUI();
 
         VersionOverlay.paint(g);
 	}
 
 	private void drawReadyUI() {
 		Graphics g = game.getGraphics();
-		
 		g.drawARGB(155, 0, 0, 0);
-        
-		tiltPanel.paintBackground(g);
-        tiltPanel.paintTitle(g, paint, "Tilt Options");
-
-        // sound control buttons
-		if(MainMenuScreen.sound == true){
-			g.drawImage(Assets.sound, SOUND_X, SOUND_Y);
-		} else {
-			g.drawImage(Assets.sound_muted, SOUND_X, SOUND_Y);
-		}
-		
-		if(MainMenuScreen.music == true){
-			g.drawImage(Assets.music, SOUND_X, SOUND_Y + 200);
-		} else {
-			g.drawImage(Assets.music_muted, SOUND_X, SOUND_Y + 200);
-		}
-
-        // tilt setting buttons
-        flatTiltButton.paint(g,paint, player);
-        tiltedTiltButton.paint(g, paint, player);
-        customTiltButton.paint(g, paint, player);
-		
-
-        
+		settingsPanel.paint(g, paint, player);
         paint.setTypeface(Assets.plain);
         promptBanner.paint(g, paint, "Press anywhere to start",
-                GameConstants.WORLD_WIDTH / 2, 300);
+                GameConstants.WORLD_WIDTH / 2, PROMPT_Y);
 	}
-
 
 	private void drawRunningUI() {
 		Graphics g = game.getGraphics();
-		
-		//powerups
 		p.paint(g, paint);
-		
-		//enemies
 		c.paint(g, paint);
-		
-		//main character
 		player.paint(g, paint);
-		
-		paint.setTypeface(Assets.plain);
+        paint.setTypeface(Assets.plain);
 		comboMeter.paint(g, paint, player.getCombo());
 		scoreBar.paint(g, paint, session.getScore());
 	}
 
-
 	private void drawPausedUI() {
 		Graphics g = game.getGraphics();
-        
-		// clears screen
 		g.drawRect(0, 0, 1281, 721, Color.BLACK);
-		
 		paint.setTextSize(40);
-		//draws gameplay on-screen
 		p.paint(g, paint);
 		c.paint(g, paint);
 		player.paint(g, paint);
-		
-		// alpha bg
 		g.drawARGB(155, 0, 0, 0);
-		
-		tiltPanel.paintBackground(g);
-        tiltPanel.paintTitle(g, paint, "Tilt Options");
-		
-		// sound control buttons
-		if(MainMenuScreen.sound == true){
-			g.drawImage(Assets.sound, SOUND_X, SOUND_Y);
-		} else {
-			g.drawImage(Assets.sound_muted, SOUND_X, SOUND_Y);
-		}
-		
-		if(MainMenuScreen.music == true){
-			g.drawImage(Assets.music, SOUND_X, SOUND_Y + 200);
-		} else {
-			g.drawImage(Assets.music_muted, SOUND_X, SOUND_Y + 200);
-		}
-		
-		// buttons
+		settingsPanel.paint(g, paint, player);
         menuButton.paint(g);
-        flatTiltButton.paint(g, paint, player);
-        tiltedTiltButton.paint(g, paint, player);
-        customTiltButton.paint(g, paint, player);
-
-
         paint.setTypeface(Assets.plain);
 		promptBanner.paint(g, paint, "Press anywhere to resume",
-                GameConstants.WORLD_WIDTH / 2, 300);
+                GameConstants.WORLD_WIDTH / 2, PROMPT_Y);
 	}
-
 
 	private void drawGameOverUI() {
 		Graphics g = game.getGraphics();
-		
 		g.drawARGB(155, 0, 0, 0);
-
         menuButton.paint(g);
         retryButton.paint(g);
 		g.drawImage(Assets.gpg_icon_leaderboards, 1175, 5);
-		
-		paint.setTypeface(Assets.plain);
+        paint.setTypeface(Assets.plain);
 		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
 		scoreBanner.paint(g, paint, "Score: " + session.getScore(), GameConstants.WORLD_WIDTH / 2, 400);
 	}
 
-	//OTHER METHODS
 	@Override
 	public void pause() {
-		if (state == GameState.Running){
+		if (state == GameState.Running) {
             state = GameState.Paused;
-            if (MainMenuScreen.music == true){
-            	Assets.setMusicVolume(0.25f); 
+            if (MainMenuScreen.music) {
+            	Assets.setMusicVolume(0.25f);
             }
 		}
 	}
 
 	@Override
 	public void resume() {
-        if (MainMenuScreen.music == true) {
+        if (MainMenuScreen.music) {
             Assets.playMusic();
             Assets.setMusicVolume(0.25f);
         }
@@ -489,7 +264,7 @@ public class GameScreen extends Screen {
 	@Override
 	public void dispose() {
 	}
-	
+
 	public void reset() {
 		paint = null;
 		player = null;
@@ -509,8 +284,8 @@ public class GameScreen extends Screen {
 
 	private void goToMenu() {
 		game.setScreen(new MainMenuScreen(majorProjectGame));
-		if (MainMenuScreen.music == true){
-        	Assets.setMusicVolume(0.85f); 
+		if (MainMenuScreen.music) {
+        	Assets.setMusicVolume(0.85f);
         }
 	}
 
@@ -519,29 +294,18 @@ public class GameScreen extends Screen {
 		if (state == GameState.Running) {
 			pause();
 		} else if (state == GameState.Paused) {
-			resume();
+			Assets.tap.play(MainMenuScreen.tapVol);
+			state = GameState.Running;
+			if (MainMenuScreen.music) Assets.setMusicVolume(0.85f);
 		} else if (state == GameState.GameOver) {
-			// Game over events
 			reset();
 			goToMenu();
-			return;
 		} else {
 			goToMenu();
 		}
 	}
 
-	public boolean isGameOverFlag() {
-		return session.isGameOverFlag();
-	}
-
-
-	public float getFacingAngle() {
-		return facingAngle;
-	}
-
-
-	public void setFacingAngle(float facingAngle) {
-		this.facingAngle = facingAngle;
-	}
-	
+	public boolean isGameOverFlag() { return session.isGameOverFlag(); }
+	public float getFacingAngle() { return facingAngle; }
+	public void setFacingAngle(float facingAngle) { this.facingAngle = facingAngle; }
 }

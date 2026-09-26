@@ -2,16 +2,16 @@ package com.aocc.framework.implementation;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -20,11 +20,12 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.aocc.framework.Audio;
 import com.aocc.framework.FileIO;
 import com.aocc.framework.Game;
-import com.aocc.framework.GameConstants;
 import com.aocc.framework.Graphics;
 import com.aocc.framework.Input;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Viewport;
+import com.aocc.majorproject.ui.ComposeOverlayBridge;
+import com.aocc.majorproject.ui.compose.ComposeOverlayHost;
 import androidx.fragment.app.FragmentActivity;
 
 // Note: this code was heavily modified for the purposes of the major project, including
@@ -43,6 +44,7 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
     Screen screen;
     public AudioManager audioManager;
     private final Viewport viewport = new Viewport();
+    private ComposeOverlayHost composeOverlayHost;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -52,9 +54,6 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-
-        Bitmap frameBuffer = Bitmap.createBitmap(GameConstants.WORLD_WIDTH,
-                GameConstants.WORLD_HEIGHT, Config.RGB_565);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
@@ -66,14 +65,32 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
             viewport.update(Math.max(1, size.x), Math.max(1, size.y));
         }
 
-        renderView = new AndroidFastRenderView(this, frameBuffer);
-        graphics = new AndroidGraphics(getAssets(), frameBuffer);
+        graphics = new AndroidGraphics(getAssets());
+        renderView = new AndroidFastRenderView(this, (AndroidGraphics) graphics);
         fileIO = new AndroidFileIO(this);
         audio = new AndroidAudio(this);
         input = new AndroidInput(this, renderView, viewport);
 
+        composeOverlayHost = new ComposeOverlayHost(this);
+
+        FrameLayout root = new FrameLayout(this);
+        root.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int width = right - left;
+            int height = bottom - top;
+            if (width > 0 && height > 0) {
+                viewport.update(width, height);
+                updateInputViewport(viewport);
+            }
+        });
+        root.addView(renderView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(composeOverlayHost.getView(), new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+
         screen = getInitScreen();
-        setContentView(renderView);
+        setContentView(root);
         configureImmersiveWindow();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -164,5 +181,9 @@ public abstract class AndroidGame extends FragmentActivity implements Game {
         if (input instanceof AndroidInput) {
             ((AndroidInput) input).updateViewport(viewport);
         }
+    }
+
+    public ComposeOverlayBridge getComposeOverlay() {
+        return composeOverlayHost;
     }
 }
