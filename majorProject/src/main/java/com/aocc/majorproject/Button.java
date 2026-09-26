@@ -138,7 +138,7 @@ public class Button {
     }
 
     public void onTap(){
-        Assets.tap.play(MainMenuScreen.tapVol);
+        Assets.tap.play(GamePreferences.getTapVolume());
     }
 
     public int getPosX() {
@@ -203,5 +203,9 @@ public class Button {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public UiBounds getBounds() {
+        return new UiBounds(posX, posY, width, height);
     }
 }

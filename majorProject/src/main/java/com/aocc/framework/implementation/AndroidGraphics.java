@@ -37,6 +37,7 @@ public class AndroidGraphics implements Graphics {
     private final Rect dstRect = new Rect();
     private final Paint filteredBitmapPaint =
             new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private Bitmap frameBuffer;
     private Canvas frameCanvas;
@@ -199,6 +200,28 @@ public class AndroidGraphics implements Graphics {
         paint.setStyle(Style.FILL);
         paint.setAntiAlias(true);
         requireCanvas().drawRect(x, y, x + width - 1, y + height - 1, paint);
+    }
+
+    @Override
+    public void drawRectOutline(int x, int y, int width, int height, int color,
+            float strokeWidth) {
+        strokePaint.setColor(color);
+        strokePaint.setStyle(Style.STROKE);
+        strokePaint.setStrokeWidth(strokeWidth);
+        float half = strokeWidth / 2f;
+        requireCanvas().drawRect(
+                x + half, y + half,
+                x + width - half, y + height - half,
+                strokePaint);
+    }
+
+    @Override
+    public void drawCircleOutline(float centerX, float centerY, float radius, int color,
+            float strokeWidth) {
+        strokePaint.setColor(color);
+        strokePaint.setStyle(Style.STROKE);
+        strokePaint.setStrokeWidth(strokeWidth);
+        requireCanvas().drawCircle(centerX, centerY, radius - strokeWidth / 2f, strokePaint);
     }
 
     @Override

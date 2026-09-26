@@ -4,6 +4,7 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.GameConstants;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.implementation.RotationHandler;
+import com.aocc.majorproject.GamePreferences;
 
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -127,7 +128,7 @@ public class Player {
 			
 			// plays sound only once
 			if (firstOverheat == true){
-				Assets.burn.play(MainMenuScreen.tapVol);
+				Assets.burn.play(GamePreferences.getTapVolume());
 				firstOverheat = false;
 			}
 		} else {

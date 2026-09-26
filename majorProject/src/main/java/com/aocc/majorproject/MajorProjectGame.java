@@ -3,12 +3,15 @@ package com.aocc.majorproject;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 
 import com.aocc.framework.Screen;
 import com.aocc.framework.implementation.AndroidGame;
+import com.aocc.majorproject.display.SecondaryDisplayManager;
+import com.aocc.majorproject.input.GamepadInput;
 
 public class MajorProjectGame extends AndroidGame {
 
@@ -16,12 +19,16 @@ public class MajorProjectGame extends AndroidGame {
 	final int TAP_VOL = 10;
 
 	private PlayGamesHelper playGamesHelper;
+	private SecondaryDisplayManager secondaryDisplayManager;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		CrashReporter.install(this);
+		GamePreferences.load(this);
 		super.onCreate(savedInstanceState);
 		CrashReporter.showPreviousCrashIfPresent(this);
+
+		secondaryDisplayManager = new SecondaryDisplayManager(this);
 
 		try {
 			playGamesHelper = new PlayGamesHelper(this);
@@ -44,10 +51,38 @@ public class MajorProjectGame extends AndroidGame {
 	}
 
 	@Override
+	public void setScreen(Screen screen) {
+		super.setScreen(screen);
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.updateForScreen(screen);
+		}
+	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event) {
+		if (event.getAction() == KeyEvent.ACTION_DOWN && getGamepadInput().onKeyDown(event)) {
+			return true;
+		}
+		return super.dispatchKeyEvent(event);
+	}
+
+	@Override
+	protected void onDestroy() {
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.shutdown();
+			secondaryDisplayManager = null;
+		}
+		super.onDestroy();
+	}
+
+	@Override
 	public void onResume() {
 		super.onResume();
         getCurrentScreen().resume();
 		screenRotation = getScreenRotation();
+		if (secondaryDisplayManager != null) {
+			secondaryDisplayManager.refresh();
+		}
 		if (playGamesHelper != null) {
 			playGamesHelper.refreshSignInState();
 		}
@@ -66,6 +101,10 @@ public class MajorProjectGame extends AndroidGame {
         getCurrentScreen().pause();
 		super.onPause();
 		Assets.pauseMusic();
+	}
+
+	public SecondaryDisplayManager getSecondaryDisplayManager() {
+		return secondaryDisplayManager;
 	}
 
 	public void onShowLeaderboardsRequested(String ID) {
@@ -121,6 +160,13 @@ public class MajorProjectGame extends AndroidGame {
 		runOnUiThread(() -> Toast.makeText(
 				getApplicationContext(),
 				getString(R.string.play_games_unavailable),
+				Toast.LENGTH_LONG).show());
+	}
+
+	public void showSecondDisplayUnavailable() {
+		runOnUiThread(() -> Toast.makeText(
+				getApplicationContext(),
+				getString(R.string.second_display_unavailable),
 				Toast.LENGTH_LONG).show());
 	}
 }

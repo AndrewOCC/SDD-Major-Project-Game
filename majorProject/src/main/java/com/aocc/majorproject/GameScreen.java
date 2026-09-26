@@ -1,5 +1,6 @@
 package com.aocc.majorproject;
 
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.List;
 
@@ -12,14 +13,20 @@ import com.aocc.framework.Graphics;
 import com.aocc.framework.PersonalMethods;
 import com.aocc.framework.Screen;
 import com.aocc.framework.Input.TouchEvent;
+import com.aocc.majorproject.input.GamepadInput;
 import com.aocc.majorproject.ui.ComboMeter;
 import com.aocc.majorproject.ui.ScoreBar;
 import com.aocc.majorproject.ui.SettingsPanel;
+import com.aocc.majorproject.ui.SpatialFocusNavigator;
 import com.aocc.majorproject.ui.UiBanner;
 import com.aocc.majorproject.ui.UiButton;
+import com.aocc.majorproject.ui.UiBounds;
+import com.aocc.majorproject.ui.UiLayout;
+import com.aocc.majorproject.ui.UiSelectionHighlight;
 
 public class GameScreen extends Screen {
-	enum GameState {Ready, Running, Paused, GameOver}
+
+	public enum GameState {Ready, Running, Paused, GameOver}
 	GameState state = GameState.Ready;
 
 	MajorProjectGame majorProjectGame;
@@ -35,31 +42,42 @@ public class GameScreen extends Screen {
     final int ARENA_HEIGHT = 3;
 
     UiButton menuButton;
+    UiButton resumeButton;
     UiButton retryButton;
     private final SettingsPanel settingsPanel = new SettingsPanel();
 
+    private static final int PAUSE_FOCUS_RESUME = 0;
+    private static final int PAUSE_FOCUS_MENU = 1;
+    private static final int PAUSE_FOCUS_SETTINGS_OFFSET = 2;
+
     private final ScoreBar scoreBar = new ScoreBar();
     private final ComboMeter comboMeter = new ComboMeter();
-    // Prompt placed below the settings panel (panel bottom = PANEL_Y + PANEL_HEIGHT = 590).
     static final int PROMPT_Y = SettingsPanel.PANEL_Y + SettingsPanel.PANEL_HEIGHT + 65;
     private final UiBanner promptBanner = new UiBanner(50f);
     private final UiBanner gameOverBanner = new UiBanner(100f);
     private final UiBanner scoreBanner = new UiBanner(60f);
 
 	private float facingAngle = 0;
+	private int pauseFocusIndex = 0;
+	private int gameOverSelection = 0;
 
 	public GameScreen(MajorProjectGame game) {
 		super(game);
 
 		majorProjectGame = game;
+		settingsPanel.setGame(majorProjectGame);
 
 		player = session.getPlayer();
+		GamePreferences.applyTiltTo(player);
 		c = new EnemyController(session);
 		r = new Random();
 		p = new PowerUp(1, session);
 		tempEnemyPoint = new Point();
 
         menuButton = UiButton.menuAt(0, 0);
+        resumeButton = new UiButton(
+                UiLayout.centerX(UiButton.MENU_WIDTH), 605,
+                UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Resume");
         retryButton = new UiButton(540, 500, UiButton.MENU_WIDTH, UiButton.MENU_HEIGHT, "Retry");
 
 		paint = new Paint();
@@ -72,15 +90,23 @@ public class GameScreen extends Screen {
 	@Override
 	public void update(float deltaTime) {
 		List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
+		List<GamepadInput.Action> gamepadActions = majorProjectGame.getGamepadInput().consumeActions();
 
-        if (state == GameState.Ready)
+        if (state == GameState.Ready) {
             updateReady(touchEvents);
-        if (state == GameState.Running)
+            handleGamepadReady(gamepadActions);
+        }
+        if (state == GameState.Running) {
             updateRunning(touchEvents, deltaTime);
-        if (state == GameState.Paused)
+        }
+        if (state == GameState.Paused) {
             updatePaused(touchEvents);
-        if (state == GameState.GameOver)
+            handleGamepadPaused(gamepadActions);
+        }
+        if (state == GameState.GameOver) {
             updateGameOver(touchEvents);
+            handleGamepadGameOver(gamepadActions);
+        }
 	}
 
 	private void updateReady(List<TouchEvent> touchEvents) {
@@ -90,13 +116,37 @@ public class GameScreen extends Screen {
 		    	if (settingsPanel.handleTouch(event, player)) {
 		    		continue;
 		    	}
-		    	Assets.tap.play(MainMenuScreen.tapVol);
-		    	state = GameState.Running;
+		    	playTap();
+		    	changeState(GameState.Running);
 	    	}
 		}
 	}
 
+	private void handleGamepadReady(List<GamepadInput.Action> actions) {
+		for (GamepadInput.Action action : actions) {
+			if (action == GamepadInput.Action.CANCEL) {
+				goToMenu();
+				return;
+			}
+			if (settingsPanel.handleGamepad(action, player)) {
+				continue;
+			}
+			if (action == GamepadInput.Action.CONFIRM) {
+				playTap();
+				changeState(GameState.Running);
+			}
+		}
+	}
+
 	private void updateRunning(List<TouchEvent> touchEvents, float deltaSeconds) {
+		for (int i = 0; i < touchEvents.size(); i++) {
+			TouchEvent event = touchEvents.get(i);
+			if (event.type == TouchEvent.TOUCH_UP && menuButton.touchInBounds(event)) {
+				openPauseMenu();
+				return;
+			}
+		}
+
 		float step = GameConstants.secondsToSteps(deltaSeconds);
 
 		session.addUpdateCount(step);
@@ -130,7 +180,21 @@ public class GameScreen extends Screen {
 		}
 
 		if (session.isGameOverFlag()) {
-			state = GameState.GameOver;
+			changeState(GameState.GameOver);
+		}
+	}
+
+	private void openPauseMenu() {
+		openPauseMenu(true);
+	}
+
+	private void openPauseMenu(boolean playSound) {
+		if (playSound) {
+			playTap();
+		}
+		changeState(GameState.Paused);
+		if (GamePreferences.music) {
+			Assets.setMusicVolume(0.25f);
 		}
 	}
 
@@ -138,8 +202,12 @@ public class GameScreen extends Screen {
 		for (int i = 0; i < touchEvents.size(); i++) {
 			TouchEvent event = touchEvents.get(i);
 		    if (event.type == TouchEvent.TOUCH_UP) {
+		    	if (resumeButton.touchInBounds(event)) {
+		    		resumeFromPause();
+		    		return;
+		    	}
 		    	if (menuButton.touchInBounds(event)) {
-		    		Assets.tap.play(MainMenuScreen.tapVol);
+		    		playTap();
 					reset();
 					goToMenu();
 					return;
@@ -147,12 +215,58 @@ public class GameScreen extends Screen {
 		    	if (settingsPanel.handleTouch(event, player)) {
 		    		continue;
 		    	}
-                Assets.tap.play(MainMenuScreen.tapVol);
-                state = GameState.Running;
-                if (MainMenuScreen.music) {
-                    Assets.setMusicVolume(0.85f);
-                }
+                resumeFromPause();
 	    	}
+		}
+	}
+
+	private void handleGamepadPaused(List<GamepadInput.Action> actions) {
+		List<UiBounds> focusItems = buildPauseFocusBounds();
+		for (GamepadInput.Action action : actions) {
+			SpatialFocusNavigator.Direction direction = SpatialFocusNavigator.directionFrom(action);
+			if (direction != null) {
+				pauseFocusIndex = SpatialFocusNavigator.findNext(
+						pauseFocusIndex, direction, focusItems);
+				continue;
+			}
+			if (action == GamepadInput.Action.CONFIRM) {
+				activatePauseFocus();
+				continue;
+			}
+			if (action == GamepadInput.Action.CANCEL) {
+				resumeFromPause();
+			}
+		}
+	}
+
+	private void activatePauseFocus() {
+		if (pauseFocusIndex == PAUSE_FOCUS_RESUME) {
+			resumeFromPause();
+		} else if (pauseFocusIndex == PAUSE_FOCUS_MENU) {
+			playTap();
+			reset();
+			goToMenu();
+		} else {
+			settingsPanel.activateFocusIndex(
+					pauseFocusIndex - PAUSE_FOCUS_SETTINGS_OFFSET, player);
+		}
+	}
+
+	private List<UiBounds> buildPauseFocusBounds() {
+		List<UiBounds> items = new ArrayList<>(PAUSE_FOCUS_SETTINGS_OFFSET + SettingsPanel.ITEM_COUNT);
+		items.add(resumeButton.getBounds());
+		items.add(menuButton.getBounds());
+		for (int i = 0; i < SettingsPanel.ITEM_COUNT; i++) {
+			items.add(settingsPanel.getItemBounds(i));
+		}
+		return items;
+	}
+
+	private void resumeFromPause() {
+		playTap();
+		changeState(GameState.Running);
+		if (GamePreferences.music) {
+			Assets.setMusicVolume(0.85f);
 		}
 	}
 
@@ -166,22 +280,72 @@ public class GameScreen extends Screen {
 			TouchEvent event = touchEvents.get(i);
 		    if (event.type == TouchEvent.TOUCH_UP) {
 		    	if (menuButton.touchInBounds(event)) {
-		    		Assets.tap.play(MainMenuScreen.tapVol);
+		    		playTap();
 					reset();
 					goToMenu();
 					return;
 		    	}
                 if (retryButton.touchInBounds(event)) {
-                    Assets.tap.play(MainMenuScreen.tapVol);
+                    playTap();
                     reset();
                     restart();
                 }
 		    	if (PersonalMethods.touchInBounds(event, 1175, 5, 100, 80)) {
-		    		Assets.tap.play(MainMenuScreen.tapVol);
+		    		playTap();
 		    		majorProjectGame.onShowLeaderboardsRequested(
 		    				majorProjectGame.getString(R.string.leaderboard_pacifist_mode));
 		    	}
 		    }
+		}
+	}
+
+	private void handleGamepadGameOver(List<GamepadInput.Action> actions) {
+		List<UiBounds> focusItems = buildGameOverFocusBounds();
+		for (GamepadInput.Action action : actions) {
+			SpatialFocusNavigator.Direction direction = SpatialFocusNavigator.directionFrom(action);
+			if (direction != null) {
+				gameOverSelection = SpatialFocusNavigator.findNext(
+						gameOverSelection, direction, focusItems);
+				continue;
+			}
+			if (action == GamepadInput.Action.CONFIRM) {
+				activateGameOverItem(gameOverSelection);
+				continue;
+			}
+			if (action == GamepadInput.Action.CANCEL) {
+				playTap();
+				reset();
+				goToMenu();
+			}
+		}
+	}
+
+	private List<UiBounds> buildGameOverFocusBounds() {
+		return List.of(
+				menuButton.getBounds(),
+				retryButton.getBounds(),
+				new UiBounds(1175, 5, 100, 80));
+	}
+
+	private void activateGameOverItem(int index) {
+		switch (index) {
+			case 0:
+				playTap();
+				reset();
+				goToMenu();
+				break;
+			case 1:
+				playTap();
+				reset();
+				restart();
+				break;
+			case 2:
+				playTap();
+				majorProjectGame.onShowLeaderboardsRequested(
+						majorProjectGame.getString(R.string.leaderboard_pacifist_mode));
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -215,6 +379,7 @@ public class GameScreen extends Screen {
         paint.setTypeface(Assets.plain);
 		comboMeter.paint(g, paint, player.getCombo());
 		scoreBar.paint(g, paint, session.getScore());
+		menuButton.paint(g);
 	}
 
 	private void drawPausedUI() {
@@ -225,11 +390,23 @@ public class GameScreen extends Screen {
 		c.paint(g, paint);
 		player.paint(g, paint);
 		g.drawARGB(155, 0, 0, 0);
-		settingsPanel.paint(g, paint, player);
+		int settingsHighlight = pauseFocusIndex >= PAUSE_FOCUS_SETTINGS_OFFSET
+				? pauseFocusIndex - PAUSE_FOCUS_SETTINGS_OFFSET : -1;
+		settingsPanel.paint(g, paint, player, settingsHighlight);
+        resumeButton.paint(g);
         menuButton.paint(g);
+        paintPauseFocusHighlight(g);
         paint.setTypeface(Assets.plain);
-		promptBanner.paint(g, paint, "Press anywhere to resume",
+		promptBanner.paint(g, paint, "Press Resume or anywhere to continue",
                 GameConstants.WORLD_WIDTH / 2, PROMPT_Y);
+	}
+
+	private void paintPauseFocusHighlight(Graphics g) {
+		if (pauseFocusIndex == PAUSE_FOCUS_RESUME) {
+			UiSelectionHighlight.paintRect(g, resumeButton.getBounds());
+		} else if (pauseFocusIndex == PAUSE_FOCUS_MENU) {
+			UiSelectionHighlight.paintRect(g, menuButton.getBounds());
+		}
 	}
 
 	private void drawGameOverUI() {
@@ -241,21 +418,26 @@ public class GameScreen extends Screen {
         paint.setTypeface(Assets.plain);
 		gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200);
 		scoreBanner.paint(g, paint, "Score: " + session.getScore(), GameConstants.WORLD_WIDTH / 2, 400);
+		paintGameOverHighlight(g);
+	}
+
+	private void paintGameOverHighlight(Graphics g) {
+		List<UiBounds> items = buildGameOverFocusBounds();
+		if (gameOverSelection >= 0 && gameOverSelection < items.size()) {
+			UiSelectionHighlight.paintRect(g, items.get(gameOverSelection));
+		}
 	}
 
 	@Override
 	public void pause() {
 		if (state == GameState.Running) {
-            state = GameState.Paused;
-            if (MainMenuScreen.music) {
-            	Assets.setMusicVolume(0.25f);
-            }
+			openPauseMenu(false);
 		}
 	}
 
 	@Override
 	public void resume() {
-        if (MainMenuScreen.music) {
+        if (GamePreferences.music) {
             Assets.playMusic();
             Assets.setMusicVolume(0.25f);
         }
@@ -284,7 +466,7 @@ public class GameScreen extends Screen {
 
 	private void goToMenu() {
 		game.setScreen(new MainMenuScreen(majorProjectGame));
-		if (MainMenuScreen.music) {
+		if (GamePreferences.music) {
         	Assets.setMusicVolume(0.85f);
         }
 	}
@@ -292,17 +474,31 @@ public class GameScreen extends Screen {
 	@Override
 	public void backButton() {
 		if (state == GameState.Running) {
-			pause();
+			openPauseMenu();
 		} else if (state == GameState.Paused) {
-			Assets.tap.play(MainMenuScreen.tapVol);
-			state = GameState.Running;
-			if (MainMenuScreen.music) Assets.setMusicVolume(0.85f);
+			resumeFromPause();
 		} else if (state == GameState.GameOver) {
 			reset();
 			goToMenu();
 		} else {
 			goToMenu();
 		}
+	}
+
+	private void changeState(GameState newState) {
+		if (newState == GameState.Paused) {
+			pauseFocusIndex = PAUSE_FOCUS_RESUME;
+		}
+		state = newState;
+		majorProjectGame.getSecondaryDisplayManager().updateForGameState(newState);
+	}
+
+	private void playTap() {
+		Assets.tap.play(GamePreferences.getTapVolume());
+	}
+
+	public GameState getState() {
+		return state;
 	}
 
 	public boolean isGameOverFlag() { return session.isGameOverFlag(); }

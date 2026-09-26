@@ -9,15 +9,14 @@ public class GameSettingsTest {
 
     @Test
     public void toggleSound_flipsSoundFlag() {
-        MainMenuScreen.sound = true;
-        MainMenuScreen.tapVol = 10;
+        GamePreferences.sound = true;
 
         GameSettings.toggleSound();
-        assertFalse(MainMenuScreen.sound);
-        assertTrue(MainMenuScreen.tapVol == 0);
+        assertFalse(GamePreferences.sound);
+        assertTrue(GamePreferences.getTapVolume() == 0);
 
         GameSettings.toggleSound();
-        assertTrue(MainMenuScreen.sound);
-        assertTrue(MainMenuScreen.tapVol == 10);
+        assertTrue(GamePreferences.sound);
+        assertTrue(GamePreferences.getTapVolume() == 10);
     }
 }

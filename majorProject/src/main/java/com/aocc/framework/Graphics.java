@@ -27,6 +27,12 @@ public interface Graphics {
 
 	public void drawRect(int x, int y, int width, int height, int color);
 
+	/** Stroked rectangle outline (transparent interior) for focus rings. */
+	void drawRectOutline(int x, int y, int width, int height, int color, float strokeWidth);
+
+	/** Stroked circle outline (transparent interior) for focus rings. */
+	void drawCircleOutline(float centerX, float centerY, float radius, int color, float strokeWidth);
+
 	public void drawImage(Image image, int x, int y, int srcX, int srcY,
 			int srcWidth, int srcHeight);
 
