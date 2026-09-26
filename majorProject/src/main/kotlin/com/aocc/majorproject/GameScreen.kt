@@ -10,7 +10,6 @@ import com.aocc.framework.PersonalMethods
 import com.aocc.framework.Screen
 import com.aocc.majorproject.display.SecondaryDebugAction
 import com.aocc.majorproject.display.SecondaryDebugState
-import com.aocc.majorproject.display.SecondaryPauseState
 import com.aocc.majorproject.input.GamepadInput
 import com.aocc.majorproject.ui.ComboMeter
 import com.aocc.majorproject.ui.PauseMenuPanel
@@ -24,6 +23,7 @@ import com.aocc.majorproject.ui.UiConfirmDialog
 import com.aocc.majorproject.ui.UiLayout
 import com.aocc.majorproject.ui.UiSelectionHighlight
 import java.util.Random
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGame) {
 
@@ -70,6 +70,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private var showQuitConfirm = false
     private var quitConfirmFocusIndex = 0
     private var gameOverSelection = 0
+
+    /** Taps from the rear-display pause menu, already in world coordinates. */
+    private val secondaryTaps = ConcurrentLinkedQueue<TouchEvent>()
 
     init {
         settingsPanel.setGame(majorProjectGame)
@@ -254,13 +257,15 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
-    private fun updatePaused(touchEvents: List<TouchEvent>, deltaSeconds: Float) {
-        majorProjectGame.updateSecondaryPauseState(
-            SecondaryPauseState(
-                GamePreferences.sound, GamePreferences.music, GamePreferences.secondScreenEnabled,
-                player.tiltMode, resumeCountdownSeconds, showQuitConfirm
-            )
-        )
+    private fun updatePaused(primaryTouches: List<TouchEvent>, deltaSeconds: Float) {
+        // While the menu is shown on the rear display, the top screen has nothing to tap.
+        val touchEvents = ArrayList<TouchEvent>()
+        if (!majorProjectGame.isSecondaryDisplayPresentingPause()) {
+            touchEvents.addAll(primaryTouches)
+        }
+        while (true) {
+            touchEvents.add(secondaryTaps.poll() ?: break)
+        }
         if (showQuitConfirm) {
             handleQuitConfirmTouch(touchEvents)
             return
@@ -273,11 +278,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
                 if (pauseMenuPanel.getResumeBounds().contains(event)) {
-                    activateSecondaryPauseItem(PauseMenuPanel.Item.RESUME)
+                    activatePauseItem(PauseMenuPanel.Item.RESUME)
                     return
                 }
                 if (pauseMenuPanel.getQuitBounds().contains(event)) {
-                    activateSecondaryPauseItem(PauseMenuPanel.Item.QUIT)
+                    activatePauseItem(PauseMenuPanel.Item.QUIT)
                     return
                 }
                 pauseMenuPanel.handleSettingsTouch(event, player)
@@ -295,7 +300,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private fun handleResumeCountdownTouch(touchEvents: List<TouchEvent>) {
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP && pauseMenuPanel.getResumeBounds().contains(event)) {
-                activateSecondaryPauseItem(PauseMenuPanel.Item.RESUME)
+                activatePauseItem(PauseMenuPanel.Item.RESUME)
                 return
             }
         }
@@ -307,11 +312,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 continue
             }
             if (quitConfirmDialog.getConfirmBounds().contains(event)) {
-                confirmSecondaryQuit(true)
+                confirmQuit(true)
                 return
             }
             if (quitConfirmDialog.getCancelBounds().contains(event)) {
-                confirmSecondaryQuit(false)
+                confirmQuit(false)
                 return
             }
         }
@@ -363,24 +368,21 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 continue
             }
             if (action == GamepadInput.Action.CONFIRM) {
-                confirmSecondaryQuit(quitConfirmFocusIndex == 0)
+                confirmQuit(quitConfirmFocusIndex == 0)
                 continue
             }
             if (action == GamepadInput.Action.CANCEL || action == GamepadInput.Action.PAUSE) {
-                confirmSecondaryQuit(false)
+                confirmQuit(false)
             }
         }
     }
 
     private fun activatePauseFocus() {
-        activateSecondaryPauseItem(PauseMenuPanel.FOCUS_ITEMS[pauseFocusIndex])
+        activatePauseItem(PauseMenuPanel.FOCUS_ITEMS[pauseFocusIndex])
     }
 
-    /**
-     * Single entry point for activating a pause-menu item, shared by touch, gamepad, and the
-     * native controls mirrored onto a secondary (rear) display.
-     */
-    fun activateSecondaryPauseItem(item: PauseMenuPanel.Item) {
+    /** Single entry point for activating a pause-menu item, shared by touch and gamepad. */
+    private fun activatePauseItem(item: PauseMenuPanel.Item) {
         if (disposed || state != GameState.Paused || showQuitConfirm) {
             return
         }
@@ -397,8 +399,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
-    /** Invoked by the "are you sure?" confirmation, whether on the primary or rear display. */
-    fun confirmSecondaryQuit(confirmed: Boolean) {
+    private fun confirmQuit(confirmed: Boolean) {
         if (disposed || state != GameState.Paused || !showQuitConfirm) {
             return
         }
@@ -559,6 +560,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         } else {
             -1
         }
+        paint.typeface = Assets.plain
         settingsPanel.paint(g, paint, player, settingsHighlight)
         startButton.paint(g)
         if (readyFocusIndex == READY_FOCUS_START) {
@@ -591,14 +593,33 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         g.drawARGB(155, 0, 0, 0)
         paint.typeface = Assets.plain
 
+        if (majorProjectGame.isSecondaryDisplayPresentingPause()) {
+            gameOverBanner.paint(g, paint, "Paused", GameConstants.WORLD_WIDTH / 2, 320)
+            promptBanner.paint(g, paint, "Menu is on the bottom screen",
+                GameConstants.WORLD_WIDTH / 2, 420)
+            return
+        }
+        paintPauseOverlay(g, paint)
+    }
+
+    /** Pause menu (or quit confirmation), drawn on whichever display is showing it. */
+    fun paintPauseOverlay(g: Graphics, paint: Paint) {
         if (showQuitConfirm) {
             quitConfirmDialog.paint(g, paint)
             paintQuitConfirmHighlight(g)
             return
         }
-
         val focusedItem = PauseMenuPanel.FOCUS_ITEMS.getOrNull(pauseFocusIndex)
         pauseMenuPanel.paint(g, paint, player, focusedItem, resumeCountdownSeconds)
+    }
+
+    /** Called from the rear display's UI thread; consumed on the next paused update. */
+    fun enqueueSecondaryTap(worldX: Int, worldY: Int) {
+        secondaryTaps.add(TouchEvent().apply {
+            type = TouchEvent.TOUCH_UP
+            x = worldX
+            y = worldY
+        })
     }
 
     private fun paintQuitConfirmHighlight(g: Graphics) {

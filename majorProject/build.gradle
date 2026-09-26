@@ -12,9 +12,9 @@ android {
         applicationId 'com.aocc.majorproject'
         minSdk 21
         targetSdk 35
-        versionCode 27
+        versionCode 28
         // CI passes -PbuildNumber so each published build has a unique version Obtainium can track.
-        versionName '1.12.0' + (project.hasProperty('buildNumber') ? "-${project.property('buildNumber')}" : '')
+        versionName '1.12.1' + (project.hasProperty('buildNumber') ? "-${project.property('buildNumber')}" : '')
     }
 
     signingConfigs {
@@ -58,6 +58,11 @@ android {
         unitTests {
             includeAndroidResources = true
             returnDefaultValues = true
+            all {
+                // Opt-in UI screenshots (ScreenshotTest): ./gradlew :majorProject:testDebugUnitTest -Pscreenshots
+                systemProperty 'screenshots.enabled', project.hasProperty('screenshots') ? 'true' : 'false'
+                systemProperty 'screenshots.dir', "${project.layout.buildDirectory.get().asFile}/screenshots"
+            }
         }
     }
 }

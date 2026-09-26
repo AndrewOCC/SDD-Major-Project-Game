@@ -28,7 +28,6 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private var currentMode = SecondaryDisplayMode.OFF
     private var pendingShow: PendingShow? = null
     private var lastStatsLabel: String? = null
-    private var lastPauseState: SecondaryPauseState? = null
     private var lastDebugState: SecondaryDebugState? = null
 
     init {
@@ -48,6 +47,13 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
 
     fun isSecondaryDisplayAvailable(): Boolean {
         return SecondaryDisplayFinder.find(activity, displayManager) != null
+    }
+
+    /** True while the rear display is showing (and taking taps for) the pause menu. */
+    fun isPresentingPauseMenu(): Boolean {
+        return GamePreferences.secondScreenEnabled &&
+            currentMode == SecondaryDisplayMode.PAUSE_MENU &&
+            presentation != null
     }
 
     /** True while the rear display is actively mirroring live gameplay (score/combo). */
@@ -94,22 +100,6 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         }
     }
 
-    /** Mirrors the primary pause menu's live state (toggles, countdown, quit-confirm) to the rear screen. */
-    fun updatePauseState(pauseState: SecondaryPauseState) {
-        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.PAUSE_MENU) {
-            return
-        }
-        if (pauseState == lastPauseState) {
-            return
-        }
-        lastPauseState = pauseState
-        mainHandler.post {
-            if (currentMode == SecondaryDisplayMode.PAUSE_MENU) {
-                presentation?.setPauseState(pauseState)
-            }
-        }
-    }
-
     /** Mirrors debug-parameter values into the rear screen's parameters popup. */
     fun updateDebugState(debugState: SecondaryDebugState) {
         if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.BACKGROUND) {
@@ -133,7 +123,6 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private fun show(mode: SecondaryDisplayMode, background: Image?, overlayLabel: String?) {
         if (mode != currentMode) {
             lastStatsLabel = null
-            lastPauseState = null
             lastDebugState = null
         }
         currentMode = mode

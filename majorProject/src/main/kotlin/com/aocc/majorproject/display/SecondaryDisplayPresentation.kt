@@ -12,26 +12,21 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
-import android.widget.ToggleButton
 import com.aocc.framework.GameConstants
 import com.aocc.framework.Image
 import com.aocc.framework.implementation.AndroidImage
 import com.aocc.majorproject.Assets
 import com.aocc.majorproject.BuildConfig
 import com.aocc.majorproject.MajorProjectGame
-import com.aocc.majorproject.ui.PauseMenuPanel
-import kotlin.math.ceil
 
 /**
  * Full-screen content on a secondary (rear) display: a background mirror plus, depending on
- * mode, a live score/combo strip, a fully interactive pause menu, or (during gameplay, in
- * debug builds) a parameters popup — all built from standard Android views so this window can
- * receive its own touch input independently of the primary SurfaceView.
+ * mode, a live score/combo strip, the game's own pause menu ([SecondaryPauseView]), or (during
+ * gameplay, in debug builds) a parameters popup built from standard Android controls. This
+ * window takes its own touch input, independently of the primary SurfaceView.
  */
 class SecondaryDisplayPresentation(
     context: Context,
@@ -47,19 +42,8 @@ class SecondaryDisplayPresentation(
     // Running: live score / combo strip.
     private var statsText: TextView? = null
 
-    // Paused: interactive controls mirroring the primary pause menu.
-    private var pauseControls: LinearLayout? = null
-    private var soundToggle: ToggleButton? = null
-    private var musicToggle: ToggleButton? = null
-    private var secondScreenToggle: ToggleButton? = null
-    private var flatRadio: RadioButton? = null
-    private var tiltedRadio: RadioButton? = null
-    private var customRadio: RadioButton? = null
-    private var resumeButton: Button? = null
-    private var quitButton: Button? = null
-    private var suppressTiltListener = false
-
-    private var quitConfirmLayout: LinearLayout? = null
+    // Paused: the game's pause menu, drawn with the game renderer.
+    private var pauseView: SecondaryPauseView? = null
 
     // Running, debug builds: parameters popup toggled from a bottom-right corner button.
     private var debugToggleButton: Button? = null
@@ -70,7 +54,6 @@ class SecondaryDisplayPresentation(
     private var suppressDebugSpeedListener = false
 
     private var pendingContent: PendingContent? = null
-    private var pendingPauseState: SecondaryPauseState? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,12 +104,16 @@ class SecondaryDisplayPresentation(
             )
         }
 
-        root.addView(buildPauseControls(), FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER
-        ))
-        root.addView(buildQuitConfirmLayout(), FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER
-        ))
+        pauseView = SecondaryPauseView(context, activity).also { view ->
+            view.visibility = View.GONE
+            root.addView(
+                view,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
 
         if (BuildConfig.DEBUG) {
             root.addView(buildDebugToggleButton(), FrameLayout.LayoutParams(
@@ -141,110 +128,6 @@ class SecondaryDisplayPresentation(
 
         setContentView(root)
         applyPendingContent()
-    }
-
-    private fun buildPauseControls(): LinearLayout {
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.argb(210, 0, 0, 0))
-            setPadding(32, 32, 32, 32)
-            visibility = View.GONE
-        }
-
-        val toggleRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val sound = ToggleButton(context).apply {
-            textOn = "Sound: On"
-            textOff = "Sound: Off"
-            setOnClickListener { activity.activateSecondaryPauseItem(PauseMenuPanel.Item.SOUND) }
-        }
-        val music = ToggleButton(context).apply {
-            textOn = "Music: On"
-            textOff = "Music: Off"
-            setOnClickListener { activity.activateSecondaryPauseItem(PauseMenuPanel.Item.MUSIC) }
-        }
-        val secondScreen = ToggleButton(context).apply {
-            textOn = "2nd Screen: On"
-            textOff = "2nd Screen: Off"
-            setOnClickListener { activity.activateSecondaryPauseItem(PauseMenuPanel.Item.SECOND_SCREEN) }
-        }
-        toggleRow.addView(sound)
-        toggleRow.addView(music)
-        toggleRow.addView(secondScreen)
-        layout.addView(toggleRow)
-        soundToggle = sound
-        musicToggle = music
-        secondScreenToggle = secondScreen
-
-        val tiltGroup = RadioGroup(context).apply { orientation = RadioGroup.HORIZONTAL }
-        // RadioGroup tracks the checked child by id, so each button needs a real (non-default) one.
-        val flat = RadioButton(context).apply { text = "Flat"; id = View.generateViewId() }
-        val tilted = RadioButton(context).apply { text = "Tilted"; id = View.generateViewId() }
-        val custom = RadioButton(context).apply { text = "Custom"; id = View.generateViewId() }
-        tiltGroup.addView(flat)
-        tiltGroup.addView(tilted)
-        tiltGroup.addView(custom)
-        tiltGroup.setOnCheckedChangeListener { _, checkedId ->
-            if (suppressTiltListener) {
-                return@setOnCheckedChangeListener
-            }
-            val item = when (checkedId) {
-                flat.id -> PauseMenuPanel.Item.TILT_FLAT
-                tilted.id -> PauseMenuPanel.Item.TILT_TILTED
-                else -> PauseMenuPanel.Item.TILT_CUSTOM
-            }
-            activity.activateSecondaryPauseItem(item)
-        }
-        layout.addView(tiltGroup)
-        flatRadio = flat
-        tiltedRadio = tilted
-        customRadio = custom
-
-        val buttonRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val resume = Button(context).apply {
-            text = "Resume"
-            setOnClickListener { activity.activateSecondaryPauseItem(PauseMenuPanel.Item.RESUME) }
-        }
-        val quit = Button(context).apply {
-            text = "Quit"
-            setOnClickListener { activity.activateSecondaryPauseItem(PauseMenuPanel.Item.QUIT) }
-        }
-        buttonRow.addView(resume)
-        buttonRow.addView(quit)
-        layout.addView(buttonRow)
-        resumeButton = resume
-        quitButton = quit
-
-        pauseControls = layout
-        return layout
-    }
-
-    private fun buildQuitConfirmLayout(): LinearLayout {
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.argb(230, 0, 0, 0))
-            setPadding(32, 32, 32, 32)
-            visibility = View.GONE
-        }
-        layout.addView(TextView(context).apply {
-            text = "Quit and return to the menu?"
-            setTextColor(Color.WHITE)
-            textSize = 22f
-            gravity = Gravity.CENTER
-        })
-        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        row.addView(Button(context).apply {
-            text = "Yes"
-            setOnClickListener { activity.confirmSecondaryQuit(true) }
-        })
-        row.addView(Button(context).apply {
-            text = "No"
-            setOnClickListener { activity.confirmSecondaryQuit(false) }
-        })
-        layout.addView(row)
-        quitConfirmLayout = layout
-        return layout
     }
 
     private fun buildDebugToggleButton(): Button {
@@ -322,9 +205,7 @@ class SecondaryDisplayPresentation(
 
     fun setMode(mode: SecondaryDisplayMode, background: Image?, overlayLabel: String?) {
         pendingContent = PendingContent(mode, background, overlayLabel)
-        pendingPauseState = null
         applyPendingContent()
-        applyPauseState()
     }
 
     /** Live score / combo mirrored to the rear screen during gameplay. */
@@ -334,12 +215,6 @@ class SecondaryDisplayPresentation(
         setStatsLabelInternal(statsLabel)
     }
 
-    /** Mirrors the primary pause menu's live state onto the rear screen's native controls. */
-    fun setPauseState(pauseState: SecondaryPauseState?) {
-        pendingPauseState = pauseState
-        applyPauseState()
-    }
-
     fun setDebugState(debugState: SecondaryDebugState?) {
         debugGodModeSwitch?.isChecked = debugState?.godMode == true
         if (debugState != null) {
@@ -347,48 +222,6 @@ class SecondaryDisplayPresentation(
             debugSpeedSeekBar?.progress = debugState.speed
             debugSpeedLabel?.text = debugState.speed.toString()
             suppressDebugSpeedListener = false
-        }
-    }
-
-    private fun applyPauseState() {
-        val controls = pauseControls ?: return
-        val confirmLayout = quitConfirmLayout ?: return
-        val state = pendingPauseState
-        val isPauseMode = pendingContent?.mode == SecondaryDisplayMode.PAUSE_MENU
-
-        if (state == null || !isPauseMode) {
-            controls.visibility = View.GONE
-            confirmLayout.visibility = View.GONE
-            return
-        }
-
-        overlayText?.visibility = View.GONE
-
-        if (state.showQuitConfirm) {
-            controls.visibility = View.GONE
-            confirmLayout.visibility = View.VISIBLE
-            return
-        }
-
-        confirmLayout.visibility = View.GONE
-        controls.visibility = View.VISIBLE
-
-        soundToggle?.isChecked = state.soundOn
-        musicToggle?.isChecked = state.musicOn
-        secondScreenToggle?.isChecked = state.secondScreenOn
-
-        suppressTiltListener = true
-        when (state.tiltMode) {
-            1 -> flatRadio?.isChecked = true
-            3 -> customRadio?.isChecked = true
-            else -> tiltedRadio?.isChecked = true
-        }
-        suppressTiltListener = false
-
-        resumeButton?.text = if (state.resumeCountdownSeconds > 0f) {
-            ceil(state.resumeCountdownSeconds).toInt().coerceAtLeast(1).toString()
-        } else {
-            "Resume"
         }
     }
 
@@ -403,6 +236,12 @@ class SecondaryDisplayPresentation(
         } else {
             imageView.setImageDrawable(null)
             imageView.setBackgroundColor(Color.BLACK)
+        }
+
+        // Draws only while the game is actually paused, so Ready / Game Over keep their label.
+        pauseView?.let { view ->
+            view.visibility = if (pending.mode == SecondaryDisplayMode.PAUSE_MENU) View.VISIBLE else View.GONE
+            view.invalidate()
         }
 
         val showDebugControls = BuildConfig.DEBUG && pending.mode == SecondaryDisplayMode.BACKGROUND

@@ -35,10 +35,10 @@ class PauseMenuPanelTest {
         val tilted = panel.getItemBounds(PauseMenuPanel.Item.TILT_TILTED)
         val custom = panel.getItemBounds(PauseMenuPanel.Item.TILT_CUSTOM)
 
-        // Same row Y positions on both sides of the panel.
-        assertEquals(sound.y, flat.y)
-        assertEquals(music.y, tilted.y)
-        assertEquals(secondScreen.y, custom.y)
+        // Each tilt icon sits on the same row centre as its sound-column partner.
+        assertEquals(sound.centerY(), flat.centerY())
+        assertEquals(music.centerY(), tilted.centerY())
+        assertEquals(secondScreen.centerY(), custom.centerY())
 
         // Same vertical pitch between consecutive items on both sides.
         assertEquals(music.y - sound.y, tilted.y - flat.y)

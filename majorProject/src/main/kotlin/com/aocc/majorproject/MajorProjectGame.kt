@@ -11,8 +11,6 @@ import com.aocc.framework.implementation.AndroidGame
 import com.aocc.majorproject.display.SecondaryDebugAction
 import com.aocc.majorproject.display.SecondaryDebugState
 import com.aocc.majorproject.display.SecondaryDisplayManager
-import com.aocc.majorproject.display.SecondaryPauseState
-import com.aocc.majorproject.ui.PauseMenuPanel
 
 class MajorProjectGame : AndroidGame() {
 
@@ -187,26 +185,15 @@ class MajorProjectGame : AndroidGame() {
         return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingGameplayStats()
     }
 
-    fun updateSecondaryPauseState(pauseState: SecondaryPauseState) {
-        if (::secondaryDisplayManager.isInitialized) {
-            secondaryDisplayManager.updatePauseState(pauseState)
-        }
+    /** True while the pause menu is being shown (and tapped) on the rear display instead. */
+    fun isSecondaryDisplayPresentingPause(): Boolean {
+        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingPauseMenu()
     }
 
     fun updateSecondaryDebugState(debugState: SecondaryDebugState) {
         if (::secondaryDisplayManager.isInitialized) {
             secondaryDisplayManager.updateDebugState(debugState)
         }
-    }
-
-    /** Invoked by native controls on the rear-display pause menu. */
-    fun activateSecondaryPauseItem(item: PauseMenuPanel.Item) {
-        (currentScreen as? GameScreen)?.activateSecondaryPauseItem(item)
-    }
-
-    /** Invoked by the rear-display "are you sure?" quit confirmation. */
-    fun confirmSecondaryQuit(confirmed: Boolean) {
-        (currentScreen as? GameScreen)?.confirmSecondaryQuit(confirmed)
     }
 
     /** Invoked by the rear-display debug parameters popup. */

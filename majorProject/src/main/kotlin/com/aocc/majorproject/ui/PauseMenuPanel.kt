@@ -2,6 +2,7 @@ package com.aocc.majorproject.ui
 
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import com.aocc.framework.Graphics
 import com.aocc.framework.Input
 import com.aocc.majorproject.Assets
@@ -33,7 +34,8 @@ class PauseMenuPanel {
     private val secondScreenY: Int
     private val secondScreenBounds: UiBounds
 
-    private val tiltButtonX: Int
+    private val tiltPanelX: Int
+    private val measureRect = Rect()
     private val flatTiltButton: Button
     private val tiltedTiltButton: Button
     private val customTiltButton: Button
@@ -48,7 +50,7 @@ class PauseMenuPanel {
         val columnHeight = PANEL_HEIGHT - INNER_PADDING * 2 - 20
 
         soundPanel = UiPanel(PANEL_X, columnY, COLUMN_WIDTH, columnHeight, Color.DKGRAY)
-        val tiltPanelX = PANEL_X + PANEL_WIDTH - COLUMN_WIDTH
+        tiltPanelX = PANEL_X + PANEL_WIDTH - COLUMN_WIDTH
         tiltPanel = UiPanel(tiltPanelX, columnY, COLUMN_WIDTH, columnHeight, Color.DKGRAY)
 
         soundIconX = PANEL_X + (COLUMN_WIDTH - ICON_SIZE) / 2
@@ -57,11 +59,13 @@ class PauseMenuPanel {
         secondScreenY = musicIconY + ITEM_PITCH
         secondScreenBounds = UiBounds(soundIconX, secondScreenY, ICON_SIZE, ICON_SIZE)
 
-        // Same item size/spacing as the sound column for symmetry.
-        tiltButtonX = tiltPanelX + (COLUMN_WIDTH - TILT_ICON_WIDTH) / 2
-        flatTiltButton = Button(tiltButtonX, soundIconY, 3, 0, "Flat")
-        tiltedTiltButton = Button(tiltButtonX, musicIconY, 3, 0, "Tilted")
-        customTiltButton = Button(tiltButtonX, secondScreenY, 3, 0, "Custom")
+        // Same rows as the sound column (icons centred on each row) for symmetry. X is
+        // recentred on each paint once the labels can be measured.
+        val tiltX = tiltPanelX + (COLUMN_WIDTH - TILT_ICON_WIDTH) / 2
+        val tiltRowOffset = (ICON_SIZE - TILT_ICON_WIDTH) / 2
+        flatTiltButton = Button(tiltX, soundIconY + tiltRowOffset, 3, 0, "Flat")
+        tiltedTiltButton = Button(tiltX, musicIconY + tiltRowOffset, 3, 0, "Tilted")
+        customTiltButton = Button(tiltX, secondScreenY + tiltRowOffset, 3, 0, "Custom")
 
         val middleX = PANEL_X + COLUMN_WIDTH + COLUMN_GAP
         val middleWidth = PANEL_WIDTH - COLUMN_WIDTH * 2 - COLUMN_GAP * 2
@@ -125,6 +129,7 @@ class PauseMenuPanel {
 
         paintSecondScreenButton(g, paint)
 
+        layoutTiltButtons(paint)
         flatTiltButton.paint(g, paint, player)
         tiltedTiltButton.paint(g, paint, player)
         customTiltButton.paint(g, paint, player)
@@ -142,6 +147,19 @@ class PauseMenuPanel {
         if (focusedItem != null) {
             paintFocusHighlight(g, focusedItem)
         }
+    }
+
+    /** Centres the icon + label group in the tilt column, sharing the widest label's width. */
+    private fun layoutTiltButtons(paint: Paint) {
+        val maxLabelWidth = listOf("Flat", "Tilted", "Custom").maxOf { label ->
+            paint.getTextBounds(label, 0, label.length, measureRect)
+            measureRect.width()
+        }
+        val groupWidth = TILT_ICON_WIDTH + TILT_LABEL_GAP + maxLabelWidth
+        val left = maxOf(tiltPanelX + 8, tiltPanelX + (COLUMN_WIDTH - groupWidth) / 2)
+        flatTiltButton.setPosX(left)
+        tiltedTiltButton.setPosX(left)
+        customTiltButton.setPosX(left)
     }
 
     private fun paintSecondScreenButton(g: Graphics, paint: Paint) {
@@ -169,7 +187,7 @@ class PauseMenuPanel {
         paint.textSize = SECOND_SCREEN_LABEL_SIZE
         UiText.drawInBounds(
             g, paint, "2nd Screen",
-            UiBounds(secondScreenBounds.x - 40, secondScreenBounds.y + secondScreenBounds.height + 4, ICON_SIZE + 80, 24),
+            UiBounds(PANEL_X, secondScreenBounds.y + secondScreenBounds.height + 4, COLUMN_WIDTH, 24),
             UiText.HAlign.CENTER, Color.WHITE
         )
         paint.textSize = previousSize
@@ -229,12 +247,12 @@ class PauseMenuPanel {
     }
 
     companion object {
-        const val PANEL_WIDTH = 900
+        const val PANEL_WIDTH = 960
         const val PANEL_HEIGHT = 440
         val PANEL_X: Int = UiLayout.centerX(PANEL_WIDTH)
         const val PANEL_Y = 150
 
-        const val COLUMN_WIDTH = 180
+        const val COLUMN_WIDTH = 240
         const val COLUMN_GAP = 32
         const val ICON_SIZE = 100
 
@@ -244,6 +262,7 @@ class PauseMenuPanel {
 
         private const val INNER_PADDING = 24
         private const val TILT_ICON_WIDTH = 64
+        private const val TILT_LABEL_GAP = 12
 
         private const val MIDDLE_BUTTON_TOP = 20
         private const val MIDDLE_BUTTON_HEIGHT = 140

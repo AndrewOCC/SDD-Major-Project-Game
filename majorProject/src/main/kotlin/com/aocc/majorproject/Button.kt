@@ -66,7 +66,7 @@ class Button(
                         icon?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
-                            posY + width / 2, Color.BLACK
+                            posY + width / 2, Color.WHITE
                         )
                     }
                     "Tilted" -> {
@@ -78,7 +78,7 @@ class Button(
                         icon?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
-                            posY + width / 2, Color.BLACK
+                            posY + width / 2, Color.WHITE
                         )
                     }
                     "Custom" -> {
@@ -93,7 +93,7 @@ class Button(
                         Assets.tilt_control_custom?.let { g.drawImage(it, posX, posY) }
                         UiText.drawLeftOfCenter(
                             g, paint, text, posX + width + 12,
-                            posY + width / 2, Color.BLACK
+                            posY + width / 2, Color.WHITE
                         )
                     }
                 }
