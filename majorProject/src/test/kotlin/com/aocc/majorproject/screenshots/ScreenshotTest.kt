@@ -86,11 +86,21 @@ class ScreenshotTest {
         ShadowDisplayManager.addDisplay("w540dp-h620dp-xhdpi")
         GamePreferences.secondScreenEnabled = true
         try {
+            val menu = MainMenuScreen(activity)
+            activity.setScreen(menu)
+            idle()
+            val rear = rearPresentation()
+            captureScreen("30-dual-top-menu", menu)
+            captureRear("31-rear-menu", rear)
+
             val game = GameScreen(activity)
             activity.setScreen(game)
+            idle()
+            captureScreen("32-dual-top-ready", game)
+            captureRear("33-rear-ready", rear)
+
             invoke(game, "changeState", GameScreen.GameState.Running)
             repeat(120) { game.update(1f / 60f); idle() }
-            val rear = rearPresentation()
             captureScreen("20-dual-top-running", game)
             captureRear("21-rear-running", rear)
 
@@ -113,6 +123,12 @@ class ScreenshotTest {
             invoke(game, "cancelResumeCountdown")
             invoke(game, "openQuitConfirm")
             captureRear("26-rear-quit-confirm", rear)
+
+            invoke(game, "confirmQuit", false)
+            invoke(game, "changeState", GameScreen.GameState.GameOver)
+            idle()
+            captureScreen("34-dual-top-gameover", game)
+            captureRear("35-rear-gameover", rear)
         } finally {
             GamePreferences.secondScreenEnabled = false
         }
