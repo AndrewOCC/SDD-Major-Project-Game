@@ -1,0 +1,51 @@
+name: Screenshots
+
+# Renders every screen (both displays) with Robolectric and pushes the PNGs to the
+# ci-screenshots branch, so UI changes can be reviewed without a device.
+on:
+  push:
+    branches:
+      - 'claude/**'
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Render screenshots
+        run: ./gradlew :majorProject:testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'
+
+      - name: Publish to ci-screenshots branch
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          out=$(mktemp -d)
+          cp majorProject/build/screenshots/*.png "$out"/
+          printf '%s\n%s\n' "${GITHUB_REF_NAME}" "${GITHUB_SHA}" > "$out/SOURCE.txt"
+          cd "$out"
+          git init -q -b ci-screenshots
+          git add .
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -qm "Screenshots for ${GITHUB_REF_NAME} @ ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-screenshots

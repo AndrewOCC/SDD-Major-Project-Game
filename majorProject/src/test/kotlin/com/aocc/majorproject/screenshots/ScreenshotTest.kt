@@ -11,6 +11,7 @@ import com.aocc.majorproject.GamePreferences
 import com.aocc.majorproject.GameScreen
 import com.aocc.majorproject.MainMenuScreen
 import com.aocc.majorproject.MajorProjectGame
+import com.aocc.majorproject.TutorialScreen
 import com.aocc.majorproject.display.SecondaryDisplayPresentation
 import com.aocc.framework.Screen
 import org.junit.Assume.assumeTrue
@@ -92,6 +93,12 @@ class ScreenshotTest {
             val rear = rearPresentation()
             captureScreen("30-dual-top-menu", menu)
             captureRear("31-rear-menu", rear)
+
+            val tutorial = TutorialScreen(activity)
+            activity.setScreen(tutorial)
+            idle()
+            captureScreen("36-dual-top-tutorial", tutorial)
+            captureRear("37-rear-tutorial", rear)
 
             val game = GameScreen(activity)
             activity.setScreen(game)

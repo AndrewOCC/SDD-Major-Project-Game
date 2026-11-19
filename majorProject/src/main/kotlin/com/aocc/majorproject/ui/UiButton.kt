@@ -21,6 +21,8 @@ class UiButton(
     private var pressedBackgroundColor: Int = Color.rgb(195, 195, 195)
     private var textColor: Int = Color.WHITE
     private var pressed = false
+    // Per instance: the top and rear displays paint on different threads.
+    private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     constructor(x: Int, y: Int, width: Int, height: Int, label: String) :
         this(x, y, width, height, label, MENU_TEXT_SIZE)
@@ -34,11 +36,11 @@ class UiButton(
         g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, bg)
 
         if (Assets.plain != null) {
-            LABEL_PAINT.typeface = Assets.plain
+            labelPaint.typeface = Assets.plain
         }
-        LABEL_PAINT.textSize = textSize
-        LABEL_PAINT.color = textColor
-        UiText.drawInBounds(g, LABEL_PAINT, label, bounds, UiText.HAlign.CENTER, textColor)
+        labelPaint.textSize = textSize
+        labelPaint.color = textColor
+        UiText.drawInBounds(g, labelPaint, label, bounds, UiText.HAlign.CENTER, textColor)
     }
 
     /** @deprecated Use [paint] — label rendering no longer shares caller paint. */
@@ -63,8 +65,6 @@ class UiButton(
         const val MENU_WIDTH = 200
         const val MENU_HEIGHT = 70
         const val MENU_TEXT_SIZE = 50f
-
-        private val LABEL_PAINT = Paint(Paint.ANTI_ALIAS_FLAG)
 
         @JvmStatic
         fun menuAt(x: Int, y: Int): UiButton {

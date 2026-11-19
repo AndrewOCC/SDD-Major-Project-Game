@@ -34,6 +34,7 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
     private val filteredBitmapPaint =
         Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val transformPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
     var frameBuffer: Bitmap? = null
         private set
@@ -217,13 +218,8 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
     override fun drawARGB(a: Int, r: Int, g: Int, b: Int) {
         paint.style = Paint.Style.FILL
         paint.setARGB(a, r, g, b)
-        requireCanvas().drawRect(
-            0f,
-            0f,
-            GameConstants.WORLD_WIDTH.toFloat(),
-            GameConstants.WORLD_HEIGHT.toFloat(),
-            paint
-        )
+        // Whole canvas, whatever this frame's world size is.
+        requireCanvas().drawPaint(paint)
     }
 
     override fun drawString(text: String, x: Int, y: Int, color: Int, textPaint: Paint) {
@@ -262,6 +258,28 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         dstRect.bottom = y + srcHeight / pixelScale
 
         requireCanvas().drawBitmap(androidImage.bitmap, srcRect, dstRect, filteredBitmapPaint)
+    }
+
+    override fun drawImageTransformed(
+        image: Image,
+        centerX: Float,
+        centerY: Float,
+        scale: Float,
+        rotationDegrees: Float,
+        alpha: Int,
+    ) {
+        val androidImage = image as AndroidImage
+        val canvas = requireCanvas()
+        val halfW = androidImage.width / 2f
+        val halfH = androidImage.height / 2f
+        canvas.save()
+        canvas.translate(centerX, centerY)
+        canvas.rotate(rotationDegrees)
+        canvas.scale(scale, scale)
+        transformPaint.alpha = alpha.coerceIn(0, 255)
+        dstRect.set(-halfW.toInt(), -halfH.toInt(), halfW.toInt(), halfH.toInt())
+        canvas.drawBitmap(androidImage.bitmap, null, dstRect, transformPaint)
+        canvas.restore()
     }
 
     override fun drawImage(image: Image, x: Int, y: Int) {

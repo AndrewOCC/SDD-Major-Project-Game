@@ -14,19 +14,29 @@ import com.aocc.majorproject.Player
 import kotlin.math.ceil
 
 /**
- * Pause-menu layout: a left column (Sound, Music, 2nd-Screen) and a right column
- * (Flat, Tilted, Custom tilt) sharing the same item size/spacing for visual symmetry,
- * with big Resume / Quit buttons in the middle.
+ * Settings + actions panel: a Sound column (Sound, Music, 2nd-Screen) and a Tilt column
+ * (Flat, Tilted, Custom) sharing the same item size/spacing for symmetry, plus a big primary
+ * and secondary action. Landscape puts the actions between the columns (primary display);
+ * portrait stacks them above the columns (rear display, [com.aocc.majorproject.display.RearLayout]).
+ * Labels are configurable so the same panel serves Pause (Resume / Quit) and Ready (Start / Menu).
  */
-class PauseMenuPanel {
+class PauseMenuPanel(
+    portrait: Boolean = false,
+    private val title: String = "Paused",
+    private val primaryLabel: String = "Resume",
+    secondaryLabel: String = "Quit",
+) {
 
+    /** RESUME is the primary action and QUIT the secondary one, whatever their labels say. */
     enum class Item {
         SOUND, MUSIC, SECOND_SCREEN, RESUME, QUIT, TILT_FLAT, TILT_TILTED, TILT_CUSTOM
     }
 
-    private val outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(180, 0, 0, 0))
+    private val outerPanel: UiPanel
     private val soundPanel: UiPanel
     private val tiltPanel: UiPanel
+    private val columnWidth: Int
+    private val soundPanelX: Int
 
     private val soundIconX: Int
     private val soundIconY: Int
@@ -46,37 +56,58 @@ class PauseMenuPanel {
     private var game: MajorProjectGame? = null
 
     init {
-        val columnY = PANEL_Y + INNER_PADDING + 20
-        val columnHeight = PANEL_HEIGHT - INNER_PADDING * 2 - 20
+        val columnY: Int
+        val columnHeight: Int
+        val itemTop: Int
+        val itemPitch: Int
+        if (portrait) {
+            outerPanel = UiPanel(20, 70, 680, 740, Color.argb(180, 0, 0, 0))
+            columnWidth = 300
+            soundPanelX = 50
+            tiltPanelX = 370
+            columnY = 380
+            columnHeight = 410
+            itemTop = columnY + 20
+            itemPitch = 125
+            resumeButton = UiButton(50, 100, 620, 120, primaryLabel, MIDDLE_BUTTON_TEXT_SIZE)
+            quitButton = UiButton(50, 240, 620, 90, secondaryLabel, SECONDARY_PORTRAIT_TEXT_SIZE)
+        } else {
+            outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(180, 0, 0, 0))
+            columnWidth = COLUMN_WIDTH
+            soundPanelX = PANEL_X
+            tiltPanelX = PANEL_X + PANEL_WIDTH - COLUMN_WIDTH
+            columnY = PANEL_Y + INNER_PADDING + 20
+            columnHeight = PANEL_HEIGHT - INNER_PADDING * 2 - 20
+            itemTop = columnY + ITEM_TOP_OFFSET
+            itemPitch = ITEM_PITCH
+            val middleX = PANEL_X + COLUMN_WIDTH + COLUMN_GAP
+            val middleWidth = PANEL_WIDTH - COLUMN_WIDTH * 2 - COLUMN_GAP * 2
+            resumeButton = UiButton(
+                middleX, columnY + MIDDLE_BUTTON_TOP, middleWidth, MIDDLE_BUTTON_HEIGHT,
+                primaryLabel, MIDDLE_BUTTON_TEXT_SIZE
+            )
+            quitButton = UiButton(
+                middleX, columnY + MIDDLE_BUTTON_TOP + MIDDLE_BUTTON_HEIGHT + MIDDLE_BUTTON_GAP,
+                middleWidth, MIDDLE_BUTTON_HEIGHT, secondaryLabel, MIDDLE_BUTTON_TEXT_SIZE
+            )
+        }
 
-        soundPanel = UiPanel(PANEL_X, columnY, COLUMN_WIDTH, columnHeight, Color.DKGRAY)
-        tiltPanelX = PANEL_X + PANEL_WIDTH - COLUMN_WIDTH
-        tiltPanel = UiPanel(tiltPanelX, columnY, COLUMN_WIDTH, columnHeight, Color.DKGRAY)
+        soundPanel = UiPanel(soundPanelX, columnY, columnWidth, columnHeight, Color.DKGRAY)
+        tiltPanel = UiPanel(tiltPanelX, columnY, columnWidth, columnHeight, Color.DKGRAY)
 
-        soundIconX = PANEL_X + (COLUMN_WIDTH - ICON_SIZE) / 2
-        soundIconY = columnY + ITEM_TOP_OFFSET
-        musicIconY = soundIconY + ITEM_PITCH
-        secondScreenY = musicIconY + ITEM_PITCH
+        soundIconX = soundPanelX + (columnWidth - ICON_SIZE) / 2
+        soundIconY = itemTop
+        musicIconY = soundIconY + itemPitch
+        secondScreenY = musicIconY + itemPitch
         secondScreenBounds = UiBounds(soundIconX, secondScreenY, ICON_SIZE, ICON_SIZE)
 
         // Same rows as the sound column (icons centred on each row) for symmetry. X is
         // recentred on each paint once the labels can be measured.
-        val tiltX = tiltPanelX + (COLUMN_WIDTH - TILT_ICON_WIDTH) / 2
+        val tiltX = tiltPanelX + (columnWidth - TILT_ICON_WIDTH) / 2
         val tiltRowOffset = (ICON_SIZE - TILT_ICON_WIDTH) / 2
         flatTiltButton = Button(tiltX, soundIconY + tiltRowOffset, 3, 0, "Flat")
         tiltedTiltButton = Button(tiltX, musicIconY + tiltRowOffset, 3, 0, "Tilted")
         customTiltButton = Button(tiltX, secondScreenY + tiltRowOffset, 3, 0, "Custom")
-
-        val middleX = PANEL_X + COLUMN_WIDTH + COLUMN_GAP
-        val middleWidth = PANEL_WIDTH - COLUMN_WIDTH * 2 - COLUMN_GAP * 2
-        resumeButton = UiButton(
-            middleX, columnY + MIDDLE_BUTTON_TOP, middleWidth, MIDDLE_BUTTON_HEIGHT,
-            "Resume", MIDDLE_BUTTON_TEXT_SIZE
-        )
-        quitButton = UiButton(
-            middleX, columnY + MIDDLE_BUTTON_TOP + MIDDLE_BUTTON_HEIGHT + MIDDLE_BUTTON_GAP,
-            middleWidth, MIDDLE_BUTTON_HEIGHT, "Quit", MIDDLE_BUTTON_TEXT_SIZE
-        )
     }
 
     fun setGame(game: MajorProjectGame) {
@@ -113,7 +144,7 @@ class PauseMenuPanel {
         resumeCountdownSeconds: Float,
     ) {
         outerPanel.paintBackground(g)
-        outerPanel.paintTitle(g, paint, "Paused")
+        outerPanel.paintTitle(g, paint, title)
 
         soundPanel.paintBackground(g)
         soundPanel.paintTitle(g, paint, "Sound")
@@ -138,7 +169,7 @@ class PauseMenuPanel {
             if (resumeCountdownSeconds > 0f) {
                 ceil(resumeCountdownSeconds).toInt().coerceAtLeast(1).toString()
             } else {
-                "Resume"
+                primaryLabel
             }
         )
         resumeButton.paint(g)
@@ -156,7 +187,7 @@ class PauseMenuPanel {
             measureRect.width()
         }
         val groupWidth = TILT_ICON_WIDTH + TILT_LABEL_GAP + maxLabelWidth
-        val left = maxOf(tiltPanelX + 8, tiltPanelX + (COLUMN_WIDTH - groupWidth) / 2)
+        val left = maxOf(tiltPanelX + 8, tiltPanelX + (columnWidth - groupWidth) / 2)
         flatTiltButton.setPosX(left)
         tiltedTiltButton.setPosX(left)
         customTiltButton.setPosX(left)
@@ -187,7 +218,7 @@ class PauseMenuPanel {
         paint.textSize = SECOND_SCREEN_LABEL_SIZE
         UiText.drawInBounds(
             g, paint, "2nd Screen",
-            UiBounds(PANEL_X, secondScreenBounds.y + secondScreenBounds.height + 4, COLUMN_WIDTH, 24),
+            UiBounds(soundPanelX, secondScreenBounds.y + secondScreenBounds.height + 4, columnWidth, 24),
             UiText.HAlign.CENTER, Color.WHITE
         )
         paint.textSize = previousSize
@@ -268,6 +299,7 @@ class PauseMenuPanel {
         private const val MIDDLE_BUTTON_HEIGHT = 140
         private const val MIDDLE_BUTTON_GAP = 24
         private const val MIDDLE_BUTTON_TEXT_SIZE = 46f
+        private const val SECONDARY_PORTRAIT_TEXT_SIZE = 40f
         private const val SECOND_SCREEN_LABEL_SIZE = 22f
 
         /** All focusable pause-menu items, in a fixed order used for gamepad focus indices. */

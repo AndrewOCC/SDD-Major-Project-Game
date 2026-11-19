@@ -5,70 +5,67 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import com.aocc.framework.Viewport
 import com.aocc.framework.implementation.AndroidGraphics
 import com.aocc.majorproject.Assets
-import com.aocc.majorproject.GameScreen
 import com.aocc.majorproject.MajorProjectGame
+import com.aocc.majorproject.ui.ParticleField
 
 /**
- * Draws the game's own pause menu (same layout, art and font as the primary screen) on the
- * rear display, letterboxed from world coordinates, and routes taps back into [GameScreen].
- * Draws nothing unless the current screen is actually paused.
+ * The rear display's touch surface in dual-screen mode. Draws the current screen's controls
+ * (see [RearScreenUi]) with the game's own renderer, over drifting snow, in a portrait world
+ * letterboxed onto the panel, and routes taps back to that screen.
  */
 @SuppressLint("ViewConstructor")
-class SecondaryPauseView(
+class SecondaryControlsView(
     context: Context,
     private val activity: MajorProjectGame,
 ) : View(context) {
 
     private val graphics = AndroidGraphics(context.assets)
-    private val viewport = Viewport()
+    private val viewport = Viewport(RearLayout.WIDTH, RearLayout.HEIGHT)
+    private val particles = ParticleField(RearLayout.WIDTH, RearLayout.HEIGHT, count = 30, seed = 11L)
     private val blitPaint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 40f
         textAlign = Paint.Align.CENTER
         color = Color.WHITE
     }
+    private var lastFrameMillis = 0L
 
-    private fun pausedScreen(): GameScreen? {
-        val screen = activity.currentScreen as? GameScreen ?: return null
-        return if (screen.state == GameScreen.GameState.Paused) screen else null
-    }
+    private fun rearScreen(): RearScreenUi? = activity.currentScreen as? RearScreenUi
 
     override fun onDraw(canvas: Canvas) {
-        if (visibility != VISIBLE) {
-            return
-        }
-        // Keep redrawing while shown so the countdown / toggles stay live.
+        // Keep redrawing so countdowns, toggles and the snow stay live.
         postInvalidateOnAnimation()
-        val screen = pausedScreen() ?: return
+        val now = SystemClock.uptimeMillis()
+        val delta = if (lastFrameMillis == 0L) 0f else ((now - lastFrameMillis) / 1000f).coerceAtMost(0.05f)
+        lastFrameMillis = now
 
+        canvas.drawColor(Color.BLACK)
         viewport.update(width, height)
         if (!graphics.beginFrame(viewport)) {
             return
         }
-        Assets.game_bg?.let { graphics.drawImage(it, 0, 0) }
-        graphics.drawARGB(170, 0, 0, 0)
+        graphics.drawARGB(255, 16, 16, 20)
+        particles.update(delta)
+        particles.paint(graphics)
         textPaint.typeface = Assets.plain
-        screen.paintPauseOverlay(graphics, textPaint)
+        rearScreen()?.paintRear(graphics, textPaint)
         graphics.endFrame()
 
         val frame = graphics.frameBuffer ?: return
-        canvas.drawColor(Color.BLACK)
         canvas.drawBitmap(frame, null, viewport.getLetterboxDestRect(), blitPaint)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val screen = pausedScreen() ?: return false
+        val screen = rearScreen() ?: return false
         if (event.actionMasked == MotionEvent.ACTION_UP) {
-            screen.enqueueSecondaryTap(
-                viewport.screenToWorldX(event.x),
-                viewport.screenToWorldY(event.y)
-            )
+            screen.onRearTap(viewport.screenToWorldX(event.x), viewport.screenToWorldY(event.y))
         }
         return true
     }

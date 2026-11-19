@@ -174,20 +174,9 @@ class MajorProjectGame : AndroidGame() {
         }
     }
 
-    fun updateSecondaryDisplayStats(score: Int, combo: Int) {
-        if (::secondaryDisplayManager.isInitialized) {
-            secondaryDisplayManager.updateGameStats(score, combo)
-        }
-    }
-
-    /** True while the rear display is actively mirroring live gameplay (score/combo). */
-    fun isSecondaryDisplayPresentingStats(): Boolean {
-        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingGameplayStats()
-    }
-
-    /** True while the pause menu is being shown (and tapped) on the rear display instead. */
-    fun isSecondaryDisplayPresentingPause(): Boolean {
-        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isPresentingPauseMenu()
+    /** True while the rear display owns every control (dual-screen mode). */
+    fun isDualScreenActive(): Boolean {
+        return ::secondaryDisplayManager.isInitialized && secondaryDisplayManager.isRearControlsActive()
     }
 
     fun updateSecondaryDebugState(debugState: SecondaryDebugState) {
