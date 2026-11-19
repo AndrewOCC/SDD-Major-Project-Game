@@ -61,7 +61,7 @@ class PauseMenuPanel(
         val itemTop: Int
         val itemPitch: Int
         if (portrait) {
-            outerPanel = UiPanel(20, 70, 680, 740, Color.argb(180, 0, 0, 0))
+            outerPanel = UiPanel(20, 30, 680, 780, Color.argb(180, 0, 0, 0))
             columnWidth = 300
             soundPanelX = 50
             tiltPanelX = 370
@@ -69,8 +69,8 @@ class PauseMenuPanel(
             columnHeight = 410
             itemTop = columnY + 20
             itemPitch = 125
-            resumeButton = UiButton(50, 100, 620, 120, primaryLabel, MIDDLE_BUTTON_TEXT_SIZE)
-            quitButton = UiButton(50, 240, 620, 90, secondaryLabel, SECONDARY_PORTRAIT_TEXT_SIZE)
+            resumeButton = UiButton(50, 60, 620, 140, primaryLabel, MIDDLE_BUTTON_TEXT_SIZE)
+            quitButton = UiButton(50, 220, 620, 100, secondaryLabel, SECONDARY_PORTRAIT_TEXT_SIZE)
         } else {
             outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(180, 0, 0, 0))
             columnWidth = COLUMN_WIDTH

@@ -15,7 +15,7 @@ class UiConfirmDialog(
 ) {
 
     private val panel = UiPanel(
-        (worldWidth - PANEL_WIDTH) / 2, panelY, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(220, 20, 20, 20)
+        (worldWidth - PANEL_WIDTH) / 2, panelY, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(240, 44, 44, 50)
     )
     private val confirmButton: UiButton
     private val cancelButton: UiButton
@@ -36,6 +36,8 @@ class UiConfirmDialog(
 
     fun paint(g: Graphics, paint: Paint) {
         panel.paintBackground(g)
+        val bounds = panel.getBounds()
+        g.drawRectOutline(bounds.x, bounds.y, bounds.width, bounds.height, Color.argb(160, 255, 255, 255), 2f)
         val previousSize = paint.textSize
         paint.textSize = MESSAGE_TEXT_SIZE
         UiText.drawCentered(g, paint, message, panel.getBounds().centerX(), panelY + 70, Color.WHITE)

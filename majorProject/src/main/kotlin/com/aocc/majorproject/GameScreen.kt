@@ -65,16 +65,17 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val quitConfirmDialog = UiConfirmDialog("Quit and return to the menu?", "Yes", "No")
 
     // Rear (bottom-screen) controls for dual-screen mode, in RearLayout coordinates.
-    private val rearReadyPanel = PauseMenuPanel(portrait = true, title = "Ready", primaryLabel = "Start", secondaryLabel = "Menu")
-    private val rearPausePanel = PauseMenuPanel(portrait = true)
+    // No titles: the top display already says "Get Ready" / "Paused".
+    private val rearReadyPanel = PauseMenuPanel(portrait = true, title = "", primaryLabel = "Start", secondaryLabel = "Menu")
+    private val rearPausePanel = PauseMenuPanel(portrait = true, title = "")
     private val rearQuitDialog = UiConfirmDialog(
         "Quit and return to the menu?", "Yes", "No", RearLayout.WIDTH, REAR_DIALOG_Y
     )
     private val rearPauseButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 600, REAR_BUTTON_WIDTH, 130, "Pause", 54f)
-    private val rearRetryButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 320, REAR_BUTTON_WIDTH, 130, "Retry", 54f)
-    private val rearMenuButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 480, REAR_BUTTON_WIDTH, 100, "Menu", 44f)
+    private val rearRetryButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 200, REAR_BUTTON_WIDTH, 170, "Retry", 64f)
+    private val rearMenuButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 400, REAR_BUTTON_WIDTH, 110, "Menu", 44f)
     private val rearLeaderboardButton =
-        UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 610, REAR_BUTTON_WIDTH, 100, "Leaderboards", 40f)
+        UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 540, REAR_BUTTON_WIDTH, 110, "Leaderboards", 40f)
     private val rearTaps = RearTapQueue()
 
     private val scoreBar = ScoreBar()
@@ -766,7 +767,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             }
             GameState.Running -> paintRearHud(g, paint)
             GameState.Paused -> paintPauseOverlay(g, paint)
-            GameState.GameOver -> paintRearGameOver(g, paint)
+            GameState.GameOver -> paintRearGameOver(g)
         }
     }
 
@@ -783,12 +784,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         rearPauseButton.paint(g)
     }
 
-    private fun paintRearGameOver(g: Graphics, paint: Paint) {
-        val centerX = RearLayout.WIDTH / 2
-        paint.textSize = 40f
-        UiText.drawCentered(g, paint, "FINAL SCORE", centerX, 110, Color.LTGRAY)
-        paint.textSize = 110f
-        UiText.drawCentered(g, paint, session.getScore().toString(), centerX, 210, Color.WHITE)
+    /** Just the choices: "Game Over!" and the score are on the top display. */
+    private fun paintRearGameOver(g: Graphics) {
         rearRetryButton.paint(g)
         rearMenuButton.paint(g)
         rearLeaderboardButton.paint(g)
