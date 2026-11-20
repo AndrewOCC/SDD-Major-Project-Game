@@ -121,7 +121,14 @@ def build_room(layout):
     floor.name = "floor"
 
     # Perimeter walls; the top wall is mostly floor-to-ceiling glazing split by concrete fins.
-    add_box(0, WORLD_H - wall, WORLD_W, wall, 0, WALL_H, m_concrete, bev=0.01)
+    door = layout.get("door")
+    if door and door["wall"] == 3:
+        add_box(0, WORLD_H - wall, door["x0"], wall, 0, WALL_H, m_concrete, bev=0.01)
+        add_box(door["x1"], WORLD_H - wall, WORLD_W - door["x1"], wall, 0, WALL_H, m_concrete, bev=0.01)
+        # Lintel above the opening keeps the wall top continuous from above.
+        add_box(door["x0"], WORLD_H - wall, door["x1"] - door["x0"], wall, 2.1, WALL_H, m_concrete)
+    else:
+        add_box(0, WORLD_H - wall, WORLD_W, wall, 0, WALL_H, m_concrete, bev=0.01)
     add_box(0, 0, wall, WORLD_H, 0, WALL_H, m_concrete, bev=0.01)
     add_box(WORLD_W - wall, 0, wall, WORLD_H, 0, WALL_H, m_concrete, bev=0.01)
     for x0, x1 in layout["windows"]:
@@ -296,29 +303,113 @@ BUILDERS = {
 }
 
 
+# Times of day. Sun angles are degrees; "sky" is the world colour and strength.
+VARIANTS = {
+    "day": dict(sun=(30, -16, 11.0, (1.0, 0.82, 0.62)), sky=((0.55, 0.65, 0.85), 0.12), fill=220),
+    "golden": dict(sun=(17, -34, 8.5, (1.0, 0.66, 0.36)), sky=((0.62, 0.55, 0.62), 0.09), fill=150),
+    "sunset": dict(sun=(8, -48, 7.0, (1.0, 0.42, 0.18)), sky=((0.55, 0.32, 0.38), 0.06), fill=90),
+    "dusk": dict(sun=None, sky=((0.16, 0.20, 0.42), 0.12), fill=70, fill_color=(0.55, 0.62, 1.0)),
+    "night": dict(sun=(40, 12, 0.9, (0.55, 0.68, 1.0)), sky=((0.05, 0.08, 0.18), 0.10), fill=55,
+                  fill_color=(0.45, 0.55, 1.0)),
+    "door": dict(sun=(40, 12, 0.9, (0.55, 0.68, 1.0)), sky=((0.05, 0.08, 0.18), 0.10), fill=55,
+                 fill_color=(0.45, 0.55, 1.0), door_open=True, porch=True, visitor=True),
+    "lights": dict(sun=(40, 12, 0.9, (0.55, 0.68, 1.0)), sky=((0.05, 0.08, 0.18), 0.10), fill=40,
+                   fill_color=(1.0, 0.8, 0.6), door_open=True, porch=True, lamps=True),
+}
+
+
+def add_light(kind, name, x, y, z, energy, color, size=0.1):
+    light = bpy.data.lights.new(name, kind)
+    light.energy = energy
+    light.color = color
+    if kind == "POINT":
+        light.shadow_soft_size = size
+    obj = bpy.data.objects.new(name, light)
+    obj.location = (px(x), py(y), z)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
+def door_leaf(layout, open_door):
+    door = layout.get("door")
+    if not door:
+        return
+    wall = layout["wall"]
+    width = door["x1"] - door["x0"]
+    m_door = mat("door", (0.30, 0.13, 0.05), 0.4)
+    leaf = add_box(door["x1"] - width, WORLD_H - wall + 4, width, 5, 0.01, 2.08, m_door, bev=0.004)
+    if open_door:
+        # Hinged at the right jamb, swung ~100 degrees into the room.
+        pivot = bpy.data.objects.new("hinge", None)
+        pivot.location = (px(door["x1"]), py(WORLD_H - wall + 6), 0)
+        bpy.context.collection.objects.link(pivot)
+        bpy.context.view_layer.update()
+        leaf.parent = pivot
+        leaf.matrix_parent_inverse = pivot.matrix_world.inverted()
+        pivot.rotation_euler.z = math.radians(-100)
+    # Threshold strip.
+    add_box(door["x0"], WORLD_H - wall, width, wall, 0, 0.01, mat("steel", (0.05, 0.05, 0.05), 0.35, metal=1.0))
+
+
+def porch(layout, visitor):
+    door = layout["door"]
+    cx = (door["x0"] + door["x1"]) / 2
+    # Outdoor floor so the light has something to bounce off, and the porch lamp beyond the door.
+    add_box(door["x0"] - 200, WORLD_H, door["x1"] - door["x0"] + 400, 300, -0.02, 0.0, mat("path", (0.3, 0.29, 0.27), 0.9))
+    add_light("POINT", "porch", cx + 10, WORLD_H + 260, 2.2, 3200, (1.0, 0.72, 0.42), size=0.04)
+    if visitor:
+        m = mat("visitor", (0.05, 0.05, 0.05), 0.8)
+        # Standing just off to the left of the doorway, keys in hand: a long shadow in the light.
+        vx, vy = cx - 30, WORLD_H + 120
+        body = add_cylinder(vx, vy, 20, 0.0, 1.45, m, verts=16)
+        body.scale.y = 0.6
+        head = add_sphere(vx, vy, 12, 1.62, m)
+        bag = add_box(vx - 34, vy - 6, 14, 26, 0.6, 0.95, m)
+        for o in (body, head, bag):
+            hidden_from_camera(o)
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     layout_path, out_path = args[0], args[1]
     preview = "--preview" in args
+    variant_name = "day"
+    if "--variant" in args:
+        variant_name = args[args.index("--variant") + 1]
+    v = VARIANTS[variant_name]
     with open(layout_path) as fh:
         layout = json.load(fh)
 
     reset_scene()
     configure_render(640 if preview else 2560, 360 if preview else 1440, 24 if preview else 96)
     setup_camera(WORLD_W / 2, WORLD_H / 2, WORLD_W)
-    setup_sun(elevation_deg=30, azimuth_deg=-16, strength=11)
+    if v["sun"]:
+        elev, az, strength, color = v["sun"]
+        setup_sun(elevation_deg=elev, azimuth_deg=az, strength=strength, color=color)
+    world = bpy.context.scene.world
+    world.use_nodes = True
+    bg = world.node_tree.nodes["Background"]
+    bg.inputs["Color"].default_value = (*v["sky"][0], 1)
+    bg.inputs["Strength"].default_value = v["sky"][1]
 
     build_room(layout)
     for f in layout["furniture"]:
         BUILDERS[f["type"]](f)
+    door_leaf(layout, v.get("door_open", False))
+    if v.get("porch"):
+        porch(layout, v.get("visitor", False))
+    if v.get("lamps"):
+        add_light("POINT", "pendant", 640, 380, 2.4, 900, (1.0, 0.74, 0.46), size=0.25)
+        add_light("POINT", "arc", 300, 270, 1.75, 160, (1.0, 0.70, 0.40), size=0.1)
+        add_light("POINT", "table", 490, 663, 1.05, 70, (1.0, 0.70, 0.40), size=0.08)
 
     # Soft, cool fill from above so the playfield stays readable outside the sun shafts.
     fill = bpy.data.lights.new("fill", "AREA")
     fill.shape = "RECTANGLE"
     fill.size = px(WORLD_W)
     fill.size_y = px(WORLD_H)
-    fill.energy = 220
-    fill.color = (0.85, 0.9, 1.0)
+    fill.energy = v["fill"]
+    fill.color = v.get("fill_color", (0.85, 0.9, 1.0))
     fobj = bpy.data.objects.new("fill", fill)
     fobj.location = (px(WORLD_W / 2), py(WORLD_H / 2), WALL_H - 0.05)
     bpy.context.collection.objects.link(fobj)

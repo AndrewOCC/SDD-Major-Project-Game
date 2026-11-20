@@ -80,6 +80,29 @@ class ScreenshotTest {
         invoke(quit, "openQuitConfirm")
         captureScreen("06-quit-confirm", quit)
 
+        // An afternoon in fast-forward: time of day, the homecoming and the trip back to the dock.
+        val evening = GameScreen(activity)
+        invoke(evening, "changeState", GameScreen.GameState.Running)
+        evening.getPlayer().debugInvincible = true
+        for ((name, seconds) in listOf("08-golden" to 70f, "09-sunset" to 112f, "10-dusk" to 150f)) {
+            setField(evening, "levelTime", seconds)
+            repeat(30) { evening.update(1f / 60f) }
+            captureScreen(name, evening)
+        }
+        setField(evening, "levelTime", 169.9f)
+        repeat(60 * 3) { evening.update(1f / 60f) }
+        captureScreen("11-countdown", evening)
+        repeat((60 * 7.3f).toInt()) { evening.update(1f / 60f) }
+        captureScreen("12-door-open", evening)
+        repeat(60 * 2) { evening.update(1f / 60f) }
+        captureScreen("13-lights-trundle", evening)
+        var frames = 0
+        while (evening.state == GameScreen.GameState.Running && frames < 60 * 40) {
+            evening.update(1f / 60f)
+            frames++
+        }
+        captureScreen("14-home-sweet-home", evening)
+
         val tutorial = TutorialScreen(activity)
         for (lesson in TutorialScreen.Lesson.entries) {
             tutorial.startLesson(lesson.ordinal)
@@ -126,6 +149,9 @@ class ScreenshotTest {
             repeat(120) { game.update(1f / 60f); idle() }
             captureScreen("20-dual-top-running", game)
             captureRear("21-rear-running", rear)
+            setField(game, "levelTime", 169.9f)
+            repeat(60 * 2) { game.update(1f / 60f); idle() }
+            captureRear("21b-rear-countdown", rear)
 
             val gear = ArrayList<View>()
             rear.window!!.decorView.findViewsWithText(gear, "⚙", View.FIND_VIEWS_WITH_TEXT)
@@ -209,6 +235,12 @@ class ScreenshotTest {
 
     private fun idle() {
         shadowOf(Looper.getMainLooper()).idle()
+    }
+
+    private fun setField(target: Any, name: String, value: Any) {
+        val field = target.javaClass.getDeclaredField(name)
+        field.isAccessible = true
+        field.set(target, value)
     }
 
     private fun invoke(target: Any, name: String, vararg args: Any) {

@@ -1,5 +1,17 @@
 package com.aocc.majorproject
 
+import com.aocc.majorproject.ui.UiStyle
+
+import com.aocc.majorproject.roomba.ProjectedHud
+
+import com.aocc.majorproject.roomba.Homecoming
+
+import com.aocc.majorproject.roomba.DayCycle
+
+import com.aocc.framework.Image
+
+import android.graphics.PointF
+
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Point
@@ -56,6 +68,12 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val tempEnemyPoint = Point()
     private val dustMap = DustMap()
     private val effects = RoombaEffects()
+    private val hud = ProjectedHud()
+    private val homecoming = Homecoming()
+    private val blend = DayCycle.Blend()
+
+    /** Seconds of play this level (paused time excluded); the owner arrives at [DayCycle.ARRIVAL_SECONDS]. */
+    private var levelTime = 0f
     private var nextCleanMilestone = 0
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 30f
@@ -77,6 +95,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val rearQuitDialog = UiConfirmDialog(
         "Quit and return to the menu?", "Yes", "No", RearLayout.WIDTH, REAR_DIALOG_Y
     )
+    private val pauseButton = UiButton(16, 14, 132, 48, "Pause", 40f)
     private val rearPauseButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 600, REAR_BUTTON_WIDTH, 130, "Pause", 54f)
     private val rearRetryButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 200, REAR_BUTTON_WIDTH, 170, "Retry", 64f)
     private val rearMenuButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 400, REAR_BUTTON_WIDTH, 110, "Menu", 44f)
@@ -267,9 +286,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun updateRunning(touchEvents: List<TouchEvent>, deltaSeconds: Float) {
-        val pauseButton = if (isDual()) rearPauseButton else menuButton
+        val activePauseButton = if (isDual()) rearPauseButton else pauseButton
         for (event in touchEvents) {
-            if (event.type == TouchEvent.TOUCH_UP && pauseButton.touchInBounds(event)) {
+            if (event.type == TouchEvent.TOUCH_UP && activePauseButton.touchInBounds(event)) {
                 openPauseMenu()
                 return
             }
@@ -278,12 +297,20 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         val step = GameConstants.secondsToSteps(deltaSeconds)
 
         session.addUpdateCount(step)
-        session.addEnemyCounter(step)
+        levelTime += deltaSeconds
+        // Afternoon is gentle; from sunset the mites come thick and fast. None once the owner is home.
+        if (!homecoming.isOver()) {
+            session.addEnemyCounter(step * DayCycle.spawnBoost(levelTime))
+        }
 
         player.update(deltaSeconds)
         enemyController.update(deltaSeconds)
-        powerUp.update(deltaSeconds)
+        if (!homecoming.isOver()) {
+            powerUp.update(deltaSeconds)
+        }
         updateCleaning(deltaSeconds)
+        updateHomecoming(deltaSeconds)
+        hud.update(deltaSeconds)
 
         if (session.getSpeed() < GameConstants.SPEED_RAMP_MAX &&
             session.getUpdateCount() >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES
@@ -293,7 +320,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             enemyController.increaseEnemyTopSpeed()
         }
 
-        if (session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
+        if (!homecoming.isOver() && session.getEnemyCounter() > enemyController.getNextEnemySpawn()) {
             if (random.nextInt(100) < FORMATION_SPAWN_PERCENT) {
                 formations.spawnRandom(enemyController, player)
                 enemyController.generateNextEnemy(session.getSpeed())
@@ -366,6 +393,37 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             effects.popup("Bin emptied!", x, y - 50f, RoombaTheme.BIN_EMPTY, 34f)
         }
         effects.update(deltaSeconds, x, y)
+    }
+
+    /** Countdown, the door, the lights and the trip back to the dock. */
+    private fun updateHomecoming(deltaSeconds: Float) {
+        if (homecoming.update(deltaSeconds, levelTime)) {
+            // Lights on: the run is over. Mites scatter; the Roomba heads home by itself.
+            session.contactsEnabled = false
+            enemyController.scatterAll(player.getCenterX(), player.getCenterY())
+            powerUp.setUsable(true)
+            player.autopilotTarget = PointF(powerUp.getCenterX(), powerUp.getCenterY())
+            homecoming.beginReturn(player.getCenterX(), player.getCenterY())
+            effects.popup("They're home!", GameConstants.WORLD_WIDTH / 2f, 200f, UiStyle.ACCENT, 46f, 2f)
+        }
+        when (homecoming.phase) {
+            Homecoming.Phase.RETURNING -> {
+                if (homecoming.updateReturn(deltaSeconds, player.getCenterX(), player.getCenterY(),
+                        powerUp.getCenterX(), powerUp.getCenterY())
+                ) {
+                    val bonus = homecoming.returnBonus.toInt()
+                    session.addScore(bonus)
+                    Assets.powerup?.play(GamePreferences.getTapVolume().toFloat())
+                    effects.popup("Docked  +$bonus", player.getCenterX(), player.getCenterY() - 60f,
+                        RoombaTheme.DOCK_GLOW, 40f, 2.2f)
+                }
+            }
+            Homecoming.Phase.DOCKED -> if (homecoming.secondsInPhase() > DOCKED_TALLY_SECONDS) {
+                session.levelComplete = true
+                session.setGameOverFlag(true)
+            }
+            else -> Unit
+        }
     }
 
     private fun cleanPercent(): Int = (dustMap.coverage() * 100).toInt()
@@ -542,6 +600,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         when (action) {
             is SecondaryDebugAction.ToggleGodMode -> player.debugInvincible = !player.debugInvincible
             is SecondaryDebugAction.SetSpeed -> session.setSpeed(action.speed)
+            is SecondaryDebugAction.SetLevelTime -> if (!homecoming.isOver()) {
+                levelTime = action.seconds
+            }
             is SecondaryDebugAction.AddScore -> session.addScore(1000)
         }
     }
@@ -673,12 +734,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
 
         val g = game.graphics
-        val floor = Assets.floor
-        if (floor != null) {
-            g.drawImage(floor, 0, 0)
-        } else {
-            g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK)
-        }
+        paintRoom(g)
         dustMap.paint(g)
 
         when (state) {
@@ -714,11 +770,80 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             GameConstants.WORLD_WIDTH / 2, PROMPT_Y)
     }
 
+    /** The room at this time of day: crossfaded renders, then the door and lamps at the end. */
+    private fun paintRoom(g: Graphics) {
+        val rooms = Assets.rooms
+        DayCycle.blendAt(levelTime, blend)
+        val base = rooms[blend.from] ?: Assets.floor
+        if (base == null) {
+            g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK)
+        } else {
+            g.drawImage(base, 0, 0)
+        }
+        overlayRoom(g, rooms[blend.to], blend.amount)
+        overlayRoom(g, rooms[DayCycle.Scene.DOOR], homecoming.doorBlend())
+        overlayRoom(g, rooms[DayCycle.Scene.LIGHTS], homecoming.lightsBlend())
+
+        var ambient = DayCycle.ambientAt(levelTime)
+        if (homecoming.doorBlend() > 0f) {
+            ambient = DayCycle.AMBIENT_DOOR
+        }
+        if (homecoming.lightsBlend() > 0.5f) {
+            ambient = DayCycle.AMBIENT_LIGHTS
+        }
+        RoombaTheme.ambient = ambient
+    }
+
+    private fun overlayRoom(g: Graphics, image: Image?, amount: Float) {
+        if (image == null || amount <= 0f) {
+            return
+        }
+        g.drawImageTransformed(image, GameConstants.WORLD_WIDTH / 2f, GameConstants.WORLD_HEIGHT / 2f, 1f, 0f,
+            (255 * amount).toInt())
+    }
+
     private fun drawScene(g: Graphics) {
+        // Everything standing on the floor catches the projector's light (and shades the floor).
+        hud.clearOccluders()
+        homecoming.clearOccluders()
+        addOccluder(player.getCenterX(), player.getCenterY(), Player.ROOMBA_DIAMETER / 2f, ROOMBA_HEIGHT)
+        for (enemy in enemyController.e) {
+            addOccluder(enemy.getPosX(), enemy.getPosY(), enemy.drawnRadius(), MITE_HEIGHT)
+        }
+        val towerOffset = 40f
+        val (tx, ty) = when (powerUp.getWall()) {
+            0 -> Pair(powerUp.getCenterX() - towerOffset, powerUp.getCenterY())
+            1 -> Pair(powerUp.getCenterX(), powerUp.getCenterY() - towerOffset)
+            2 -> Pair(powerUp.getCenterX() + towerOffset, powerUp.getCenterY())
+            else -> Pair(powerUp.getCenterX(), powerUp.getCenterY() + towerOffset)
+        }
+        addOccluder(tx, ty, DOCK_TOWER_RADIUS, DOCK_TOWER_HEIGHT)
+
+        val lastLabel = if (homecoming.isOver()) "BONUS" else "TIME"
+        val lastValue = if (homecoming.isOver()) homecoming.returnBonus.toInt().toString() else DayCycle.clockAt(levelTime)
+        hud.setValues(session.getScore(), player.getCombo(), cleanPercent(), lastLabel, lastValue)
+        val intensity = projectorIntensity()
+        hud.paintFloor(g, intensity)
+        homecoming.paintCountdown(g, intensity)
+
         powerUp.paint(g, paint)
         effects.paintPuffs(g)
         enemyController.paint(g, paint)
         player.paint(g, paint)
+
+        hud.paintTops(g, intensity)
+        homecoming.paintCountdownTops(g, intensity)
+    }
+
+    private fun addOccluder(x: Float, y: Float, radius: Float, height: Float) {
+        hud.addOccluder(x, y, radius, height)
+        homecoming.addOccluder(x, y, radius, height)
+    }
+
+    /** Stronger as dusk falls; washed out once the room lights are on. */
+    private fun projectorIntensity(): Float {
+        val base = DayCycle.projectorIntensity(levelTime)
+        return base * (1f - 0.45f * homecoming.lightsBlend())
     }
 
     private fun drawRunningUI(g: Graphics) {
@@ -729,10 +854,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         if (isDual()) {
             return
         }
-        comboMeter.paint(g, paint, player.getCombo())
-        scoreBar.paint(g, paint, session.getScore())
-        paintCleanMeter(g)
-        menuButton.paint(g)
+        // Readouts are projected onto the floor; only the pause control floats above.
+        pauseButton.paint(g)
     }
 
     private fun paintCleanMeter(g: Graphics) {
@@ -783,7 +906,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         g.drawARGB(155, 0, 0, 0)
         if (isDual()) {
             paint.typeface = Assets.plain
-            gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 260)
+            gameOverBanner.paint(g, paint, endTitle(), GameConstants.WORLD_WIDTH / 2, 260)
             scoreBanner.paint(g, paint, "Score: ${session.getScore()}", GameConstants.WORLD_WIDTH / 2, 420)
             return
         }
@@ -791,11 +914,13 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         retryButton.paint(g)
         Assets.gpg_icon_leaderboards?.let { g.drawImage(it, 1175, 5) }
         paint.typeface = Assets.plain
-        gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 200)
+        gameOverBanner.paint(g, paint, endTitle(), GameConstants.WORLD_WIDTH / 2, 200)
         scoreBanner.paint(g, paint, "Score: ${session.getScore()}",
             GameConstants.WORLD_WIDTH / 2, 400)
         paintGameOverHighlight(g)
     }
+
+    private fun endTitle(): String = if (session.levelComplete) "Home sweet home" else "Battery flat"
 
     private fun paintGameOverHighlight(g: Graphics) {
         val items = buildGameOverFocusBounds()
@@ -832,21 +957,32 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
+    /** Score is on the floor; the rear keeps the clock (when they'll be home) and Pause. */
     private fun paintRearHud(g: Graphics, paint: Paint) {
         val centerX = RearLayout.WIDTH / 2
-        paint.textSize = 36f
-        UiText.drawCentered(g, paint, "SCORE", centerX, 80, Color.LTGRAY)
-        paint.textSize = 110f
-        UiText.drawCentered(g, paint, session.getScore().toString(), centerX, 175, Color.WHITE)
-
-        val leftX = RearLayout.WIDTH / 4
-        val rightX = RearLayout.WIDTH * 3 / 4
-        paint.textSize = 36f
-        UiText.drawCentered(g, paint, "BIN", leftX, 320, Color.LTGRAY)
-        UiText.drawCentered(g, paint, "FLOOR", rightX, 320, Color.LTGRAY)
-        paint.textSize = 84f
-        UiText.drawCentered(g, paint, "x${player.getCombo()}", leftX, 400, Color.WHITE)
-        UiText.drawCentered(g, paint, "${cleanPercent()}%", rightX, 400, RoombaTheme.DOCK_GLOW)
+        paint.typeface = Assets.plain
+        paint.letterSpacing = 0.2f
+        paint.textSize = 30f
+        val label = when {
+            homecoming.isOver() -> "WELCOME HOME"
+            homecoming.isCountingDown() -> "KEYS IN THE DOOR"
+            else -> "THE TIME IS"
+        }
+        UiText.drawCentered(g, paint, label, centerX, 120, UiStyle.TEXT_MUTED)
+        paint.letterSpacing = -0.02f
+        paint.typeface = Assets.display ?: Assets.bold
+        paint.textSize = 150f
+        UiText.drawCentered(g, paint, DayCycle.clockAt(levelTime), centerX, 250, UiStyle.TEXT)
+        paint.typeface = Assets.plain
+        paint.letterSpacing = 0.02f
+        paint.textSize = 34f
+        val sub = if (homecoming.isOver()) "Trundling back to the dock" else "They get home at 8:00"
+        UiText.drawCentered(g, paint, sub, centerX, 360, UiStyle.ACCENT)
+        // A thin day-progress rule: afternoon to night.
+        val progress = (levelTime / DayCycle.ARRIVAL_SECONDS).coerceIn(0f, 1f)
+        g.drawRect(80, 430, RearLayout.WIDTH - 160, 2, UiStyle.RULE_SOFT)
+        g.drawRect(80, 428, ((RearLayout.WIDTH - 160) * progress).toInt(), 6, UiStyle.ACCENT)
+        paint.letterSpacing = 0f
         rearPauseButton.paint(g)
     }
 
@@ -939,6 +1075,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     fun isGameOverFlag(): Boolean = session.isGameOverFlag()
 
+    internal fun getPlayer(): Player = player
+
     fun getFacingAngle(): Float = facingAngle
 
     fun setFacingAngle(facingAngle: Float) {
@@ -947,6 +1085,12 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     companion object {
         private const val SPAWN_ATTEMPTS = 8
+        /** Heights above the floor (cm) for the projector's parallax. */
+        private const val ROOMBA_HEIGHT = 14f
+        private const val MITE_HEIGHT = 5f
+        private const val DOCK_TOWER_HEIGHT = 35f
+        private const val DOCK_TOWER_RADIUS = 30f
+        private const val DOCKED_TALLY_SECONDS = 2.2f
         /** Chance (%) that a spawn tick produces a group formation instead of a single tracker. */
         private const val FORMATION_SPAWN_PERCENT = 25
         private const val READY_FOCUS_START = 0

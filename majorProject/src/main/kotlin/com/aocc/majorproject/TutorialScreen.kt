@@ -405,6 +405,7 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
 
     override fun paint(deltaTime: Float) {
         val g = game.graphics
+        RoombaTheme.ambient = Color.WHITE
         Assets.floor?.let { g.drawImage(it, 0, 0) } ?: g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK)
         dust.paint(g)
         paintGoalMarkers(g)

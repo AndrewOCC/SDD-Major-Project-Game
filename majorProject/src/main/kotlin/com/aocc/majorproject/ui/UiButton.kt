@@ -17,9 +17,9 @@ class UiButton(
 ) {
 
     private val bounds = UiBounds(x, y, width, height)
-    private var backgroundColor: Int = Color.DKGRAY
-    private var pressedBackgroundColor: Int = Color.rgb(195, 195, 195)
-    private var textColor: Int = Color.WHITE
+    private var backgroundColor: Int = UiStyle.PANEL
+    private var pressedBackgroundColor: Int = UiStyle.ACCENT_PRESSED
+    private var textColor: Int = UiStyle.TEXT
     private var pressed = false
     // Per instance: the top and rear displays paint on different threads.
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -34,11 +34,16 @@ class UiButton(
     fun paint(g: Graphics) {
         val bg = if (pressed) pressedBackgroundColor else backgroundColor
         g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, bg)
+        g.drawRectOutline(bounds.x, bounds.y, bounds.width, bounds.height, UiStyle.RULE_SOFT, 1.5f)
+        // Mustard underline: the one accent on an otherwise flat button.
+        g.drawRect(bounds.x, bounds.y + bounds.height - 4, bounds.width, 4, UiStyle.ACCENT)
 
         if (Assets.plain != null) {
             labelPaint.typeface = Assets.plain
         }
-        labelPaint.textSize = textSize
+        labelPaint.letterSpacing = UiStyle.LETTER_SPACING
+        // Inter is wider than the old pixel font; keep labels comfortably inside.
+        labelPaint.textSize = textSize * TEXT_SCALE
         labelPaint.color = textColor
         UiText.drawInBounds(g, labelPaint, label, bounds, UiText.HAlign.CENTER, textColor)
     }
@@ -65,6 +70,7 @@ class UiButton(
         const val MENU_WIDTH = 200
         const val MENU_HEIGHT = 70
         const val MENU_TEXT_SIZE = 50f
+        private const val TEXT_SCALE = 0.72f
 
         @JvmStatic
         fun menuAt(x: Int, y: Int): UiButton {

@@ -17,11 +17,10 @@ object GameConstants {
     const val SPEED_RAMP_MAX = 25
 
     /**
-     * Height of the reserved HUD band at the top of the screen (score / combo strip).
-     * Gameplay — the player, enemies and power-ups — is confined below this line so
-     * nothing overlaps the readouts. Slightly taller than the 50px score bar for margin.
+     * Top of the playable area. The readouts are projected onto the floor now, so there is no
+     * HUD band; this is just the inside face of the window wall.
      */
-    const val PLAY_AREA_TOP = 56
+    const val PLAY_AREA_TOP = 30
 
     /** Converts a frame-based constant to seconds using the 60 FPS reference. */
     @JvmStatic

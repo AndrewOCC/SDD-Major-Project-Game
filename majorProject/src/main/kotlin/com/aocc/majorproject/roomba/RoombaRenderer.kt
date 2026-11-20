@@ -86,7 +86,7 @@ object RoombaRenderer {
             val size = CELL * (radius * 2f / SPRITE_DIAMETER)
             g.drawImageRegion(
                 sheet, (frame % COLUMNS) * CELL, (frame / COLUMNS) * CELL, CELL, CELL,
-                x, y, size, size
+                x, y, size, size, RoombaTheme.ambient
             )
         } else {
             // Body, then the front bumper band, then the lid on top.

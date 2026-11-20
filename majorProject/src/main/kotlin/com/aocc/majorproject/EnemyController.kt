@@ -88,6 +88,14 @@ class EnemyController(private val session: GameSession) {
         }
     }
 
+    /** Lights on: formations break up and every mite bolts for cover, away from ([x], [y]). */
+    fun scatterAll(x: Float, y: Float) {
+        activeFormations.clear()
+        for (enemy in e) {
+            enemy.flee(x, y)
+        }
+    }
+
     fun increaseEnemyTopSpeed() {
         for (enemy in e) {
             enemy.increaseTopSpeed()

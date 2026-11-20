@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Typeface
 import com.aocc.framework.Audio
 import com.aocc.framework.Graphics
+import com.aocc.majorproject.roomba.DayCycle
 import com.aocc.majorproject.roomba.RoomLayout
 import com.aocc.framework.Graphics.ImageFormat
 import com.aocc.framework.Image
@@ -130,8 +131,13 @@ class AssetLoader(
         stepComplete()
         Assets.flakes = (1..4).map { loadImage("flake-$it.png", ImageFormat.ARGB8888, true) }
         stepComplete()
-        Assets.floor = loadImage("room-apartment.jpg", ImageFormat.RGB565, true)
-        stepComplete()
+        val rooms = HashMap<DayCycle.Scene, Image>()
+        for (scene in DayCycle.Scene.entries) {
+            rooms[scene] = loadImage(scene.asset, ImageFormat.RGB565, true)
+            stepComplete()
+        }
+        Assets.rooms = rooms
+        Assets.floor = rooms[DayCycle.Scene.DAY]
         Assets.roombaSheet = loadImage("roomba.png", ImageFormat.ARGB8888, true)
         stepComplete()
         Assets.dockSheet = loadImage("dock.png", ImageFormat.ARGB8888, true)
@@ -155,11 +161,15 @@ class AssetLoader(
         stepComplete()
         Assets.powerup = audio.createSound("powerup.wav")
         stepComplete()
+        Assets.homeSounds = HOME_SOUNDS.associateWith { audio.createSound("home_$it.wav") }
+        stepComplete()
     }
 
     private fun loadFonts() {
-        Assets.plain = Typeface.createFromAsset(game.assets, "fonts/power_clear.ttf")
-        Assets.bold = Typeface.create(Assets.plain, Typeface.BOLD)
+        // Inter: a neo-grotesque in the Helvetica tradition (OFL, see fonts/INTER-LICENSE.txt).
+        Assets.plain = Typeface.createFromAsset(game.assets, "fonts/inter-medium.otf")
+        Assets.bold = Typeface.createFromAsset(game.assets, "fonts/inter-display-bold.otf")
+        Assets.display = Typeface.createFromAsset(game.assets, "fonts/inter-display-medium.otf")
         stepComplete()
     }
 
@@ -175,7 +185,8 @@ class AssetLoader(
     }
 
     companion object {
-        const val TOTAL_STEP_COUNT = 29
+        const val TOTAL_STEP_COUNT = 36
         private const val TOTAL_STEPS = TOTAL_STEP_COUNT
+        val HOME_SOUNDS = listOf("tick", "car", "car_door", "steps", "keys", "lock", "door", "switch", "scatter")
     }
 }

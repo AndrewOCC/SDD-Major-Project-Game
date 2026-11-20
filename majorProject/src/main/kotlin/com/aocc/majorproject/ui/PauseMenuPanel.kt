@@ -61,7 +61,7 @@ class PauseMenuPanel(
         val itemTop: Int
         val itemPitch: Int
         if (portrait) {
-            outerPanel = UiPanel(20, 30, 680, 780, Color.argb(180, 0, 0, 0))
+            outerPanel = UiPanel(20, 30, 680, 780, UiStyle.PANEL_SOLID)
             columnWidth = 300
             soundPanelX = 50
             tiltPanelX = 370
@@ -72,7 +72,7 @@ class PauseMenuPanel(
             resumeButton = UiButton(50, 60, 620, 140, primaryLabel, MIDDLE_BUTTON_TEXT_SIZE)
             quitButton = UiButton(50, 220, 620, 100, secondaryLabel, SECONDARY_PORTRAIT_TEXT_SIZE)
         } else {
-            outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, Color.argb(180, 0, 0, 0))
+            outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, UiStyle.PANEL_SOLID)
             columnWidth = COLUMN_WIDTH
             soundPanelX = PANEL_X
             tiltPanelX = PANEL_X + PANEL_WIDTH - COLUMN_WIDTH
@@ -92,8 +92,8 @@ class PauseMenuPanel(
             )
         }
 
-        soundPanel = UiPanel(soundPanelX, columnY, columnWidth, columnHeight, Color.DKGRAY)
-        tiltPanel = UiPanel(tiltPanelX, columnY, columnWidth, columnHeight, Color.DKGRAY)
+        soundPanel = UiPanel(soundPanelX, columnY, columnWidth, columnHeight, UiStyle.PANEL_INNER)
+        tiltPanel = UiPanel(tiltPanelX, columnY, columnWidth, columnHeight, UiStyle.PANEL_INNER)
 
         soundIconX = soundPanelX + (columnWidth - ICON_SIZE) / 2
         soundIconY = itemTop
@@ -198,7 +198,7 @@ class PauseMenuPanel(
         val centerY = secondScreenBounds.centerY().toFloat()
         val radius = secondScreenBounds.width / 2f
         val enabled = GamePreferences.secondScreenEnabled
-        g.drawCircle(centerX, centerY, radius, if (enabled) Color.argb(220, 0, 90, 220) else Color.DKGRAY)
+        g.drawCircle(centerX, centerY, radius, if (enabled) UiStyle.TEAL else UiStyle.PANEL_INNER)
         g.drawCircleOutline(centerX, centerY, radius, Color.WHITE, 3f)
 
         // Small monitor glyph: screen outline + stand.

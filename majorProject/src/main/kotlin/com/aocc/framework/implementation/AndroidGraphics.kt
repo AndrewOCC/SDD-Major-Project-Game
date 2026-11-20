@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LightingColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
@@ -32,6 +33,8 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
     private val srcRect = Rect()
     private val dstRect = Rect()
     private val regionDst = RectF()
+    private val tintedBitmapPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private var lastTint = Color.WHITE
     private val filteredBitmapPaint =
         Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -87,6 +90,9 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
             canvas = null
         }
     }
+
+    /** The frame canvas (world coordinates), for effects that need raw canvas operations. */
+    fun currentCanvas(): Canvas = requireCanvas()
 
     private fun requireCanvas(): Canvas {
         return canvas ?: throw IllegalStateException("beginFrame() must be called before drawing")
@@ -319,12 +325,19 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         centerY: Float,
         width: Float,
         height: Float,
+        tint: Int,
     ) {
         val androidImage = image as AndroidImage
         val scale = androidImage.pixelScale
+        val paint = if (tint == Color.WHITE) filteredBitmapPaint else tintedBitmapPaint.also {
+            if (tint != lastTint) {
+                it.colorFilter = LightingColorFilter(tint, 0)
+                lastTint = tint
+            }
+        }
         srcRect.set(srcX * scale, srcY * scale, (srcX + srcWidth) * scale, (srcY + srcHeight) * scale)
         regionDst.set(centerX - width / 2f, centerY - height / 2f, centerX + width / 2f, centerY + height / 2f)
-        requireCanvas().drawBitmap(androidImage.bitmap, srcRect, regionDst, filteredBitmapPaint)
+        requireCanvas().drawBitmap(androidImage.bitmap, srcRect, regionDst, paint)
     }
 
     override fun drawImage(image: Image, x: Int, y: Int) {

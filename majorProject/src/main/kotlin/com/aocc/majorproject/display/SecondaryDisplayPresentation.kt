@@ -136,6 +136,21 @@ class SecondaryDisplayPresentation(
             setOnClickListener { activity.applySecondaryDebugAction(SecondaryDebugAction.AddScore) }
         })
 
+        // Time-of-day jumps, for checking the evening and the homecoming without a full run.
+        val timeRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((label, seconds) in listOf(
+            "Sunset" to 92f,
+            "Dusk" to 135f,
+            "Home soon" to com.aocc.majorproject.roomba.DayCycle.ARRIVAL_SECONDS - 12f,
+        )) {
+            timeRow.addView(Button(context).apply {
+                text = label
+                isAllCaps = false
+                setOnClickListener { activity.applySecondaryDebugAction(SecondaryDebugAction.SetLevelTime(seconds)) }
+            })
+        }
+        layout.addView(timeRow)
+
         debugPanel = layout
         return layout
     }

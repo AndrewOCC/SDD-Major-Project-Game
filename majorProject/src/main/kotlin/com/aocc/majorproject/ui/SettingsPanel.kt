@@ -40,17 +40,17 @@ class SettingsPanel {
 
     init {
         outerPanel = UiPanel(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT,
-            Color.argb(180, 0, 0, 0))
+            UiStyle.PANEL_SOLID)
 
         // Sound column flush to the left edge, tilt column flush to the right edge.
         val soundPanelX = PANEL_X
         val columnY = PANEL_Y + INNER_PADDING + 20
         val columnHeight = PANEL_HEIGHT - INNER_PADDING * 2 - 20
-        soundPanel = UiPanel(soundPanelX, columnY, SOUND_COLUMN_WIDTH, columnHeight, Color.DKGRAY)
+        soundPanel = UiPanel(soundPanelX, columnY, SOUND_COLUMN_WIDTH, columnHeight, UiStyle.PANEL_INNER)
 
         tiltPanelX = soundPanelX + SOUND_COLUMN_WIDTH + COLUMN_GAP
         tiltPanelWidth = PANEL_WIDTH - SOUND_COLUMN_WIDTH - COLUMN_GAP
-        tiltPanel = UiPanel(tiltPanelX, columnY, tiltPanelWidth, columnHeight, Color.DKGRAY)
+        tiltPanel = UiPanel(tiltPanelX, columnY, tiltPanelWidth, columnHeight, UiStyle.PANEL_INNER)
 
         tiltButtonY = columnY + 56
         // Initial X is recentred each frame in layoutTiltButtons() once text can be measured.
@@ -137,7 +137,7 @@ class SettingsPanel {
         g.drawRect(
             displayToggleBounds.x, displayToggleBounds.y,
             displayToggleBounds.width, displayToggleBounds.height,
-            Color.rgb(60, 60, 60)
+            UiStyle.PANEL_INNER
         )
         val label = if (GamePreferences.secondScreenEnabled) "2nd Screen: ON" else "2nd Screen: OFF"
         UiText.drawInBounds(g, paint, label, displayToggleBounds, UiText.HAlign.CENTER, Color.WHITE)

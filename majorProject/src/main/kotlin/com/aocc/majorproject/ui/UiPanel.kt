@@ -14,14 +14,15 @@ class UiPanel(
 ) {
 
     private val bounds = UiBounds(x, y, width, height)
-    private val titleTextSize = 30f
-    private val titleColor = Color.WHITE
+    private val titleTextSize = 24f
+    private val titleColor = UiStyle.TEXT_MUTED
     private val titleGap = 30
 
     fun getBounds(): UiBounds = bounds
 
     fun paintBackground(g: Graphics) {
         g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, backgroundColor)
+        g.drawRectOutline(bounds.x, bounds.y, bounds.width, bounds.height, UiStyle.RULE_SOFT, 1.5f)
     }
 
     fun paintTitle(g: Graphics, paint: Paint, title: String) {

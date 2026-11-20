@@ -2,9 +2,9 @@
   {"type":"sofa","x":34,"y":210,"w":96,"h":320,"solid":true},
   {"type":"sideTable","x":140,"y":560,"w":64,"h":64,"solid":true},
   {"type":"arcLamp","x":60,"y":150,"w":60,"h":60,"solid":true,"reachX":300,"reachY":270},
-  {"type":"lounge","x":1030,"y":500,"w":120,"h":130,"solid":true,"rot":-28,"footprint":[1025,478,135,185]},
+  {"type":"lounge","x":990,"y":340,"w":120,"h":130,"solid":true,"rot":-28,"footprint":[985,318,135,185]},
   {"type":"credenza","x":430,"y":636,"w":420,"h":54,"solid":true},
   {"type":"bookshelf","x":1196,"y":200,"w":54,"h":260,"solid":true},
   {"type":"plant","x":1150,"y":60,"w":80,"h":80,"solid":true},
   {"type":"plant","x":50,"y":610,"w":74,"h":74,"solid":true}],
- "outlets":[{"x":290,"wall":1},{"x":650,"wall":1},{"x":1000,"wall":1},{"x":300,"wall":3},{"x":960,"wall":3}]}
+ "outlets":[{"x":290,"wall":1},{"x":650,"wall":1},{"x":1000,"wall":1},{"x":300,"wall":3},{"x":960,"wall":3}],"door":{"wall":3,"x0":1100,"x1":1190}}

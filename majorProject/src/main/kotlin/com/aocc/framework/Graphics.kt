@@ -55,7 +55,8 @@ interface Graphics {
 
     /**
      * Draws a sub-rectangle of [image] (in the image's world units, so sprite sheets work at any
-     * asset pixel scale) centred on ([centerX], [centerY]) at [width] x [height] world units.
+     * asset pixel scale) centred on ([centerX], [centerY]) at [width] x [height] world units,
+     * colour-multiplied by [tint] (white leaves it unchanged).
      */
     fun drawImageRegion(
         image: Image,
@@ -67,6 +68,7 @@ interface Graphics {
         centerY: Float,
         width: Float,
         height: Float,
+        tint: Int = android.graphics.Color.WHITE,
     )
 
     fun drawString(text: String, x: Int, y: Int, color: Int, paint: Paint)

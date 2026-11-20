@@ -59,6 +59,11 @@ class Player(private val session: GameSession) {
     /** Set when the dock has just emptied the bin (combo lost); consumed by the screen. */
     var binEmptiedEvent = false
 
+    /** When set, the Roomba ignores tilt and drives itself to this world point (going home). */
+    var autopilotTarget: android.graphics.PointF? = null
+    private var stuckSeconds = 0f
+    private var sidestepSeconds = 0f
+
     /** Debug-popup "god mode" toggle: damage is ignored entirely while true. */
     var debugInvincible = false
 
@@ -70,10 +75,29 @@ class Player(private val session: GameSession) {
         }
         brushDegrees = (brushDegrees + deltaSeconds * BRUSH_DEGREES_PER_SECOND) % 360f
 
-        velocityX = (PersonalMethods.limitInside(RotationHandler.getRotationX(), -90, 90) / 90f + xBias) * sensitivity
-        velocityX = PersonalMethods.limitInside(velocityX, -maxSpeed, maxSpeed)
-        velocityY = (PersonalMethods.limitInside(RotationHandler.getRotationY(), -90, 90) / 90f + yBias) * sensitivity
-        velocityY = PersonalMethods.limitInside(velocityY, -maxSpeed, maxSpeed)
+        val target = autopilotTarget
+        if (target != null) {
+            // Trundling home on its own: steady speed, sidestepping when wedged on furniture.
+            var dx = target.x - (defaultX + characterDiameter / 2f)
+            var dy = target.y - (defaultY + characterDiameter / 2f)
+            val distance = maxOf(0.001f, kotlin.math.hypot(dx, dy))
+            if (sidestepSeconds > 0f) {
+                sidestepSeconds -= deltaSeconds
+                val ox = dx
+                dx = -dy
+                dy = ox
+            }
+            val speed = minOf(AUTOPILOT_SPEED, distance)
+            velocityX = dx / distance * speed
+            velocityY = dy / distance * speed
+        } else {
+            velocityX = (PersonalMethods.limitInside(RotationHandler.getRotationX(), -90, 90) / 90f + xBias) * sensitivity
+            velocityX = PersonalMethods.limitInside(velocityX, -maxSpeed, maxSpeed)
+            velocityY = (PersonalMethods.limitInside(RotationHandler.getRotationY(), -90, 90) / 90f + yBias) * sensitivity
+            velocityY = PersonalMethods.limitInside(velocityY, -maxSpeed, maxSpeed)
+        }
+        val startX = defaultX
+        val startY = defaultY
 
         facingAngle = if (velocityX > 0) {
             (atan((velocityY / velocityX).toDouble()) * 180 / PI).toFloat()
@@ -143,6 +167,15 @@ class Player(private val session: GameSession) {
         if (room.resolveCircle(defaultX + half, defaultY + half, half, resolved)) {
             defaultX = resolved[0] - half
             defaultY = resolved[1] - half
+        }
+
+        if (target != null && step > 0f) {
+            val moved = kotlin.math.hypot(defaultX - startX, defaultY - startY)
+            stuckSeconds = if (moved < AUTOPILOT_SPEED * step * 0.3f) stuckSeconds + deltaSeconds else 0f
+            if (stuckSeconds > 0.4f && sidestepSeconds <= 0f) {
+                sidestepSeconds = 0.6f
+                stuckSeconds = 0f
+            }
         }
 
         mainCharacter.set(
@@ -299,5 +332,7 @@ class Player(private val session: GameSession) {
         const val ROOMBA_DIAMETER = 60f
         private const val BRUSH_DEGREES_PER_SECOND = 900f
         private const val SUCTION_LOW = 25
+        /** World units per 60 fps step when driving itself home: a slow, dignified trundle. */
+        const val AUTOPILOT_SPEED = 2.4f
     }
 }

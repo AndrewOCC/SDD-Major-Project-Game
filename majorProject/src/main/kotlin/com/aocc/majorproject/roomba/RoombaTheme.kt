@@ -4,6 +4,24 @@ import android.graphics.Color
 
 /** Palette for the Roomba / apartment theme. */
 object RoombaTheme {
+    /** Ambient light on sprites this frame (see [DayCycle.ambientAt]); white = as rendered. */
+    @Volatile
+    var ambient: Int = Color.WHITE
+
+    /** Multiplies [color] by [ambient], keeping its alpha. */
+    fun lit(color: Int): Int {
+        val a = ambient
+        if (a == Color.WHITE) {
+            return color
+        }
+        return Color.argb(
+            Color.alpha(color),
+            Color.red(color) * Color.red(a) / 255,
+            Color.green(color) * Color.green(a) / 255,
+            Color.blue(color) * Color.blue(a) / 255,
+        )
+    }
+
     val DUST: Int = Color.rgb(176, 166, 150)
 
     val ROOMBA_BODY: Int = Color.rgb(42, 44, 48)

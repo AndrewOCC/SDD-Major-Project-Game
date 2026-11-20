@@ -81,6 +81,14 @@ object Assets {
     @JvmField
     var floor: Image? = null
 
+    /** Every time of day of the room, for crossfading (see [com.aocc.majorproject.roomba.DayCycle]). */
+    @JvmField
+    var rooms: Map<com.aocc.majorproject.roomba.DayCycle.Scene, Image> = emptyMap()
+
+    /** "Owner comes home" effects, keyed by name without the `home_` prefix (car, steps, keys...). */
+    @JvmField
+    var homeSounds: Map<String, Sound> = emptyMap()
+
     /** Roomba rotation sheet: 8x8 frames of [com.aocc.majorproject.roomba.RoombaRenderer.CELL] units. */
     @JvmField
     var roombaSheet: Image? = null
@@ -113,6 +121,10 @@ object Assets {
 
     @JvmField
     var bold: Typeface? = null
+
+    /** Large display cut, used for the floor-projected HUD and headings. */
+    @JvmField
+    var display: Typeface? = null
 
     /** Pixel scale tier used when loading bitmaps (1 or 2). */
     @JvmField

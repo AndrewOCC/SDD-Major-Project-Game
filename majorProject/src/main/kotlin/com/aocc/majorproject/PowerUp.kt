@@ -140,7 +140,7 @@ class PowerUp(t: Int, session: GameSession) {
         if (sheet != null) {
             g.drawImageRegion(
                 sheet, wall * DOCK_CELL, 0, DOCK_CELL, DOCK_CELL,
-                x, y, DOCK_CELL.toFloat(), DOCK_CELL.toFloat()
+                x, y, DOCK_CELL.toFloat(), DOCK_CELL.toFloat(), RoombaTheme.ambient
             )
             if (!usable) {
                 g.drawCircle(x, y, radius * 0.94f, Color.argb(110, 0, 0, 0))
@@ -190,6 +190,9 @@ class PowerUp(t: Int, session: GameSession) {
     }
 
     fun isUsable(): Boolean = usable
+
+    /** Wall the dock is plugged into: 0 left, 1 top, 2 right, 3 bottom. */
+    fun getWall(): Int = wall
 
     fun getCenterX(): Float = posX.toFloat()
 

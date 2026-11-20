@@ -188,7 +188,7 @@ class Enemy(
     }
 
     private fun handleContact() {
-        if (health <= 0 || spawnScale() < CONTACT_MIN_SCALE) {
+        if (health <= 0 || !session.contactsEnabled || spawnScale() < CONTACT_MIN_SCALE) {
             return
         }
         val hit = PersonalMethods.rectFInBounds(
@@ -252,6 +252,29 @@ class Enemy(
     }
 
     fun isDespawned(): Boolean = despawned
+
+    /** On-screen radius including the spawn-in scale (for lighting / projection). */
+    fun drawnRadius(): Float = effectiveRadius() * MITE_SIZE
+
+    /** The lights came on: bolt for the nearest edge at speed and despawn off-screen. */
+    fun flee(awayFromX: Float, awayFromY: Float) {
+        spawnElapsed = spawnSeconds
+        var dx = posX - awayFromX
+        var dy = posY - awayFromY
+        // Prefer the closest wall so they visibly dive for cover.
+        val toLeft = posX
+        val toRight = GameConstants.WORLD_WIDTH - posX
+        val toTop = posY
+        val toBottom = GameConstants.WORLD_HEIGHT - posY
+        when (minOf(minOf(toLeft, toRight), minOf(toTop, toBottom))) {
+            toLeft -> dx -= 400f
+            toRight -> dx += 400f
+            toTop -> dy -= 400f
+            else -> dy += 400f
+        }
+        val length = maxOf(1f, hypot(dx, dy))
+        launch(dx / length * FLEE_SPEED, dy / length * FLEE_SPEED)
+    }
 
     /** Directly places the dot (used by formations that position their members). */
     fun setPosition(x: Float, y: Float) {
@@ -320,6 +343,7 @@ class Enemy(
         /** Dots don't deal contact damage/score until mostly grown. */
         private const val CONTACT_MIN_SCALE = 0.6f
         private const val OFF_SCREEN_MARGIN = 60f
+        private const val FLEE_SPEED = 14f
 
         /** Mites are drawn a little larger than their hit radius so the fuzz reads. */
         private const val MITE_SIZE = 1.25f

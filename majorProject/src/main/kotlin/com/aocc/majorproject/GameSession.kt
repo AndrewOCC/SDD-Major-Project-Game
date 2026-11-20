@@ -15,6 +15,12 @@ class GameSession {
 
     fun getPlayer(): Player = player
 
+    /** False once the owner is home: mites flee and can no longer hurt or be vacuumed. */
+    var contactsEnabled = true
+
+    /** Set when the run ended by surviving until the owner got home (not by running flat). */
+    var levelComplete = false
+
     /** A mite vacuumed up at ([x], [y]) worth [points]; drained each frame by the screen for effects. */
     class Vacuumed(val x: Float, val y: Float, val points: Int)
 
@@ -90,6 +96,8 @@ class GameSession {
         scoreUploaded = false
         speed = 0
         gameOverFlag = false
+        contactsEnabled = true
+        levelComplete = false
     }
 
     companion object {

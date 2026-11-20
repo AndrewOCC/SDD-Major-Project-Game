@@ -11,4 +11,6 @@ sealed class SecondaryDebugAction {
     object ToggleGodMode : SecondaryDebugAction()
     data class SetSpeed(val speed: Int) : SecondaryDebugAction()
     object AddScore : SecondaryDebugAction()
+    /** Jump the level clock (seconds into the afternoon). */
+    data class SetLevelTime(val seconds: Float) : SecondaryDebugAction()
 }

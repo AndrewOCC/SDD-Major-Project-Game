@@ -30,8 +30,12 @@ object MiteRenderer {
             return
         }
         val a = opacity.coerceIn(0f, 1f)
-        fun c(color: Int, alpha: Int = 255) =
-            Color.argb((alpha * a).toInt(), Color.red(color), Color.green(color), Color.blue(color))
+        fun c(color: Int, alpha: Int = 255): Int {
+            val lit = RoombaTheme.lit(color)
+            return Color.argb((alpha * a).toInt(), Color.red(lit), Color.green(lit), Color.blue(lit))
+        }
+        // The eyes glow: never dimmed by the ambient light.
+        fun glow(color: Int) = Color.argb((255 * a).toInt(), Color.red(color), Color.green(color), Color.blue(color))
 
         val look = atan2((targetY - y).toDouble(), (targetX - x).toDouble())
         val lookX = cos(look).toFloat()
@@ -75,7 +79,7 @@ object MiteRenderer {
             val ex = x + lookX * radius * 0.38f + sideX * side * radius * 0.3f
             val ey = y + lookY * radius * 0.38f + sideY * side * radius * 0.3f
             g.drawCircle(ex, ey, radius * 0.24f, c(Color.WHITE))
-            g.drawCircle(ex + lookX * radius * 0.08f, ey + lookY * radius * 0.08f, radius * 0.12f, c(RoombaTheme.MITE_PUPIL))
+            g.drawCircle(ex + lookX * radius * 0.08f, ey + lookY * radius * 0.08f, radius * 0.12f, glow(RoombaTheme.MITE_PUPIL))
             g.drawStroke(
                 ex - sideX * side * radius * 0.2f + lookX * radius * 0.30f,
                 ey - sideY * side * radius * 0.2f + lookY * radius * 0.30f,
