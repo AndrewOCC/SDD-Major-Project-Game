@@ -10,7 +10,9 @@ import com.aocc.framework.PersonalMethods
 import com.aocc.framework.Screen
 import com.aocc.majorproject.display.SecondaryDebugAction
 import com.aocc.majorproject.display.SecondaryDebugState
-import com.aocc.majorproject.display.SecondaryPauseState
+import com.aocc.majorproject.display.RearLayout
+import com.aocc.majorproject.display.RearScreenUi
+import com.aocc.majorproject.display.RearTapQueue
 import com.aocc.majorproject.input.GamepadInput
 import com.aocc.majorproject.ui.ComboMeter
 import com.aocc.majorproject.ui.PauseMenuPanel
@@ -23,9 +25,14 @@ import com.aocc.majorproject.ui.UiBounds
 import com.aocc.majorproject.ui.UiConfirmDialog
 import com.aocc.majorproject.ui.UiLayout
 import com.aocc.majorproject.ui.UiSelectionHighlight
+import com.aocc.majorproject.ui.UiText
 import java.util.Random
 
-class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGame) {
+/**
+ * The game itself. In dual-screen mode every control lives on the rear touch display
+ * ([RearScreenUi]); the top display shows only the game and its big moments.
+ */
+class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGame), RearScreenUi {
 
     enum class GameState {
         Ready, Running, Paused, GameOver
@@ -57,6 +64,20 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val pauseMenuPanel = PauseMenuPanel()
     private val quitConfirmDialog = UiConfirmDialog("Quit and return to the menu?", "Yes", "No")
 
+    // Rear (bottom-screen) controls for dual-screen mode, in RearLayout coordinates.
+    // No titles: the top display already says "Get Ready" / "Paused".
+    private val rearReadyPanel = PauseMenuPanel(portrait = true, title = "", primaryLabel = "Start", secondaryLabel = "Menu")
+    private val rearPausePanel = PauseMenuPanel(portrait = true, title = "")
+    private val rearQuitDialog = UiConfirmDialog(
+        "Quit and return to the menu?", "Yes", "No", RearLayout.WIDTH, REAR_DIALOG_Y
+    )
+    private val rearPauseButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 600, REAR_BUTTON_WIDTH, 130, "Pause", 54f)
+    private val rearRetryButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 200, REAR_BUTTON_WIDTH, 170, "Retry", 64f)
+    private val rearMenuButton = UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 400, REAR_BUTTON_WIDTH, 110, "Menu", 44f)
+    private val rearLeaderboardButton =
+        UiButton(RearLayout.centerX(REAR_BUTTON_WIDTH), 540, REAR_BUTTON_WIDTH, 110, "Leaderboards", 40f)
+    private val rearTaps = RearTapQueue()
+
     private val scoreBar = ScoreBar()
     private val comboMeter = ComboMeter()
     private val promptBanner = UiBanner(34f)
@@ -65,6 +86,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private var facingAngle = 0f
     private var readyFocusIndex = READY_FOCUS_START
+    private var rearReadyFocusIndex = PauseMenuPanel.FOCUS_ITEMS.indexOf(PauseMenuPanel.Item.RESUME)
     private var pauseFocusIndex = 0
     private var resumeCountdownSeconds = 0f
     private var showQuitConfirm = false
@@ -74,6 +96,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     init {
         settingsPanel.setGame(majorProjectGame)
         pauseMenuPanel.setGame(majorProjectGame)
+        rearReadyPanel.setGame(majorProjectGame)
+        rearPausePanel.setGame(majorProjectGame)
         GamePreferences.applyTiltTo(player)
 
         menuButton = UiButton.menuAt(0, 0)
@@ -89,7 +113,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             return
         }
 
-        val touchEvents = game.input.touchEvents
+        // In dual-screen mode only the bottom touch screen has controls; top taps are ignored.
+        val topTouches = game.input.touchEvents
+        val rearTouches = rearTaps.drain()
+        val touchEvents = if (isDual()) rearTouches else topTouches
         val gamepadActions = majorProjectGame.getGamepadInput().consumeActions()
 
         when (state) {
@@ -113,6 +140,24 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun updateReady(touchEvents: List<TouchEvent>) {
+        if (isDual()) {
+            for (event in touchEvents) {
+                when {
+                    rearReadyPanel.getResumeBounds().contains(event) -> {
+                        playTap()
+                        changeState(GameState.Running)
+                        return
+                    }
+                    rearReadyPanel.getQuitBounds().contains(event) -> {
+                        playTap()
+                        leaveForMenu()
+                        return
+                    }
+                    else -> rearReadyPanel.handleSettingsTouch(event, player)
+                }
+            }
+            return
+        }
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
                 if (startButton.touchInBounds(event)) {
@@ -130,6 +175,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun handleGamepadReady(actions: List<GamepadInput.Action>) {
+        if (isDual()) {
+            handleGamepadRearReady(actions)
+            return
+        }
         val focusItems = buildReadyFocusBounds()
         for (action in actions) {
             if (action == GamepadInput.Action.CANCEL) {
@@ -145,6 +194,41 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             }
             if (action == GamepadInput.Action.CONFIRM || action == GamepadInput.Action.PAUSE) {
                 activateReadyFocus()
+            }
+        }
+    }
+
+    private fun handleGamepadRearReady(actions: List<GamepadInput.Action>) {
+        val focusItems = PauseMenuPanel.FOCUS_ITEMS.map { rearReadyPanel.getItemBounds(it) }
+        for (action in actions) {
+            if (action == GamepadInput.Action.CANCEL) {
+                leaveForMenu()
+                return
+            }
+            val direction = SpatialFocusNavigator.directionFrom(action)
+            if (direction != null) {
+                rearReadyFocusIndex = SpatialFocusNavigator.findNext(rearReadyFocusIndex, direction, focusItems)
+                continue
+            }
+            if (action == GamepadInput.Action.PAUSE) {
+                playTap()
+                changeState(GameState.Running)
+                return
+            }
+            if (action == GamepadInput.Action.CONFIRM) {
+                when (val item = PauseMenuPanel.FOCUS_ITEMS[rearReadyFocusIndex]) {
+                    PauseMenuPanel.Item.RESUME -> {
+                        playTap()
+                        changeState(GameState.Running)
+                        return
+                    }
+                    PauseMenuPanel.Item.QUIT -> {
+                        playTap()
+                        leaveForMenu()
+                        return
+                    }
+                    else -> rearReadyPanel.activateSettingsItem(item, player)
+                }
             }
         }
     }
@@ -177,8 +261,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun updateRunning(touchEvents: List<TouchEvent>, deltaSeconds: Float) {
+        val pauseButton = if (isDual()) rearPauseButton else menuButton
         for (event in touchEvents) {
-            if (event.type == TouchEvent.TOUCH_UP && menuButton.touchInBounds(event)) {
+            if (event.type == TouchEvent.TOUCH_UP && pauseButton.touchInBounds(event)) {
                 openPauseMenu()
                 return
             }
@@ -230,7 +315,6 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             )
         }
 
-        majorProjectGame.updateSecondaryDisplayStats(session.getScore(), player.getCombo())
         majorProjectGame.updateSecondaryDebugState(
             SecondaryDebugState(player.debugInvincible, session.getSpeed())
         )
@@ -255,12 +339,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun updatePaused(touchEvents: List<TouchEvent>, deltaSeconds: Float) {
-        majorProjectGame.updateSecondaryPauseState(
-            SecondaryPauseState(
-                GamePreferences.sound, GamePreferences.music, GamePreferences.secondScreenEnabled,
-                player.tiltMode, resumeCountdownSeconds, showQuitConfirm
-            )
-        )
+        val panel = activePausePanel()
         if (showQuitConfirm) {
             handleQuitConfirmTouch(touchEvents)
             return
@@ -272,15 +351,15 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
-                if (pauseMenuPanel.getResumeBounds().contains(event)) {
-                    activateSecondaryPauseItem(PauseMenuPanel.Item.RESUME)
+                if (panel.getResumeBounds().contains(event)) {
+                    activatePauseItem(PauseMenuPanel.Item.RESUME)
                     return
                 }
-                if (pauseMenuPanel.getQuitBounds().contains(event)) {
-                    activateSecondaryPauseItem(PauseMenuPanel.Item.QUIT)
+                if (panel.getQuitBounds().contains(event)) {
+                    activatePauseItem(PauseMenuPanel.Item.QUIT)
                     return
                 }
-                pauseMenuPanel.handleSettingsTouch(event, player)
+                panel.handleSettingsTouch(event, player)
             }
         }
     }
@@ -294,24 +373,25 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private fun handleResumeCountdownTouch(touchEvents: List<TouchEvent>) {
         for (event in touchEvents) {
-            if (event.type == TouchEvent.TOUCH_UP && pauseMenuPanel.getResumeBounds().contains(event)) {
-                activateSecondaryPauseItem(PauseMenuPanel.Item.RESUME)
+            if (event.type == TouchEvent.TOUCH_UP && activePausePanel().getResumeBounds().contains(event)) {
+                activatePauseItem(PauseMenuPanel.Item.RESUME)
                 return
             }
         }
     }
 
     private fun handleQuitConfirmTouch(touchEvents: List<TouchEvent>) {
+        val quitConfirmDialog = activeQuitDialog()
         for (event in touchEvents) {
             if (event.type != TouchEvent.TOUCH_UP) {
                 continue
             }
             if (quitConfirmDialog.getConfirmBounds().contains(event)) {
-                confirmSecondaryQuit(true)
+                confirmQuit(true)
                 return
             }
             if (quitConfirmDialog.getCancelBounds().contains(event)) {
-                confirmSecondaryQuit(false)
+                confirmQuit(false)
                 return
             }
         }
@@ -353,6 +433,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun handleGamepadQuitConfirm(actions: List<GamepadInput.Action>) {
+        val quitConfirmDialog = activeQuitDialog()
         val focusItems = listOf(quitConfirmDialog.getConfirmBounds(), quitConfirmDialog.getCancelBounds())
         for (action in actions) {
             val direction = SpatialFocusNavigator.directionFrom(action)
@@ -363,24 +444,21 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 continue
             }
             if (action == GamepadInput.Action.CONFIRM) {
-                confirmSecondaryQuit(quitConfirmFocusIndex == 0)
+                confirmQuit(quitConfirmFocusIndex == 0)
                 continue
             }
             if (action == GamepadInput.Action.CANCEL || action == GamepadInput.Action.PAUSE) {
-                confirmSecondaryQuit(false)
+                confirmQuit(false)
             }
         }
     }
 
     private fun activatePauseFocus() {
-        activateSecondaryPauseItem(PauseMenuPanel.FOCUS_ITEMS[pauseFocusIndex])
+        activatePauseItem(PauseMenuPanel.FOCUS_ITEMS[pauseFocusIndex])
     }
 
-    /**
-     * Single entry point for activating a pause-menu item, shared by touch, gamepad, and the
-     * native controls mirrored onto a secondary (rear) display.
-     */
-    fun activateSecondaryPauseItem(item: PauseMenuPanel.Item) {
+    /** Single entry point for activating a pause-menu item, shared by touch and gamepad. */
+    private fun activatePauseItem(item: PauseMenuPanel.Item) {
         if (disposed || state != GameState.Paused || showQuitConfirm) {
             return
         }
@@ -397,8 +475,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
-    /** Invoked by the "are you sure?" confirmation, whether on the primary or rear display. */
-    fun confirmSecondaryQuit(confirmed: Boolean) {
+    private fun confirmQuit(confirmed: Boolean) {
         if (disposed || state != GameState.Paused || !showQuitConfirm) {
             return
         }
@@ -424,7 +501,8 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     private fun buildPauseFocusBounds(): List<UiBounds> {
-        return PauseMenuPanel.FOCUS_ITEMS.map { pauseMenuPanel.getItemBounds(it) }
+        val panel = activePausePanel()
+        return PauseMenuPanel.FOCUS_ITEMS.map { panel.getItemBounds(it) }
     }
 
     private fun startResumeCountdown() {
@@ -459,6 +537,16 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             session.setScoreUploaded(true)
         }
 
+        if (isDual()) {
+            for (event in touchEvents) {
+                val index = buildGameOverFocusBounds().indexOfFirst { it.contains(event) }
+                if (index >= 0) {
+                    activateGameOverItem(index)
+                    return
+                }
+            }
+            return
+        }
         for (event in touchEvents) {
             if (event.type == TouchEvent.TOUCH_UP) {
                 if (menuButton.touchInBounds(event)) {
@@ -502,7 +590,11 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
     }
 
+    /** Order matters: 0 Menu, 1 Retry, 2 Leaderboards (see [activateGameOverItem]). */
     private fun buildGameOverFocusBounds(): List<UiBounds> {
+        if (isDual()) {
+            return listOf(rearMenuButton.getBounds(), rearRetryButton.getBounds(), rearLeaderboardButton.getBounds())
+        }
         return listOf(
             menuButton.getBounds(),
             retryButton.getBounds(),
@@ -554,11 +646,17 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private fun drawReadyUI(g: Graphics) {
         g.drawARGB(155, 0, 0, 0)
+        if (isDual()) {
+            paint.typeface = Assets.plain
+            gameOverBanner.paint(g, paint, "Get Ready", GameConstants.WORLD_WIDTH / 2, 320)
+            return
+        }
         val settingsHighlight = if (readyFocusIndex >= READY_FOCUS_SETTINGS_OFFSET) {
             readyFocusIndex - READY_FOCUS_SETTINGS_OFFSET
         } else {
             -1
         }
+        paint.typeface = Assets.plain
         settingsPanel.paint(g, paint, player, settingsHighlight)
         startButton.paint(g)
         if (readyFocusIndex == READY_FOCUS_START) {
@@ -574,11 +672,12 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         enemyController.paint(g, paint)
         player.paint(g, paint)
         paint.typeface = Assets.plain
-        // Score/combo move to the rear display while it's actively mirroring gameplay.
-        if (!majorProjectGame.isSecondaryDisplayPresentingStats()) {
-            comboMeter.paint(g, paint, player.getCombo())
-            scoreBar.paint(g, paint, session.getScore())
+        // In dual-screen mode the score, combo and pause button live on the bottom screen.
+        if (isDual()) {
+            return
         }
+        comboMeter.paint(g, paint, player.getCombo())
+        scoreBar.paint(g, paint, session.getScore())
         menuButton.paint(g)
     }
 
@@ -591,17 +690,26 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         g.drawARGB(155, 0, 0, 0)
         paint.typeface = Assets.plain
 
+        if (isDual()) {
+            gameOverBanner.paint(g, paint, "Paused", GameConstants.WORLD_WIDTH / 2, 320)
+            return
+        }
+        paintPauseOverlay(g, paint)
+    }
+
+    /** Pause menu (or quit confirmation), on whichever display currently has the controls. */
+    private fun paintPauseOverlay(g: Graphics, paint: Paint) {
         if (showQuitConfirm) {
-            quitConfirmDialog.paint(g, paint)
+            activeQuitDialog().paint(g, paint)
             paintQuitConfirmHighlight(g)
             return
         }
-
         val focusedItem = PauseMenuPanel.FOCUS_ITEMS.getOrNull(pauseFocusIndex)
-        pauseMenuPanel.paint(g, paint, player, focusedItem, resumeCountdownSeconds)
+        activePausePanel().paint(g, paint, player, focusedItem, resumeCountdownSeconds)
     }
 
     private fun paintQuitConfirmHighlight(g: Graphics) {
+        val quitConfirmDialog = activeQuitDialog()
         val bounds = if (quitConfirmFocusIndex == 0) {
             quitConfirmDialog.getConfirmBounds()
         } else {
@@ -612,6 +720,12 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private fun drawGameOverUI(g: Graphics) {
         g.drawARGB(155, 0, 0, 0)
+        if (isDual()) {
+            paint.typeface = Assets.plain
+            gameOverBanner.paint(g, paint, "Game Over!", GameConstants.WORLD_WIDTH / 2, 260)
+            scoreBanner.paint(g, paint, "Score: ${session.getScore()}", GameConstants.WORLD_WIDTH / 2, 420)
+            return
+        }
         menuButton.paint(g)
         retryButton.paint(g)
         Assets.gpg_icon_leaderboards?.let { g.drawImage(it, 1175, 5) }
@@ -627,6 +741,55 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         if (gameOverSelection in items.indices) {
             UiSelectionHighlight.paintRect(g, items[gameOverSelection])
         }
+    }
+
+    // --- Dual-screen: rear (bottom) display -------------------------------------------------
+
+    private fun isDual(): Boolean = majorProjectGame.isDualScreenActive()
+
+    private fun activePausePanel(): PauseMenuPanel = if (isDual()) rearPausePanel else pauseMenuPanel
+
+    private fun activeQuitDialog(): UiConfirmDialog = if (isDual()) rearQuitDialog else quitConfirmDialog
+
+    override fun onRearTap(x: Int, y: Int) {
+        rearTaps.add(x, y)
+    }
+
+    override fun paintRear(g: Graphics, paint: Paint) {
+        if (disposed) {
+            return
+        }
+        paint.textSize = 40f
+        when (state) {
+            GameState.Ready -> {
+                val focused = PauseMenuPanel.FOCUS_ITEMS.getOrNull(rearReadyFocusIndex)
+                rearReadyPanel.paint(g, paint, player, focused, 0f)
+            }
+            GameState.Running -> paintRearHud(g, paint)
+            GameState.Paused -> paintPauseOverlay(g, paint)
+            GameState.GameOver -> paintRearGameOver(g)
+        }
+    }
+
+    private fun paintRearHud(g: Graphics, paint: Paint) {
+        val centerX = RearLayout.WIDTH / 2
+        paint.textSize = 40f
+        UiText.drawCentered(g, paint, "SCORE", centerX, 110, Color.LTGRAY)
+        paint.textSize = 120f
+        UiText.drawCentered(g, paint, session.getScore().toString(), centerX, 220, Color.WHITE)
+        paint.textSize = 40f
+        UiText.drawCentered(g, paint, "COMBO", centerX, 350, Color.LTGRAY)
+        paint.textSize = 96f
+        UiText.drawCentered(g, paint, "x${player.getCombo()}", centerX, 445, Color.WHITE)
+        rearPauseButton.paint(g)
+    }
+
+    /** Just the choices: "Game Over!" and the score are on the top display. */
+    private fun paintRearGameOver(g: Graphics) {
+        rearRetryButton.paint(g)
+        rearMenuButton.paint(g)
+        rearLeaderboardButton.paint(g)
+        paintGameOverHighlight(g)
     }
 
     override fun pause() {
@@ -692,6 +855,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         if (disposed) {
             return
         }
+        if (newState == GameState.GameOver) {
+            gameOverSelection = GAME_OVER_FOCUS_RETRY
+        }
         if (newState == GameState.Paused) {
             pauseFocusIndex = PauseMenuPanel.FOCUS_ITEMS.indexOf(PauseMenuPanel.Item.RESUME)
             resumeCountdownSeconds = 0f
@@ -718,6 +884,10 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         private const val FORMATION_SPAWN_PERCENT = 25
         private const val READY_FOCUS_START = 0
         private const val READY_FOCUS_SETTINGS_OFFSET = 1
+
+        private const val GAME_OVER_FOCUS_RETRY = 1
+        private const val REAR_BUTTON_WIDTH = 620
+        private const val REAR_DIALOG_Y = 280
 
         /** Resume button dwell time before it actually resumes the game. */
         private const val RESUME_COUNTDOWN_SECONDS = 3f

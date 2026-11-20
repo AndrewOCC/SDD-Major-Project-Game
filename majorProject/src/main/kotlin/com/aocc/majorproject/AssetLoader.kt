@@ -125,6 +125,10 @@ class AssetLoader(
         stepComplete()
         Assets.tutorial = loadImage("tutorial.png", ImageFormat.RGB565, false)
         stepComplete()
+        Assets.logo = loadImage("logo.png", ImageFormat.ARGB8888, true)
+        stepComplete()
+        Assets.flakes = (1..4).map { loadImage("flake-$it.png", ImageFormat.ARGB8888, true) }
+        stepComplete()
     }
 
     /** Full-screen backgrounds stay at 1×; UI sprites may use 2×. */
@@ -162,7 +166,7 @@ class AssetLoader(
     }
 
     companion object {
-        const val TOTAL_STEP_COUNT = 23
+        const val TOTAL_STEP_COUNT = 25
         private const val TOTAL_STEPS = TOTAL_STEP_COUNT
     }
 }

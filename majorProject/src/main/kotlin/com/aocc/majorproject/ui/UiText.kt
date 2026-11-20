@@ -7,7 +7,8 @@ import com.aocc.framework.Graphics
 /** Text rendering with correct horizontal and vertical alignment within bounds. */
 object UiText {
 
-    private val measureRect = Rect()
+    // One per thread: the top and rear displays paint concurrently.
+    private val measureRect = ThreadLocal.withInitial { Rect() }
 
     enum class HAlign(private val paintAlign: Paint.Align) {
         LEFT(Paint.Align.LEFT),
@@ -77,8 +78,9 @@ object UiText {
         if (text.isEmpty()) {
             return
         }
-        paint.getTextBounds(text, 0, text.length, measureRect)
-        val baseline = centerY - (measureRect.top + measureRect.bottom) / 2f
+        val rect = measureRect.get()!!
+        paint.getTextBounds(text, 0, text.length, rect)
+        val baseline = centerY - (rect.top + rect.bottom) / 2f
         g.drawString(text, anchorX, Math.round(baseline), color, paint)
     }
 }

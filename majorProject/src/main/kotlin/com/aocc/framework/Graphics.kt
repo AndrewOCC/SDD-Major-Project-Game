@@ -37,6 +37,16 @@ interface Graphics {
 
     fun drawImage(image: Image, x: Int, y: Int)
 
+    /** Draws [image] centred on ([centerX], [centerY]), scaled, rotated and faded (alpha 0..255). */
+    fun drawImageTransformed(
+        image: Image,
+        centerX: Float,
+        centerY: Float,
+        scale: Float,
+        rotationDegrees: Float,
+        alpha: Int,
+    )
+
     fun drawString(text: String, x: Int, y: Int, color: Int, paint: Paint)
 
     val width: Int

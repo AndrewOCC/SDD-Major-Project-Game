@@ -70,6 +70,13 @@ object Assets {
     @JvmField
     var tutorial: Image? = null
 
+    /** Game logo (lifted from the menu art) and frost particles for the dual-screen title. */
+    @JvmField
+    var logo: Image? = null
+
+    @JvmField
+    var flakes: List<Image> = emptyList()
+
     @JvmField
     var tap: Sound? = null
 

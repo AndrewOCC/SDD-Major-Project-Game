@@ -6,9 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Display
 import android.view.WindowManager
-import com.aocc.framework.Image
 import com.aocc.framework.Screen
-import com.aocc.majorproject.Assets
 import com.aocc.majorproject.CrashReporter
 import com.aocc.majorproject.GamePreferences
 import com.aocc.majorproject.GameScreen
@@ -16,7 +14,7 @@ import com.aocc.majorproject.MainMenuScreen
 import com.aocc.majorproject.MajorProjectGame
 import com.aocc.majorproject.TutorialScreen
 
-/** Detects secondary displays and mirrors menu / pause content when enabled. */
+/** Detects a secondary (rear) display and, when enabled, moves every control onto it. */
 class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     DisplayManager.DisplayListener {
 
@@ -27,8 +25,6 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
     private var presentation: SecondaryDisplayPresentation? = null
     private var currentMode = SecondaryDisplayMode.OFF
     private var pendingShow: PendingShow? = null
-    private var lastStatsLabel: String? = null
-    private var lastPauseState: SecondaryPauseState? = null
     private var lastDebugState: SecondaryDebugState? = null
 
     init {
@@ -50,63 +46,25 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         return SecondaryDisplayFinder.find(activity, displayManager) != null
     }
 
-    /** True while the rear display is actively mirroring live gameplay (score/combo). */
-    fun isPresentingGameplayStats(): Boolean {
+    /** True while the rear display is up and owns every control (dual-screen mode). */
+    fun isRearControlsActive(): Boolean {
         return GamePreferences.secondScreenEnabled &&
-            currentMode == SecondaryDisplayMode.BACKGROUND &&
+            currentMode != SecondaryDisplayMode.OFF &&
             presentation != null
     }
 
     fun updateForScreen(screen: Screen) {
         when (screen) {
-            is MainMenuScreen -> show(SecondaryDisplayMode.MAIN_MENU, Assets.menu_bg, null)
-            is TutorialScreen -> show(SecondaryDisplayMode.MAIN_MENU, Assets.tutorial, null)
+            is MainMenuScreen, is TutorialScreen -> show(SecondaryDisplayMode.MAIN_MENU)
             is GameScreen -> updateForGameState(screen.state)
-            else -> show(SecondaryDisplayMode.OFF, null, null)
+            else -> show(SecondaryDisplayMode.OFF)
         }
     }
 
     fun updateForGameState(state: GameScreen.GameState) {
         when (state) {
-            GameScreen.GameState.Ready, GameScreen.GameState.Paused ->
-                show(SecondaryDisplayMode.PAUSE_MENU, Assets.game_bg, "Paused")
-            GameScreen.GameState.GameOver ->
-                show(SecondaryDisplayMode.PAUSE_MENU, Assets.game_bg, "Game Over")
-            GameScreen.GameState.Running ->
-                show(SecondaryDisplayMode.BACKGROUND, Assets.game_bg, formatStats(0, 0))
-        }
-    }
-
-    /** Live score / combo mirrored to the rear screen during gameplay. */
-    fun updateGameStats(score: Int, combo: Int) {
-        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.BACKGROUND) {
-            return
-        }
-        val label = formatStats(score, combo)
-        if (label == lastStatsLabel) {
-            return
-        }
-        lastStatsLabel = label
-        mainHandler.post {
-            if (currentMode == SecondaryDisplayMode.BACKGROUND) {
-                presentation?.setStatsLabel(label)
-            }
-        }
-    }
-
-    /** Mirrors the primary pause menu's live state (toggles, countdown, quit-confirm) to the rear screen. */
-    fun updatePauseState(pauseState: SecondaryPauseState) {
-        if (!GamePreferences.secondScreenEnabled || currentMode != SecondaryDisplayMode.PAUSE_MENU) {
-            return
-        }
-        if (pauseState == lastPauseState) {
-            return
-        }
-        lastPauseState = pauseState
-        mainHandler.post {
-            if (currentMode == SecondaryDisplayMode.PAUSE_MENU) {
-                presentation?.setPauseState(pauseState)
-            }
+            GameScreen.GameState.Running -> show(SecondaryDisplayMode.BACKGROUND)
+            else -> show(SecondaryDisplayMode.PAUSE_MENU)
         }
     }
 
@@ -126,14 +84,8 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         }
     }
 
-    private fun formatStats(score: Int, combo: Int): String {
-        return "SCORE $score\nCombo x$combo"
-    }
-
-    private fun show(mode: SecondaryDisplayMode, background: Image?, overlayLabel: String?) {
+    private fun show(mode: SecondaryDisplayMode) {
         if (mode != currentMode) {
-            lastStatsLabel = null
-            lastPauseState = null
             lastDebugState = null
         }
         currentMode = mode
@@ -145,12 +97,12 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
 
         val secondary = SecondaryDisplayFinder.find(activity, displayManager)
         if (secondary == null) {
-            pendingShow = PendingShow(mode, background, overlayLabel)
+            pendingShow = PendingShow(mode)
             dismissPresentationAsync()
             return
         }
 
-        val request = PendingShow(mode, background, overlayLabel)
+        val request = PendingShow(mode)
         pendingShow = request
         mainHandler.post { presentOnDisplay(secondary, request) }
     }
@@ -172,7 +124,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
                 presentation = current
                 current.show()
             }
-            current.setMode(request.mode, request.background, request.overlayLabel)
+            current.setMode(request.mode)
             pendingShow = null
         } catch (e: WindowManager.InvalidDisplayException) {
             CrashReporter.log(activity, "Secondary display rejected Presentation.show()", e)
@@ -202,7 +154,7 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
             activity.runOnUiThread {
                 val pending = pendingShow
                 if (pending != null) {
-                    show(pending.mode, pending.background, pending.overlayLabel)
+                    show(pending.mode)
                 } else {
                     updateForScreen(activity.currentScreen)
                 }
@@ -225,9 +177,5 @@ class SecondaryDisplayManager(private val activity: MajorProjectGame) :
         }
     }
 
-    private class PendingShow(
-        val mode: SecondaryDisplayMode,
-        val background: Image?,
-        val overlayLabel: String?,
-    )
+    private class PendingShow(val mode: SecondaryDisplayMode)
 }

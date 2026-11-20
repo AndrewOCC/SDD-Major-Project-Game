@@ -1,6 +1,7 @@
 package com.aocc.majorproject.display
 
 import android.hardware.display.DisplayManager
+import android.os.Build
 import android.view.Display
 import com.aocc.majorproject.CrashReporter
 import com.aocc.majorproject.MajorProjectGame
@@ -90,9 +91,13 @@ internal object SecondaryDisplayFinder {
     }
 
     private fun getActivityDisplayId(activity: MajorProjectGame): Int {
-        val activityDisplay = activity.display
-        if (activityDisplay != null) {
-            return activityDisplay.displayId
+        // Context#getDisplay only exists on API 30+, and throws for non-visual contexts.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                activity.display?.let { return it.displayId }
+            } catch (e: UnsupportedOperationException) {
+                // Fall through to the window manager's display.
+            }
         }
         @Suppress("DEPRECATION")
         val defaultDisplay = activity.windowManager.defaultDisplay

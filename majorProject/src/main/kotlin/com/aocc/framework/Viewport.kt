@@ -4,8 +4,12 @@ import android.graphics.Rect
 
 /**
  * Maps between virtual world coordinates and the letterboxed on-screen area.
+ * Defaults to the 1280×720 game world; the rear display uses its own portrait world.
  */
-class Viewport {
+class Viewport(
+    val worldWidth: Int = GameConstants.WORLD_WIDTH,
+    val worldHeight: Int = GameConstants.WORLD_HEIGHT,
+) {
 
     private var scale: Float = 1f
     private var offsetX: Float = 0f
@@ -21,12 +25,12 @@ class Viewport {
         this.viewWidth = viewWidth
         this.viewHeight = viewHeight
 
-        val scaleX = viewWidth.toFloat() / GameConstants.WORLD_WIDTH
-        val scaleY = viewHeight.toFloat() / GameConstants.WORLD_HEIGHT
+        val scaleX = viewWidth.toFloat() / worldWidth
+        val scaleY = viewHeight.toFloat() / worldHeight
         scale = minOf(scaleX, scaleY)
 
-        val contentWidth = GameConstants.WORLD_WIDTH * scale
-        val contentHeight = GameConstants.WORLD_HEIGHT * scale
+        val contentWidth = worldWidth * scale
+        val contentHeight = worldHeight * scale
         offsetX = (viewWidth - contentWidth) * 0.5f
         offsetY = (viewHeight - contentHeight) * 0.5f
     }
@@ -43,8 +47,8 @@ class Viewport {
         val rect = Rect()
         rect.left = Math.round(offsetX)
         rect.top = Math.round(offsetY)
-        rect.right = Math.round(offsetX + GameConstants.WORLD_WIDTH * scale)
-        rect.bottom = Math.round(offsetY + GameConstants.WORLD_HEIGHT * scale)
+        rect.right = Math.round(offsetX + worldWidth * scale)
+        rect.bottom = Math.round(offsetY + worldHeight * scale)
         return rect
     }
 

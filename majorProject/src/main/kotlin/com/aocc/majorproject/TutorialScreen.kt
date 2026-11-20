@@ -1,20 +1,42 @@
 package com.aocc.majorproject
 
 import android.graphics.Color
+import android.graphics.Paint
 import com.aocc.framework.Graphics
 import com.aocc.framework.Screen
+import com.aocc.majorproject.display.RearLayout
+import com.aocc.majorproject.display.RearScreenUi
+import com.aocc.majorproject.display.RearTapQueue
 import com.aocc.majorproject.input.GamepadInput
 import com.aocc.majorproject.ui.UiButton
+import com.aocc.majorproject.ui.UiText
 
-class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(majorProjectGame) {
+/** How-to-play art. In dual-screen mode its buttons move to the rear touch display. */
+class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(majorProjectGame), RearScreenUi {
 
     private val menuButton = UiButton.menuAt(0, 0)
+    private val rearTaps = RearTapQueue()
+    private val rearPlayButton = UiButton(50, 260, 620, 170, "Play", 72f)
+    private val rearBackButton = UiButton(50, 460, 620, 120, "Back", 48f)
 
     override fun update(deltaTime: Float) {
-        val touchEvents = game.input.touchEvents
-        for (event in touchEvents) {
-            if (event.type == com.aocc.framework.Input.TouchEvent.TOUCH_UP) {
-                if (menuButton.touchInBounds(event)) {
+        val topTouches = game.input.touchEvents
+        val rearTouches = rearTaps.drain()
+        if (majorProjectGame.isDualScreenActive()) {
+            for (event in rearTouches) {
+                if (rearPlayButton.touchInBounds(event)) {
+                    playTap()
+                    game.setScreen(GameScreen(majorProjectGame))
+                    return
+                }
+                if (rearBackButton.touchInBounds(event)) {
+                    goToMenu()
+                    return
+                }
+            }
+        } else {
+            for (event in topTouches) {
+                if (event.type == com.aocc.framework.Input.TouchEvent.TOUCH_UP && menuButton.touchInBounds(event)) {
                     goToMenu()
                 }
             }
@@ -28,15 +50,32 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
     }
 
     private fun goToMenu() {
-        Assets.tap?.play(GamePreferences.getTapVolume().toFloat())
+        playTap()
         game.setScreen(MainMenuScreen(majorProjectGame))
+    }
+
+    private fun playTap() {
+        Assets.tap?.play(GamePreferences.getTapVolume().toFloat())
+    }
+
+    override fun onRearTap(x: Int, y: Int) {
+        rearTaps.add(x, y)
+    }
+
+    override fun paintRear(g: Graphics, paint: Paint) {
+        paint.textSize = 54f
+        UiText.drawCentered(g, paint, "How to Play", RearLayout.WIDTH / 2, 140, Color.WHITE)
+        rearPlayButton.paint(g)
+        rearBackButton.paint(g)
     }
 
     override fun paint(deltaTime: Float) {
         val g = game.graphics
         Assets.tutorial?.let { g.drawImage(it, 0, 0) }
         g.drawRect(0, 0, UiButton.MENU_WIDTH, LEGACY_MENU_ART_HEIGHT, Color.BLACK)
-        menuButton.paint(g)
+        if (!majorProjectGame.isDualScreenActive()) {
+            menuButton.paint(g)
+        }
         VersionOverlay.paint(g)
     }
 

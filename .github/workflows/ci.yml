@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - 'cursor/**'
+      - 'claude/**'
   pull_request:
 
 jobs:
