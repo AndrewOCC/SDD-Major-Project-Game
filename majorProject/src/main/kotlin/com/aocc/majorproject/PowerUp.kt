@@ -92,16 +92,28 @@ class PowerUp(t: Int, session: GameSession) {
         }
     }
 
+    /** Moves the dock to a random outlet on [wall] (0 left, 1 top, 2 right, 3 bottom), if it has one. */
+    fun placeOnWall(wall: Int) {
+        val candidates = Assets.roomLayout.outlets.indices.filter { Assets.roomLayout.outlets[it].wall == wall }
+        if (candidates.isNotEmpty()) {
+            placeAtOutlet(candidates[r.nextInt(candidates.size)])
+        }
+    }
+
     /** Plugs the dock into one of the room's outlets (a different one each time), pad facing in. */
     private fun placeOnWall() {
-        val layout = Assets.roomLayout
-        val outlets = layout.outlets
+        val outlets = Assets.roomLayout.outlets
         var index = r.nextInt(outlets.size)
         if (outlets.size > 1 && index == outletIndex) {
             index = (index + 1 + r.nextInt(outlets.size - 1)) % outlets.size
         }
+        placeAtOutlet(index)
+    }
+
+    private fun placeAtOutlet(index: Int) {
+        val layout = Assets.roomLayout
         outletIndex = index
-        val outlet = outlets[index]
+        val outlet = layout.outlets[index]
         wall = outlet.wall
         val inset = layout.wall + PAD_FROM_WALL
         when (wall) {

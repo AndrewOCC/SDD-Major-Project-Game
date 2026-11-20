@@ -47,7 +47,7 @@ class DustMap(seed: Long = 3L, layout: RoomLayout = Assets.roomLayout) {
                 }
                 // Patchy clumps plus per-cell speckle so the stretched layer reads as dust.
                 val clump = clumps.sample(col.toFloat() / columns, row.toFloat() / rows)
-                val alpha = (40 + 120 * clump + random.nextInt(50) - 25).toInt().coerceIn(25, 200)
+                val alpha = (14 + 70 * clump * clump + random.nextInt(24) - 12).toInt().coerceIn(8, 110)
                 pixels[index] = Color.argb(alpha, r, g, b)
                 totalDusty++
             }

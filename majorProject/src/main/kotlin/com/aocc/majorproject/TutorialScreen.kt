@@ -113,12 +113,12 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
             }
             Lesson.RECHARGE -> {
                 suctionWasLow = false
-                dock = PowerUp(1, session)
+                dock = PowerUp(1, session).apply { placeOnWall(BOTTOM_WALL) }
             }
             Lesson.LINGER -> {
                 touchedDock = false
                 player.setCombo(LINGER_COMBO)
-                dock = PowerUp(1, session)
+                dock = PowerUp(1, session).apply { placeOnWall(BOTTOM_WALL) }
             }
             Lesson.DANGER -> {
                 dodgeSeconds = 0f
@@ -230,6 +230,7 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
             // Free roam on the summary page.
             player.setShield(100)
             player.update(deltaSeconds)
+            keepClearOfCard()
             dust.clean(player.getCenterX(), player.getCenterY(), cleanRadius())
             effects.update(deltaSeconds, player.getCenterX(), player.getCenterY())
             return
@@ -244,6 +245,7 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
         }
         val healthBefore = player.getHealth()
         player.update(deltaSeconds)
+        keepClearOfCard()
         dock?.update(deltaSeconds)
         val iterator = mites.iterator()
         while (iterator.hasNext()) {
@@ -278,6 +280,14 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
                 RoombaTheme.DOCK_GLOW, 48f, SUCCESS_HOLD_SECONDS)
         }
         effects.update(deltaSeconds, player.getCenterX(), player.getCenterY())
+    }
+
+    /** On a single screen the instruction card covers the top strip; keep the Roomba below it. */
+    private fun keepClearOfCard() {
+        if (!majorProjectGame.isDualScreenActive() && player.getDefaultY() < CARD_HEIGHT + 6f) {
+            player.setDefaultY(CARD_HEIGHT + 6f)
+            player.setVelocityY(0f)
+        }
     }
 
     private fun cleanRadius(): Float = Player.ROOMBA_DIAMETER / 2f + player.getShieldWidth() * CLEAN_SUCTION_SHARE
@@ -528,6 +538,7 @@ class TutorialScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
         private const val START_Y = 400f
         private const val MAX_HEALTH = 5
         private const val CARD_HEIGHT = 120
+        private const val BOTTOM_WALL = 3
         private const val SUCCESS_HOLD_SECONDS = 1.4f
         private const val CLEAN_SUCTION_SHARE = 0.6f
 
