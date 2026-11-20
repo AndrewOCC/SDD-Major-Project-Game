@@ -69,6 +69,17 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         return true
     }
 
+    /** Shifts subsequent drawing by ([dx], [dy]) world units until [popOffset]. */
+    fun pushOffset(dx: Float, dy: Float) {
+        val canvas = requireCanvas()
+        canvas.save()
+        canvas.translate(dx, dy)
+    }
+
+    fun popOffset() {
+        requireCanvas().restore()
+    }
+
     fun endFrame() {
         canvas?.let {
             it.restore()

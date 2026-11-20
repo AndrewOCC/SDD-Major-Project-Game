@@ -93,6 +93,9 @@ class ScreenshotTest {
             val rear = rearPresentation()
             captureScreen("30-dual-top-menu", menu)
             captureRear("31-rear-menu", rear)
+            // Other panel shapes must fill edge to edge (no bars) without clipping controls.
+            captureRear("38-rear-menu-tall", rear, 1080, 1600)
+            captureRear("39-rear-menu-wide", rear, 1240, 1080)
 
             val tutorial = TutorialScreen(activity)
             activity.setScreen(tutorial)
@@ -148,9 +151,9 @@ class ScreenshotTest {
             ?: error("rear presentation was not created")
     }
 
-    private fun captureRear(name: String, rear: SecondaryDisplayPresentation) {
+    private fun captureRear(name: String, rear: SecondaryDisplayPresentation, width: Int = 1080, height: Int = 1240) {
         idle()
-        captureView(name, rear.window!!.decorView, 1080, 1240)
+        captureView(name, rear.window!!.decorView, width, height)
     }
 
     private fun captureScreen(name: String, screen: Screen) {

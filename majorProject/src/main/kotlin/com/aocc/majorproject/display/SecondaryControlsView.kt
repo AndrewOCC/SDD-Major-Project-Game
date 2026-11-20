@@ -17,7 +17,7 @@ import com.aocc.majorproject.ui.ParticleField
 /**
  * The rear display's touch surface in dual-screen mode. Draws the current screen's controls
  * (see [RearScreenUi]) with the game's own renderer, over drifting snow, in a portrait world
- * letterboxed onto the panel, and routes taps back to that screen.
+ * that fills the panel edge to edge, and routes taps back to that screen.
  */
 @SuppressLint("ViewConstructor")
 class SecondaryControlsView(
@@ -26,8 +26,15 @@ class SecondaryControlsView(
 ) : View(context) {
 
     private val graphics = AndroidGraphics(context.assets)
-    private val viewport = Viewport(RearLayout.WIDTH, RearLayout.HEIGHT)
-    private val particles = ParticleField(RearLayout.WIDTH, RearLayout.HEIGHT, count = 30, seed = 11L)
+
+    // The world is sized to the panel's own shape so the background fills it edge to edge;
+    // the RearLayout design box is centred inside at the largest scale that fits.
+    private var viewport = Viewport(RearLayout.WIDTH, RearLayout.HEIGHT)
+    private var particles = ParticleField(RearLayout.WIDTH, RearLayout.HEIGHT, count = 30, seed = 11L)
+    private var contentOffsetX = 0f
+    private var contentOffsetY = 0f
+    private var laidOutWidth = 0
+    private var laidOutHeight = 0
     private val blitPaint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 40f
@@ -46,7 +53,7 @@ class SecondaryControlsView(
         lastFrameMillis = now
 
         canvas.drawColor(Color.BLACK)
-        viewport.update(width, height)
+        layoutWorld()
         if (!graphics.beginFrame(viewport)) {
             return
         }
@@ -54,18 +61,38 @@ class SecondaryControlsView(
         particles.update(delta)
         particles.paint(graphics)
         textPaint.typeface = Assets.plain
+        graphics.pushOffset(contentOffsetX, contentOffsetY)
         rearScreen()?.paintRear(graphics, textPaint)
+        graphics.popOffset()
         graphics.endFrame()
 
         val frame = graphics.frameBuffer ?: return
         canvas.drawBitmap(frame, null, viewport.getLetterboxDestRect(), blitPaint)
     }
 
+    private fun layoutWorld() {
+        if (width <= 0 || height <= 0 || (width == laidOutWidth && height == laidOutHeight)) {
+            return
+        }
+        laidOutWidth = width
+        laidOutHeight = height
+        val scale = minOf(width.toFloat() / RearLayout.WIDTH, height.toFloat() / RearLayout.HEIGHT)
+        val worldWidth = Math.round(width / scale)
+        val worldHeight = Math.round(height / scale)
+        viewport = Viewport(worldWidth, worldHeight).apply { update(width, height) }
+        particles = ParticleField(worldWidth, worldHeight, count = 30, seed = 11L)
+        contentOffsetX = (worldWidth - RearLayout.WIDTH) / 2f
+        contentOffsetY = (worldHeight - RearLayout.HEIGHT) / 2f
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val screen = rearScreen() ?: return false
         if (event.actionMasked == MotionEvent.ACTION_UP) {
-            screen.onRearTap(viewport.screenToWorldX(event.x), viewport.screenToWorldY(event.y))
+            screen.onRearTap(
+                Math.round(viewport.screenToWorldX(event.x) - contentOffsetX),
+                Math.round(viewport.screenToWorldY(event.y) - contentOffsetY)
+            )
         }
         return true
     }
