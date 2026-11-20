@@ -86,6 +86,23 @@ class DustMap(seed: Long = 3L, layout: RoomLayout = Assets.roomLayout) {
         return newlyCleaned
     }
 
+    /** Dusty (uncleaned) cells whose centres lie inside the given world rectangle. */
+    fun dustyCellsIn(left: Float, top: Float, right: Float, bottom: Float): Int {
+        val minCol = floor(left / CELL).toInt().coerceAtLeast(0)
+        val maxCol = floor(right / CELL).toInt().coerceAtMost(columns - 1)
+        val minRow = floor(top / CELL).toInt().coerceAtLeast(0)
+        val maxRow = floor(bottom / CELL).toInt().coerceAtMost(rows - 1)
+        var count = 0
+        for (row in minRow..maxRow) {
+            for (col in minCol..maxCol) {
+                if (pixels[row * columns + col] != Color.TRANSPARENT) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+
     fun paint(g: Graphics) {
         if (dirtyBitmap) {
             bitmap.setPixels(pixels, 0, columns, 0, 0, columns, rows)

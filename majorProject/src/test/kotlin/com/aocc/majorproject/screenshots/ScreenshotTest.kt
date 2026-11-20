@@ -79,6 +79,13 @@ class ScreenshotTest {
         invoke(quit, "openPauseMenu", false)
         invoke(quit, "openQuitConfirm")
         captureScreen("06-quit-confirm", quit)
+
+        val tutorial = TutorialScreen(activity)
+        for (lesson in TutorialScreen.Lesson.entries) {
+            tutorial.startLesson(lesson.ordinal)
+            repeat(75) { tutorial.update(1f / 60f) }
+            captureScreen("07-tutorial-${lesson.ordinal + 1}-${lesson.name.lowercase()}", tutorial)
+        }
     }
 
     @Test
@@ -102,6 +109,12 @@ class ScreenshotTest {
             idle()
             captureScreen("36-dual-top-tutorial", tutorial)
             captureRear("37-rear-tutorial", rear)
+            tutorial.startLesson(TutorialScreen.Lesson.LINGER.ordinal)
+            repeat(30) { tutorial.update(1f / 60f) }
+            captureScreen("36b-dual-top-tutorial-linger", tutorial)
+            captureRear("37b-rear-tutorial-linger", rear)
+            tutorial.startLesson(TutorialScreen.Lesson.DONE.ordinal)
+            captureRear("37c-rear-tutorial-done", rear)
 
             val game = GameScreen(activity)
             activity.setScreen(game)
