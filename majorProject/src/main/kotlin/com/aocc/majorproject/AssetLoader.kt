@@ -4,7 +4,7 @@ import android.app.Activity
 import android.graphics.Typeface
 import com.aocc.framework.Audio
 import com.aocc.framework.Graphics
-import com.aocc.majorproject.roomba.ApartmentFloor
+import com.aocc.majorproject.roomba.RoomLayout
 import com.aocc.framework.Graphics.ImageFormat
 import com.aocc.framework.Image
 import java.util.concurrent.ExecutorService
@@ -130,7 +130,13 @@ class AssetLoader(
         stepComplete()
         Assets.flakes = (1..4).map { loadImage("flake-$it.png", ImageFormat.ARGB8888, true) }
         stepComplete()
-        Assets.floor = ApartmentFloor.build()
+        Assets.floor = loadImage("room-apartment.jpg", ImageFormat.RGB565, true)
+        stepComplete()
+        Assets.roombaSheet = loadImage("roomba.png", ImageFormat.ARGB8888, true)
+        stepComplete()
+        Assets.dockSheet = loadImage("dock.png", ImageFormat.ARGB8888, true)
+        stepComplete()
+        Assets.roomLayout = game.assets.open("rooms/apartment.json").bufferedReader().use { RoomLayout.parse(it.readText()) }
         stepComplete()
     }
 
@@ -169,7 +175,7 @@ class AssetLoader(
     }
 
     companion object {
-        const val TOTAL_STEP_COUNT = 26
+        const val TOTAL_STEP_COUNT = 29
         private const val TOTAL_STEPS = TOTAL_STEP_COUNT
     }
 }

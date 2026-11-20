@@ -31,6 +31,7 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
     private val paint = Paint()
     private val srcRect = Rect()
     private val dstRect = Rect()
+    private val regionDst = RectF()
     private val filteredBitmapPaint =
         Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -306,6 +307,24 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         dstRect.set(-halfW.toInt(), -halfH.toInt(), halfW.toInt(), halfH.toInt())
         canvas.drawBitmap(androidImage.bitmap, null, dstRect, transformPaint)
         canvas.restore()
+    }
+
+    override fun drawImageRegion(
+        image: Image,
+        srcX: Int,
+        srcY: Int,
+        srcWidth: Int,
+        srcHeight: Int,
+        centerX: Float,
+        centerY: Float,
+        width: Float,
+        height: Float,
+    ) {
+        val androidImage = image as AndroidImage
+        val scale = androidImage.pixelScale
+        srcRect.set(srcX * scale, srcY * scale, (srcX + srcWidth) * scale, (srcY + srcHeight) * scale)
+        regionDst.set(centerX - width / 2f, centerY - height / 2f, centerX + width / 2f, centerY + height / 2f)
+        requireCanvas().drawBitmap(androidImage.bitmap, srcRect, regionDst, filteredBitmapPaint)
     }
 
     override fun drawImage(image: Image, x: Int, y: Int) {

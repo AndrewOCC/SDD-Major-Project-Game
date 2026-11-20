@@ -77,9 +77,21 @@ object Assets {
     @JvmField
     var flakes: List<Image> = emptyList()
 
-    /** Procedurally drawn apartment floor for the Roomba theme. */
+    /** Pre-rendered apartment (tools/render/apartment.py) for the Roomba theme. */
     @JvmField
     var floor: Image? = null
+
+    /** Roomba rotation sheet: 8x8 frames of [com.aocc.majorproject.roomba.RoombaRenderer.CELL] units. */
+    @JvmField
+    var roombaSheet: Image? = null
+
+    /** Charging dock, one frame per wall (left, top, right, bottom). */
+    @JvmField
+    var dockSheet: Image? = null
+
+    /** Gameplay geometry of the rendered room (walls, furniture, outlets). */
+    @JvmField
+    var roomLayout: com.aocc.majorproject.roomba.RoomLayout = com.aocc.majorproject.roomba.RoomLayout.EMPTY
 
     @JvmField
     var tap: Sound? = null

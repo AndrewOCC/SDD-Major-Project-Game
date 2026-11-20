@@ -3,14 +3,33 @@ package com.aocc.majorproject.roomba
 import android.graphics.Color
 import android.graphics.RectF
 import com.aocc.framework.Graphics
+import com.aocc.majorproject.Assets
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Top-down robot vacuum, drawn procedurally. */
+/**
+ * Top-down robot vacuum. The body comes from a pre-rendered rotation sheet
+ * (tools/render/sprites.py) when loaded, with procedural brushes, LED and effects on top;
+ * otherwise it is drawn flat.
+ */
 object RoombaRenderer {
 
     private val oval = RectF()
     private const val PROGRESS_BEADS = 28
+
+    /** Sheet layout: [FRAMES] headings in [COLUMNS] columns, each [CELL] world units square. */
+    const val FRAMES = 64
+    const val COLUMNS = 8
+    const val CELL = 96
+
+    /** Rendered body diameter in world units (the model is 0.60 m across, 1 unit = 1 cm). */
+    private const val SPRITE_DIAMETER = 60f
+
+    /** Sheet frame for a heading: frame i faces i * 360 / [FRAMES] degrees clockwise from +x. */
+    fun frameFor(facingDegrees: Float): Int {
+        val normalized = ((facingDegrees % 360f) + 360f) % 360f
+        return Math.round(normalized / (360f / FRAMES)) % FRAMES
+    }
 
     /**
      * @param facingDegrees direction of travel (0 = +x, clockwise in screen space)
@@ -38,8 +57,11 @@ object RoombaRenderer {
             g.drawCircleOutline(x, y, outer, Color.argb(150, 150, 225, 255), 2f)
         }
 
-        // Shadow.
-        g.drawCircle(x + 3f, y + 5f, radius, Color.argb(80, 0, 0, 0))
+        val sheet = Assets.roombaSheet
+        if (sheet == null) {
+            // Shadow.
+            g.drawCircle(x + 3f, y + 5f, radius, Color.argb(80, 0, 0, 0))
+        }
 
         val facing = Math.toRadians(facingDegrees.toDouble())
 
@@ -59,18 +81,24 @@ object RoombaRenderer {
             g.drawCircle(bx, by, radius * 0.08f, Color.rgb(90, 90, 96))
         }
 
-        // Body, then the front bumper band, then the lid on top.
-        g.drawCircle(x, y, radius, RoombaTheme.ROOMBA_BODY)
-        oval.set(x - radius, y - radius, x + radius, y + radius)
-        g.drawArc(oval, facingDegrees - 75f, 150f, true, RoombaTheme.ROOMBA_BUMPER)
-        g.drawCircle(x, y, radius * 0.80f, RoombaTheme.ROOMBA_LID)
-        g.drawCircleOutline(x, y, radius * 0.80f, Color.argb(90, 255, 255, 255), 1.2f)
-        // Specular sheen on the lid.
-        g.drawCircle(x - radius * 0.22f, y - radius * 0.26f, radius * 0.38f, Color.argb(22, 255, 255, 255))
-
-        // Centre "clean" button.
-        g.drawCircle(x, y, radius * 0.26f, RoombaTheme.ROOMBA_BUTTON)
-        g.drawCircleOutline(x, y, radius * 0.26f, Color.argb(140, 200, 200, 200), 1.2f)
+        if (sheet != null) {
+            val frame = frameFor(facingDegrees)
+            val size = CELL * (radius * 2f / SPRITE_DIAMETER)
+            g.drawImageRegion(
+                sheet, (frame % COLUMNS) * CELL, (frame / COLUMNS) * CELL, CELL, CELL,
+                x, y, size, size
+            )
+        } else {
+            // Body, then the front bumper band, then the lid on top.
+            g.drawCircle(x, y, radius, RoombaTheme.ROOMBA_BODY)
+            oval.set(x - radius, y - radius, x + radius, y + radius)
+            g.drawArc(oval, facingDegrees - 75f, 150f, true, RoombaTheme.ROOMBA_BUMPER)
+            g.drawCircle(x, y, radius * 0.80f, RoombaTheme.ROOMBA_LID)
+            g.drawCircleOutline(x, y, radius * 0.80f, Color.argb(90, 255, 255, 255), 1.2f)
+            g.drawCircle(x - radius * 0.22f, y - radius * 0.26f, radius * 0.38f, Color.argb(22, 255, 255, 255))
+            g.drawCircle(x, y, radius * 0.26f, RoombaTheme.ROOMBA_BUTTON)
+            g.drawCircleOutline(x, y, radius * 0.26f, Color.argb(140, 200, 200, 200), 1.2f)
+        }
 
         // Status LED toward the front.
         val ledColor = when {
@@ -78,10 +106,12 @@ object RoombaRenderer {
             suctionLow -> Color.rgb(255, 180, 40)
             else -> Color.rgb(80, 230, 130)
         }
-        val lx = x + (cos(facing) * radius * 0.52f).toFloat()
-        val ly = y + (sin(facing) * radius * 0.52f).toFloat()
-        g.drawCircle(lx, ly, radius * 0.16f, Color.argb(70, Color.red(ledColor), Color.green(ledColor), Color.blue(ledColor)))
-        g.drawCircle(lx, ly, radius * 0.08f, ledColor)
+        // Sits between the clean button and the front camera window of the rendered model.
+        val ledOffset = if (sheet != null) 0.34f else 0.52f
+        val lx = x + (cos(facing) * radius * ledOffset).toFloat()
+        val ly = y + (sin(facing) * radius * ledOffset).toFloat()
+        g.drawCircle(lx, ly, radius * 0.14f, Color.argb(80, Color.red(ledColor), Color.green(ledColor), Color.blue(ledColor)))
+        g.drawCircle(lx, ly, radius * 0.065f, ledColor)
 
         // Bin emptying progress (on the dock).
         if (binEmptying > 0f) {

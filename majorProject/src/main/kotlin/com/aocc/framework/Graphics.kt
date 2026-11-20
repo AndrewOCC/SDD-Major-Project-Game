@@ -53,6 +53,22 @@ interface Graphics {
         alpha: Int,
     )
 
+    /**
+     * Draws a sub-rectangle of [image] (in the image's world units, so sprite sheets work at any
+     * asset pixel scale) centred on ([centerX], [centerY]) at [width] x [height] world units.
+     */
+    fun drawImageRegion(
+        image: Image,
+        srcX: Int,
+        srcY: Int,
+        srcWidth: Int,
+        srcHeight: Int,
+        centerX: Float,
+        centerY: Float,
+        width: Float,
+        height: Float,
+    )
+
     fun drawString(text: String, x: Int, y: Int, color: Int, paint: Paint)
 
     val width: Int

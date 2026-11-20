@@ -51,6 +51,8 @@ class Player(private val session: GameSession) {
     /** Remaining invincibility (damage i-frames + flash) while > 0. Movement is unaffected. */
     private var iframeSeconds = 0f
 
+    private val resolved = FloatArray(2)
+
     /** Side-brush spin, degrees. */
     private var brushDegrees = 0f
 
@@ -79,24 +81,27 @@ class Player(private val session: GameSession) {
             180f + (atan((velocityY / velocityX).toDouble()) * 180 / PI).toFloat()
         }
 
-        if (defaultX + velocityX * step < borderWidth) {
+        // Keep inside the room's walls.
+        val room = Assets.roomLayout
+        val minX = room.innerLeft + borderWidth
+        val minY = maxOf(room.innerTop + borderWidth, GameConstants.PLAY_AREA_TOP.toFloat())
+        val maxX = room.innerRight - characterDiameter - borderWidth
+        val maxY = room.innerBottom - characterDiameter - borderWidth
+        if (defaultX + velocityX * step < minX) {
             velocityX = 0f
-            defaultX = borderWidth
+            defaultX = minX
         }
-
-        if (defaultY + velocityY * step < GameConstants.PLAY_AREA_TOP) {
+        if (defaultY + velocityY * step < minY) {
             velocityY = 0f
-            defaultY = GameConstants.PLAY_AREA_TOP.toFloat()
+            defaultY = minY
         }
-
-        if (defaultX + velocityX * step > GameConstants.WORLD_WIDTH - characterDiameter - borderWidth) {
+        if (defaultX + velocityX * step > maxX) {
             velocityX = 0f
-            defaultX = GameConstants.WORLD_WIDTH - characterDiameter - borderWidth
+            defaultX = maxX
         }
-
-        if (defaultY + velocityY * step > GameConstants.WORLD_HEIGHT - characterDiameter - borderWidth) {
+        if (defaultY + velocityY * step > maxY) {
             velocityY = 0f
-            defaultY = GameConstants.WORLD_HEIGHT - characterDiameter - borderWidth
+            defaultY = maxY
         }
 
         if (health <= 0) {
@@ -132,6 +137,13 @@ class Player(private val session: GameSession) {
 
         defaultX += velocityX * step
         defaultY += velocityY * step
+
+        // Slide around furniture rather than driving through it.
+        val half = characterDiameter / 2f
+        if (room.resolveCircle(defaultX + half, defaultY + half, half, resolved)) {
+            defaultX = resolved[0] - half
+            defaultY = resolved[1] - half
+        }
 
         mainCharacter.set(
             defaultX.toInt().toFloat(),

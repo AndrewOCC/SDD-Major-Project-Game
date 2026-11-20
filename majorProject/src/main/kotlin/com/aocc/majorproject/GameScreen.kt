@@ -298,15 +298,25 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
                 formations.spawnRandom(enemyController, player)
                 enemyController.generateNextEnemy(session.getSpeed())
             } else {
-                val spawnTop = GameConstants.PLAY_AREA_TOP + 20
-                tempEnemyPoint.x = random.nextInt(GameConstants.WORLD_WIDTH - 100) + 50
-                tempEnemyPoint.y = random.nextInt(GameConstants.WORLD_HEIGHT - 50 - spawnTop) + spawnTop
-                PersonalMethods.limitOutside(
-                    tempEnemyPoint,
-                    player.getCenterX().toInt(),
-                    player.getCenterY().toInt(),
-                    100
-                )
+                // Spawn on open floor: inside the walls and not under the furniture.
+                val room = Assets.roomLayout
+                val spawnLeft = room.wall + 30
+                val spawnTop = maxOf(GameConstants.PLAY_AREA_TOP, room.wall) + 20
+                val spawnRight = GameConstants.WORLD_WIDTH - room.wall - 30
+                val spawnBottom = GameConstants.WORLD_HEIGHT - room.wall - 30
+                for (attempt in 0 until SPAWN_ATTEMPTS) {
+                    tempEnemyPoint.x = spawnLeft + random.nextInt(spawnRight - spawnLeft)
+                    tempEnemyPoint.y = spawnTop + random.nextInt(spawnBottom - spawnTop)
+                    PersonalMethods.limitOutside(
+                        tempEnemyPoint,
+                        player.getCenterX().toInt(),
+                        player.getCenterY().toInt(),
+                        100
+                    )
+                    if (!room.overlapsSolid(tempEnemyPoint.x.toFloat(), tempEnemyPoint.y.toFloat(), 24f)) {
+                        break
+                    }
+                }
                 if (random.nextInt(10) == 9) {
                     enemyController.addEnemy(tempEnemyPoint.x, tempEnemyPoint.y, 2)
                 } else {
@@ -936,6 +946,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     }
 
     companion object {
+        private const val SPAWN_ATTEMPTS = 8
         /** Chance (%) that a spawn tick produces a group formation instead of a single tracker. */
         private const val FORMATION_SPAWN_PERCENT = 25
         private const val READY_FOCUS_START = 0

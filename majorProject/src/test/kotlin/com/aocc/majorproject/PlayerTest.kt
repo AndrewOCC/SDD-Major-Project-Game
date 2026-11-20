@@ -19,6 +19,7 @@ class PlayerTest {
 
     @Before
     fun setUp() {
+        Assets.roomLayout = com.aocc.majorproject.roomba.RoomLayout.EMPTY
         session = GameSession()
         setRotation(0f, 0f)
         player = session.getPlayer()
@@ -32,7 +33,7 @@ class PlayerTest {
 
         player.update(ONE_FRAME)
 
-        assertEquals(3f, player.getDefaultX(), 0.001f)
+        assertEquals(Assets.roomLayout.wall + player.borderWidth, player.getDefaultX(), 0.001f)
         assertEquals(0f, player.getVelocityX(), 0.001f)
     }
 

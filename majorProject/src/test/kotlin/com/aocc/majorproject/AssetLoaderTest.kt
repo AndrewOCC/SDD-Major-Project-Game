@@ -7,6 +7,6 @@ class AssetLoaderTest {
 
     @Test
     fun totalSteps_matchesLoadPipeline() {
-        assertEquals(26, AssetLoader.TOTAL_STEP_COUNT)
+        assertEquals(29, AssetLoader.TOTAL_STEP_COUNT)
     }
 }

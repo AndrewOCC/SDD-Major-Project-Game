@@ -6,15 +6,17 @@ import com.aocc.framework.GameConstants
 import com.aocc.framework.Graphics
 import com.aocc.framework.Graphics.ImageFormat
 import com.aocc.framework.implementation.AndroidImage
+import com.aocc.majorproject.Assets
 import java.util.Random
 import kotlin.math.floor
 
 /**
  * The dusty floor the Roomba paints clean. A low-resolution grid of dust (one cell per
  * [CELL] world units) is kept in a bitmap and drawn stretched with filtering, so wiped paths
- * get soft edges. Tracks how much of the floor has been cleaned.
+ * get soft edges. Tracks how much of the floor has been cleaned. There is no dust inside the
+ * walls or under furniture, so the whole floor can be finished.
  */
-class DustMap(seed: Long = 3L) {
+class DustMap(seed: Long = 3L, layout: RoomLayout = Assets.roomLayout) {
 
     val columns = GameConstants.WORLD_WIDTH / CELL
     val rows = GameConstants.WORLD_HEIGHT / CELL
@@ -30,14 +32,16 @@ class DustMap(seed: Long = 3L) {
     init {
         val random = Random(seed)
         val clumps = ValueNoise(random, 9, 6)
-        val inset = RoombaTheme.WALL_THICKNESS / CELL + 1
+        val inset = layout.wall / CELL + 1
         val r = Color.red(RoombaTheme.DUST)
         val g = Color.green(RoombaTheme.DUST)
         val b = Color.blue(RoombaTheme.DUST)
         for (row in 0 until rows) {
             for (col in 0 until columns) {
                 val index = row * columns + col
-                if (col < inset || row < inset || col >= columns - inset || row >= rows - inset) {
+                if (col < inset || row < inset || col >= columns - inset || row >= rows - inset ||
+                    layout.isSolid((col + 0.5f) * CELL, (row + 0.5f) * CELL)
+                ) {
                     pixels[index] = Color.TRANSPARENT
                     continue
                 }
