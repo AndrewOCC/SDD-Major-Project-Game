@@ -37,6 +37,12 @@ interface Graphics {
 
     fun drawImage(image: Image, x: Int, y: Int)
 
+    /** Line with a round cap of the given stroke [width], in world units. */
+    fun drawStroke(x1: Float, y1: Float, x2: Float, y2: Float, color: Int, width: Float)
+
+    /** Draws [image] stretched (filtered) to fill the rectangle at ([x], [y]) sized [width] x [height]. */
+    fun drawImageStretched(image: Image, x: Int, y: Int, width: Int, height: Int)
+
     /** Draws [image] centred on ([centerX], [centerY]), scaled, rotated and faded (alpha 0..255). */
     fun drawImageTransformed(
         image: Image,

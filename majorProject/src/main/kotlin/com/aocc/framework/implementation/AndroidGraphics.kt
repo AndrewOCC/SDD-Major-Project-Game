@@ -271,6 +271,21 @@ class AndroidGraphics(private val assets: AssetManager) : Graphics {
         requireCanvas().drawBitmap(androidImage.bitmap, srcRect, dstRect, filteredBitmapPaint)
     }
 
+    override fun drawStroke(x1: Float, y1: Float, x2: Float, y2: Float, color: Int, width: Float) {
+        strokePaint.color = color
+        strokePaint.style = Paint.Style.STROKE
+        strokePaint.strokeWidth = width
+        strokePaint.strokeCap = Paint.Cap.ROUND
+        requireCanvas().drawLine(x1, y1, x2, y2, strokePaint)
+        strokePaint.strokeCap = Paint.Cap.BUTT
+    }
+
+    override fun drawImageStretched(image: Image, x: Int, y: Int, width: Int, height: Int) {
+        val androidImage = image as AndroidImage
+        dstRect.set(x, y, x + width, y + height)
+        requireCanvas().drawBitmap(androidImage.bitmap, null, dstRect, filteredBitmapPaint)
+    }
+
     override fun drawImageTransformed(
         image: Image,
         centerX: Float,

@@ -77,6 +77,10 @@ object Assets {
     @JvmField
     var flakes: List<Image> = emptyList()
 
+    /** Procedurally drawn apartment floor for the Roomba theme. */
+    @JvmField
+    var floor: Image? = null
+
     @JvmField
     var tap: Sound? = null
 

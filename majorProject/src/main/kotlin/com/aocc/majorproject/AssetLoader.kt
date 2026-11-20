@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Typeface
 import com.aocc.framework.Audio
 import com.aocc.framework.Graphics
+import com.aocc.majorproject.roomba.ApartmentFloor
 import com.aocc.framework.Graphics.ImageFormat
 import com.aocc.framework.Image
 import java.util.concurrent.ExecutorService
@@ -129,6 +130,8 @@ class AssetLoader(
         stepComplete()
         Assets.flakes = (1..4).map { loadImage("flake-$it.png", ImageFormat.ARGB8888, true) }
         stepComplete()
+        Assets.floor = ApartmentFloor.build()
+        stepComplete()
     }
 
     /** Full-screen backgrounds stay at 1×; UI sprites may use 2×. */
@@ -166,7 +169,7 @@ class AssetLoader(
     }
 
     companion object {
-        const val TOTAL_STEP_COUNT = 25
+        const val TOTAL_STEP_COUNT = 26
         private const val TOTAL_STEPS = TOTAL_STEP_COUNT
     }
 }

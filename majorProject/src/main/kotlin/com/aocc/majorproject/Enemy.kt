@@ -1,12 +1,12 @@
 package com.aocc.majorproject
 
-import android.graphics.Color
 import android.graphics.PointF
 import android.graphics.RectF
 import android.graphics.Paint
 import com.aocc.framework.GameConstants
 import com.aocc.framework.Graphics
 import com.aocc.framework.PersonalMethods
+import com.aocc.majorproject.roomba.MiteRenderer
 import kotlin.math.hypot
 
 /**
@@ -63,6 +63,7 @@ class Enemy(
 
     private val spawnSeconds = spawnSecondsFor(session.getSpeed())
     private var spawnElapsed = 0f
+    private var age = 0f
     private var despawned = false
 
     init {
@@ -80,6 +81,7 @@ class Enemy(
     fun update(deltaSeconds: Float) {
         val step = GameConstants.secondsToSteps(deltaSeconds)
 
+        age += deltaSeconds
         if (spawnElapsed < spawnSeconds) {
             spawnElapsed = minOf(spawnSeconds, spawnElapsed + deltaSeconds)
         }
@@ -198,7 +200,9 @@ class Enemy(
 
         health--
         if (player.getShield() > 0) {
-            session.addScore(10 * player.getCombo())
+            val points = 10 * player.getCombo()
+            session.addScore(points)
+            session.recordVacuumed(posX, posY, points)
             player.setCombo(player.getCombo() + 1)
         } else {
             player.onDamaged()
@@ -241,8 +245,10 @@ class Enemy(
 
     fun paint(g: Graphics, paint: Paint) {
         val scale = maxOf(0f, spawnScale())
-        val alpha = (255 * minOf(1f, scale)).toInt().coerceIn(0, 255)
-        g.drawCircle(posX, posY, radius * scale, Color.argb(alpha, 255, 255, 255))
+        MiteRenderer.paint(
+            g, posX, posY, radius * scale * MITE_SIZE, age,
+            player.getCenterX(), player.getCenterY(), opacity = minOf(1f, scale)
+        )
     }
 
     fun isDespawned(): Boolean = despawned
@@ -314,6 +320,9 @@ class Enemy(
         /** Dots don't deal contact damage/score until mostly grown. */
         private const val CONTACT_MIN_SCALE = 0.6f
         private const val OFF_SCREEN_MARGIN = 60f
+
+        /** Mites are drawn a little larger than their hit radius so the fuzz reads. */
+        private const val MITE_SIZE = 1.25f
 
         /** Spawn-in duration for a dot created at the given session [speed] (0..[GameConstants.SPEED_RAMP_MAX]). */
         @JvmStatic

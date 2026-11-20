@@ -15,6 +15,24 @@ class GameSession {
 
     fun getPlayer(): Player = player
 
+    /** A mite vacuumed up at ([x], [y]) worth [points]; drained each frame by the screen for effects. */
+    class Vacuumed(val x: Float, val y: Float, val points: Int)
+
+    private val vacuumed = ArrayList<Vacuumed>()
+
+    fun recordVacuumed(x: Float, y: Float, points: Int) {
+        vacuumed.add(Vacuumed(x, y, points))
+    }
+
+    fun drainVacuumed(): List<Vacuumed> {
+        if (vacuumed.isEmpty()) {
+            return emptyList()
+        }
+        val drained = ArrayList(vacuumed)
+        vacuumed.clear()
+        return drained
+    }
+
     fun getUpdateCount(): Float = updateCount
 
     fun addUpdateCount(step: Float) {

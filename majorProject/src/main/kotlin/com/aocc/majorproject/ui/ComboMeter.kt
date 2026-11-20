@@ -18,13 +18,13 @@ class ComboMeter {
         g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, backgroundColor)
         val previousSize = paint.textSize
         paint.textSize = textSize
-        UiText.drawInBounds(g, paint, "x$combo", bounds, UiText.HAlign.CENTER, textColor)
+        UiText.drawInBounds(g, paint, "Bin x$combo", bounds, UiText.HAlign.CENTER, textColor)
         paint.textSize = previousSize
     }
 
     companion object {
         private const val BAR_HEIGHT = ScoreBar.BAR_HEIGHT
-        private const val BAR_WIDTH = 120
+        private const val BAR_WIDTH = 170
         private const val GAP = 8
         private val BAR_X: Int = ScoreBar.BAR_X - BAR_WIDTH - GAP
     }

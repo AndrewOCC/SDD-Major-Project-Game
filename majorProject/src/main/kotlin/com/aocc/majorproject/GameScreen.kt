@@ -14,6 +14,9 @@ import com.aocc.majorproject.display.RearLayout
 import com.aocc.majorproject.display.RearScreenUi
 import com.aocc.majorproject.display.RearTapQueue
 import com.aocc.majorproject.input.GamepadInput
+import com.aocc.majorproject.roomba.DustMap
+import com.aocc.majorproject.roomba.RoombaEffects
+import com.aocc.majorproject.roomba.RoombaTheme
 import com.aocc.majorproject.ui.ComboMeter
 import com.aocc.majorproject.ui.PauseMenuPanel
 import com.aocc.majorproject.ui.ScoreBar
@@ -51,6 +54,9 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
     private val formations = EnemyFormations(random)
     private val powerUp = PowerUp(1, session)
     private val tempEnemyPoint = Point()
+    private val dustMap = DustMap()
+    private val effects = RoombaEffects()
+    private var nextCleanMilestone = 0
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 30f
         textAlign = Paint.Align.CENTER
@@ -277,6 +283,7 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         player.update(deltaSeconds)
         enemyController.update(deltaSeconds)
         powerUp.update(deltaSeconds)
+        updateCleaning(deltaSeconds)
 
         if (session.getSpeed() < GameConstants.SPEED_RAMP_MAX &&
             session.getUpdateCount() >= GameConstants.SPEED_RAMP_INTERVAL_FRAMES
@@ -323,6 +330,35 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             changeState(GameState.GameOver)
         }
     }
+
+    /** Floor painting, milestone bonuses and vacuum / bin feedback. */
+    private fun updateCleaning(deltaSeconds: Float) {
+        val x = player.getCenterX()
+        val y = player.getCenterY()
+        dustMap.clean(x, y, Player.ROOMBA_DIAMETER / 2f + player.getShieldWidth() * CLEAN_SUCTION_SHARE)
+
+        val coverage = dustMap.coverage()
+        while (nextCleanMilestone < CLEAN_MILESTONES.size && coverage >= CLEAN_MILESTONES[nextCleanMilestone]) {
+            val bonus = CLEAN_BONUSES[nextCleanMilestone]
+            session.addScore(bonus)
+            val percent = (CLEAN_MILESTONES[nextCleanMilestone] * 100).toInt()
+            effects.popup("Floor $percent% clean! +$bonus", GameConstants.WORLD_WIDTH / 2f, 160f,
+                RoombaTheme.DOCK_GLOW, 44f, 2.2f)
+            Assets.powerup?.play(GamePreferences.getTapVolume().toFloat())
+            nextCleanMilestone++
+        }
+
+        for (event in session.drainVacuumed()) {
+            effects.vacuumed(event.x, event.y, event.points)
+        }
+        if (player.binEmptiedEvent) {
+            player.binEmptiedEvent = false
+            effects.popup("Bin emptied!", x, y - 50f, RoombaTheme.BIN_EMPTY, 34f)
+        }
+        effects.update(deltaSeconds, x, y)
+    }
+
+    private fun cleanPercent(): Int = (dustMap.coverage() * 100).toInt()
 
     private fun openPauseMenu() {
         openPauseMenu(true)
@@ -627,12 +663,13 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         }
 
         val g = game.graphics
-        val background = Assets.game_bg
-        if (background != null) {
-            g.drawImage(background, 0, 0)
+        val floor = Assets.floor
+        if (floor != null) {
+            g.drawImage(floor, 0, 0)
         } else {
             g.drawRect(0, 0, GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT, Color.BLACK)
         }
+        dustMap.paint(g)
 
         when (state) {
             GameState.Ready -> drawReadyUI(g)
@@ -667,26 +704,40 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
             GameConstants.WORLD_WIDTH / 2, PROMPT_Y)
     }
 
-    private fun drawRunningUI(g: Graphics) {
+    private fun drawScene(g: Graphics) {
         powerUp.paint(g, paint)
+        effects.paintPuffs(g)
         enemyController.paint(g, paint)
         player.paint(g, paint)
+    }
+
+    private fun drawRunningUI(g: Graphics) {
+        drawScene(g)
         paint.typeface = Assets.plain
+        effects.paintPopups(g, paint)
         // In dual-screen mode the score, combo and pause button live on the bottom screen.
         if (isDual()) {
             return
         }
         comboMeter.paint(g, paint, player.getCombo())
         scoreBar.paint(g, paint, session.getScore())
+        paintCleanMeter(g)
         menuButton.paint(g)
     }
 
+    private fun paintCleanMeter(g: Graphics) {
+        val x = ScoreBar.BAR_X + ScoreBar.BAR_WIDTH + 8
+        g.drawRect(x, 0, CLEAN_METER_WIDTH, ScoreBar.BAR_HEIGHT, Color.argb(100, 255, 255, 255))
+        val previousSize = paint.textSize
+        paint.textSize = 30f
+        UiText.drawCentered(g, paint, "${cleanPercent()}% clean", x + CLEAN_METER_WIDTH / 2,
+            ScoreBar.BAR_HEIGHT / 2, Color.WHITE)
+        paint.textSize = previousSize
+    }
+
     private fun drawPausedUI(g: Graphics) {
-        g.drawRect(0, 0, 1281, 721, Color.BLACK)
         paint.textSize = 40f
-        powerUp.paint(g, paint)
-        enemyController.paint(g, paint)
-        player.paint(g, paint)
+        drawScene(g)
         g.drawARGB(155, 0, 0, 0)
         paint.typeface = Assets.plain
 
@@ -773,14 +824,19 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
 
     private fun paintRearHud(g: Graphics, paint: Paint) {
         val centerX = RearLayout.WIDTH / 2
-        paint.textSize = 40f
-        UiText.drawCentered(g, paint, "SCORE", centerX, 110, Color.LTGRAY)
-        paint.textSize = 120f
-        UiText.drawCentered(g, paint, session.getScore().toString(), centerX, 220, Color.WHITE)
-        paint.textSize = 40f
-        UiText.drawCentered(g, paint, "COMBO", centerX, 350, Color.LTGRAY)
-        paint.textSize = 96f
-        UiText.drawCentered(g, paint, "x${player.getCombo()}", centerX, 445, Color.WHITE)
+        paint.textSize = 36f
+        UiText.drawCentered(g, paint, "SCORE", centerX, 80, Color.LTGRAY)
+        paint.textSize = 110f
+        UiText.drawCentered(g, paint, session.getScore().toString(), centerX, 175, Color.WHITE)
+
+        val leftX = RearLayout.WIDTH / 4
+        val rightX = RearLayout.WIDTH * 3 / 4
+        paint.textSize = 36f
+        UiText.drawCentered(g, paint, "BIN", leftX, 320, Color.LTGRAY)
+        UiText.drawCentered(g, paint, "FLOOR", rightX, 320, Color.LTGRAY)
+        paint.textSize = 84f
+        UiText.drawCentered(g, paint, "x${player.getCombo()}", leftX, 400, Color.WHITE)
+        UiText.drawCentered(g, paint, "${cleanPercent()}%", rightX, 400, RoombaTheme.DOCK_GLOW)
         rearPauseButton.paint(g)
     }
 
@@ -886,6 +942,12 @@ class GameScreen(val majorProjectGame: MajorProjectGame) : Screen(majorProjectGa
         private const val READY_FOCUS_SETTINGS_OFFSET = 1
 
         private const val GAME_OVER_FOCUS_RETRY = 1
+        private const val CLEAN_METER_WIDTH = 170
+
+        /** Share of the suction field (beyond the body) that also cleans the floor. */
+        private const val CLEAN_SUCTION_SHARE = 0.6f
+        private val CLEAN_MILESTONES = floatArrayOf(0.25f, 0.5f, 0.75f, 0.95f)
+        private val CLEAN_BONUSES = intArrayOf(250, 500, 1000, 2500)
         private const val REAR_BUTTON_WIDTH = 620
         private const val REAR_DIALOG_Y = 280
 
