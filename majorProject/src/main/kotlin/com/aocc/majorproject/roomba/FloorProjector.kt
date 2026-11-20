@@ -200,7 +200,7 @@ class FloorProjector(
 
     companion object {
         /** Warm halogen white. */
-        val LIGHT: Int = Color.argb(150, 255, 236, 200)
+        val LIGHT: Int = Color.argb(112, 255, 232, 196)
         private const val SHADOW_STEPS = 4
     }
 }

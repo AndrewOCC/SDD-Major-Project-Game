@@ -1,5 +1,7 @@
 package com.aocc.majorproject
 
+import com.aocc.majorproject.ui.UiStyle
+
 import android.graphics.Color
 import android.graphics.Paint
 import com.aocc.framework.Graphics
@@ -69,7 +71,7 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
         paintRearTile(g, paint, rearLeaderboardsTile, Assets.gpg_icon_leaderboards, "Leaderboards")
         paintRearTile(g, paint, rearAchievementsTile, Assets.gpg_icon_achievements, "Achievements")
         if (!majorProjectGame.isLoggedIn()) {
-            g.drawRect(rearSignInTile.x, rearSignInTile.y, rearSignInTile.width, rearSignInTile.height, Color.DKGRAY)
+            paintTile(g, rearSignInTile)
             Assets.sign_in_base?.let {
                 g.drawImage(
                     it,
@@ -82,7 +84,7 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
     }
 
     private fun paintRearTile(g: Graphics, paint: Paint, tile: UiBounds, icon: com.aocc.framework.Image?, label: String) {
-        g.drawRect(tile.x, tile.y, tile.width, tile.height, Color.DKGRAY)
+        paintTile(g, tile)
         icon?.let { g.drawImage(it, tile.centerX() - it.width / 2, tile.y + 22) }
         paint.textSize = 32f
         UiText.drawCentered(g, paint, label, tile.centerX(), tile.y + tile.height - 34, Color.WHITE)
@@ -242,6 +244,11 @@ class MainMenuScreen(private val majorProjectGame: MajorProjectGame) : Screen(ma
     }
 
     override fun dispose() {
+    }
+
+    private fun paintTile(g: Graphics, tile: UiBounds) {
+        g.drawRect(tile.x, tile.y, tile.width, tile.height, UiStyle.PANEL)
+        g.drawRectOutline(tile.x, tile.y, tile.width, tile.height, UiStyle.RULE_SOFT, 1.5f)
     }
 
     override fun backButton() {
